@@ -118,8 +118,8 @@ function Build-DynamicWorkflowsIndexContent {
 
 # Resolve paths
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$assignmentsIndexPath = Join-Path $repoRoot 'remote_ai_instruction_modules\ai-workflow-assignments.md'
-$workflowsIndexPath   = Join-Path $repoRoot 'remote_ai_instruction_modules\ai-dynamic-workflows.md'
+$assignmentsIndexPath = Join-Path $repoRoot 'local_ai_instruction_modules\ai-workflow-assignments.md'
+$workflowsIndexPath   = Join-Path $repoRoot 'local_ai_instruction_modules\ai-dynamic-workflows.md'
 
 # Fetch remote file lists
 $assignmentsDir = 'ai_instruction_modules/ai-workflow-assignments'

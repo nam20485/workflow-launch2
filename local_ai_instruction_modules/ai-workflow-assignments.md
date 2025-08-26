@@ -1,7 +1,5 @@
 # Workflow Assignments Index
 
-## Location of Remote Repository
-
 Repository: nam20485/agent-instructions
 Full repo URL: https://github.com/nam20485/agent-instructions
 Branch: main
@@ -11,12 +9,7 @@ Listed beklow are all of the active workflow assignments and their paths.
 
 Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
 
-Single Source of Truth
-
-- Assignment definition files in the `nam20485/agent-instructions` repository are authoritative for steps and Acceptance Criteria.
-- Do not use local golden files, cached plans, or mirrors to derive steps; remove them to prevent drift.
-- Changes made to assignment files upstream must take effect immediately in subsequent runs; always dereference the remote raw URLs at execution time.
-
+## Location of Remote Repository
 
 - Repository: nam20485/agent-instructions
 - Branch: main

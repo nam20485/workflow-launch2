@@ -27,7 +27,7 @@ Remote repository containing dynamic workflows and workflow assignments, and oth
 - Full repo URL: https://github.com/nam20485/agent-instructions
 - Branch: main
 - Assignments directory: ai_instruction_modules/ai-workflow-assignments/
-- Active assignments index in this workspace: see `remote_ai_instruction_modules/ai-workflow-assignments.md`
+ - Active assignments index in this workspace: see `local_ai_instruction_modules/ai-workflow-assignments.md`
 
 Single Source of Truth Policy:
 
@@ -40,12 +40,15 @@ Single Source of Truth Policy:
 - Full repo URL: https://github.com/nam20485/agent-instructions
 - Branch: main
 - Dynamic workflows directory: ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/
-- Active workflows index in this workspace: see `remote_ai_instruction_modules/ai-dynamic-workflows.md`
+ - Active workflows index in this workspace: see `local_ai_instruction_modules/ai-dynamic-workflows.md`
 
 ## Dynamic Workflow Orchestration (**REQUIRED**)
 Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
-[ai-dynamic-workflows.md](../remote_ai_instruction_modules/ai-dynamic-workflows.md)
+[ai-dynamic-workflows.md](../local_ai_instruction_modules/ai-dynamic-workflows.md)
 
 ## Assignments & Orchestration (**REQUIRED**)
 Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
-[ai-workflow-assignments.md](../remote_ai_instruction_modules/ai-workflow-assignments.md)
+[ai-workflow-assignments.md](../local_ai_instruction_modules/ai-workflow-assignments.md)
+
+## Local Ops Notes (Optional)
+- [Initiate New Repository — Operational Notes](../local_ai_instruction_modules/ai-initiate-new-repository-ops-notes.md)

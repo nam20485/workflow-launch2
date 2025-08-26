@@ -9,12 +9,6 @@ Listed beklow are all of the active dynamic workflows and their paths.
 
 Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
 
-Single Source of Truth
-
-- The dynamic workflow files listed below in the `nam20485/agent-instructions` repository are the only authoritative source for dynamic workflow scripts.
-- Do not reference local golden files, cached plans, or any mirrored copies; they are non-authoritative and should be removed if found.
-- Any edits made upstream to these files must be reflected immediately in subsequent runs by always dereferencing the remote raw URLs at runtime.
-
 ## Location of Remote Repository
 
 - Repository: nam20485/agent-instructions
