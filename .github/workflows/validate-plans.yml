@@ -1,4 +1,4 @@
-name: Validate plan outputs (goldens)
+name: Disabled - goldens removed (SSOT)
 
 on:
   push:
@@ -7,49 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  plan-validation:
-    runs-on: windows-latest
+  noop:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Generate plan (case1)
-        shell: pwsh
-        run: |
-          $docs = @('docs\advanced_memory\Advanced Memory .NET - Dev Plan.md')
-          ./scripts/workflow-resolution.ps1 `
-            -WorkflowName 'initiate-new-repo' `
-            -ContextRepoName 'sample-repo' `
-            -AppPlanDocs $docs `
-            -TraceOnly `
-            -CaseId case1
-
-      - name: Compare plan JSON (case1)
-        shell: pwsh
-        run: >-
-          ./scripts/plan-compare.ps1
-          -Expected ./tests/goldens/initiate-new-repo/case1.plan.json
-          -Actual ./run-plans/initiate-new-repo-sample-repo-case1.plan.json
-          -Kind json
-
-      - name: Generate plan (case2)
-        shell: pwsh
-        run: |
-          $docs = @(
-            'docs\advanced_memory\Advanced Memory .NET - Dev Plan.md',
-            'docs\advanced_memory\index.html'
-          )
-          ./scripts/workflow-resolution.ps1 `
-            -WorkflowName 'initiate-new-repo' `
-            -ContextRepoName 'sample-repo-2' `
-            -AppPlanDocs $docs `
-            -TraceOnly `
-            -CaseId case2
-
-      - name: Compare plan JSON (case2)
-        shell: pwsh
-        run: >-
-          ./scripts/plan-compare.ps1
-          -Expected ./tests/goldens/initiate-new-repo/case2.plan.json
-          -Actual ./run-plans/initiate-new-repo-sample-repo-2-case2.plan.json
-          -Kind json
+      - name: No-op
+        run: echo "Plan validation via goldens is disabled. Dynamic workflows and assignments are the single source of truth."
