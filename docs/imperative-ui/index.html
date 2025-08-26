@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImperativeUI: UI Rendering Architecture Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            /* slate-100 */
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            border: 1px solid #e2e8f0;
+            /* slate-200 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-content {
+            flex-grow: 1;
+        }
+
+        .benefit-list li::before {
+            content: '✓';
+            color: #10b981;
+            /* emerald-500 */
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .disadvantage-list li::before {
+            content: '✗';
+            color: #ef4444;
+            /* red-500 */
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .recommended-badge {
+            background-color: #dcfce7;
+            /* green-100 */
+            color: #166534;
+            /* green-800 */
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            border: 1px solid #86efac;
+            /* green-300 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-slate-900">ImperativeUI</h1>
+            <p class="mt-2 text-xl text-slate-600">UI Generation & Rendering Architecture Comparison</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Option A: WebView -->
+            <section class="card">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Option A: WebView</h2>
+                    <p class="mt-2 text-sm text-slate-500">Render UI using HTML/CSS/JS inside a browser component.</p>
+                </div>
+                <div class="card-content px-6 pb-6 space-y-4">
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Generator Target</h3>
+                        <p class="text-slate-600">HTML, CSS, JavaScript</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Viewer</h3>
+                        <p class="text-slate-600">Avalonia `WebView` Control</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Benefits</h3>
+                        <ul class="space-y-1 text-slate-600 benefit-list">
+                            <li>Ultimate UI flexibility & styling (CSS)</li>
+                            <li>Leverages existing web skills & libraries</li>
+                            <li>Generated UI is portable to the web</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Disadvantages</h3>
+                        <ul class="space-y-1 text-slate-600 disadvantage-list">
+                            <li>Complex C# to JS data binding</li>
+                            <li>Higher performance overhead</li>
+                            <li>Inconsistent native look & feel</li>
+                            <li>Increases application size</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Option B: Native Controls -->
+            <section class="card border-2 border-green-500 shadow-xl">
+                <div class="p-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-slate-800">Option B: Native</h2>
+                        <span class="recommended-badge">Recommended</span>
+                    </div>
+                    <p class="mt-2 text-sm text-slate-500">Render UI by programmatically creating native Avalonia
+                        controls.</p>
+                </div>
+                <div class="card-content px-6 pb-6 space-y-4">
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Generator Target</h3>
+                        <p class="text-slate-600">C# Avalonia Control Instances</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Viewer</h3>
+                        <p class="text-slate-600">Native Avalonia `Window` / Panel</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Benefits</h3>
+                        <ul class="space-y-1 text-slate-600 benefit-list">
+                            <li>Optimal performance and efficiency</li>
+                            <li>Perfect native look & feel</li>
+                            <li>Simple, reliable, and type-safe data binding</li>
+                            <li>Smallest application size</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Disadvantages</h3>
+                        <ul class="space-y-1 text-slate-600 disadvantage-list">
+                            <li>Styling is less flexible than CSS</li>
+                            <li>Complex custom controls require more effort</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Option C: Dynamic XAML -->
+            <section class="card">
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Option C: Dynamic XAML</h2>
+                    <p class="mt-2 text-sm text-slate-500">Render UI by generating and parsing Avalonia's XAML markup at
+                        runtime.</p>
+                </div>
+                <div class="card-content px-6 pb-6 space-y-4">
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Generator Target</h3>
+                        <p class="text-slate-600">String of XAML Markup</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Viewer</h3>
+                        <p class="text-slate-600">Native Avalonia `ContentControl`</p>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Benefits</h3>
+                        <ul class="space-y-1 text-slate-600 benefit-list">
+                            <li>Clean, declarative generation target</li>
+                            <li>Good separation of UI definition and logic</li>
+                            <li>Leverages existing XAML skills</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-slate-700">Disadvantages</h3>
+                        <ul class="space-y-1 text-slate-600 disadvantage-list">
+                            <li>Runtime XAML parsing is slow</li>
+                            <li>Potential security risks from generated code</li>
+                            <li>Debugging can be more difficult</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+</body>
+
+</html>
