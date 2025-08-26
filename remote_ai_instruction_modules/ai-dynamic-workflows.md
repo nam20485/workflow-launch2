@@ -47,6 +47,14 @@ Single Source of Truth
 - Raw URL:   [new-project](https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/new-project.md)
 - Canonical file: `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/new-project.md`
 
+#### project-setup
+
+- shortId: project-setup
+
+- GitHub UI: [project-setup](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/project-setup.md)
+- Raw URL:   [project-setup](https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/project-setup.md)
+- Canonical file: `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/project-setup.md`
+
 #### sample-minimal
 
 - shortId: sample-minimal

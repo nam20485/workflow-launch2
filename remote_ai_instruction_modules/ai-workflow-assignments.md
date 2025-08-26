@@ -1,5 +1,7 @@
 # Workflow Assignments Index
 
+## Location of Remote Repository
+
 Repository: nam20485/agent-instructions
 Full repo URL: https://github.com/nam20485/agent-instructions
 Branch: main
@@ -15,7 +17,6 @@ Single Source of Truth
 - Do not use local golden files, cached plans, or mirrors to derive steps; remove them to prevent drift.
 - Changes made to assignment files upstream must take effect immediately in subsequent runs; always dereference the remote raw URLs at execution time.
 
-## Location of Remote Repository
 
 - Repository: nam20485/agent-instructions
 - Branch: main

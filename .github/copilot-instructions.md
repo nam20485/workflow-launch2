@@ -17,8 +17,17 @@
 ## Core Instructions (**REQUIRED**)
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
-## Dynamic Workflow Orchestration (**REQUIRED**)
-Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
+## nam20485/agent-instructions Repository
+
+Remote repository containing dynamic workflows and workflow assignments, and other ai instruction modules.
+
+### Remote Repo Details
+
+ Repository: nam20485/agent-instructions
+- Full repo URL: https://github.com/nam20485/agent-instructions
+- Branch: main
+- Assignments directory: ai_instruction_modules/ai-workflow-assignments/
+- Active assignments index in this workspace: see `remote_ai_instruction_modules/ai-workflow-assignments.md`
 
 Single Source of Truth Policy:
 
@@ -33,34 +42,10 @@ Single Source of Truth Policy:
 - Dynamic workflows directory: ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/
 - Active workflows index in this workspace: see `remote_ai_instruction_modules/ai-dynamic-workflows.md`
 
-Active dynamic workflows (alias → canonical file):
-
-- initiate-new-repo → ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/initiate-new-repo.md
-	- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/initiate-new-repo.md
-	- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/initiate-new-repo.md
-
-Reference: `remote_ai_instruction_modules/ai-dynamic-workflows.md`
+## Dynamic Workflow Orchestration (**REQUIRED**)
+Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
+[ai-dynamic-workflows.md](../remote_ai_instruction_modules/ai-dynamic-workflows.md)
 
 ## Assignments & Orchestration (**REQUIRED**)
 Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
-
-Single Source of Truth Policy:
-
-- Workflow assignment definition files in `nam20485/agent-instructions` are authoritative. Execute steps strictly from these files; do not synthesize steps from dynamic workflow files or local artifacts.
-- Acceptance Criteria in the assignment files are mandatory gates for completion.
-- Any local mirrors, cached plans, or goldens must be ignored and may be removed to avoid drift.
-
-- Repository: nam20485/agent-instructions
-- Full repo URL: https://github.com/nam20485/agent-instructions
-- Branch: main
-- Assignments directory: ai_instruction_modules/ai-workflow-assignments/
-- Active assignments index in this workspace: see `remote_ai_instruction_modules/ai-workflow-assignments.md`
-
-Active assignment shortIds (shortId → canonical file):
-
-- initiate-new-repository → ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
-	- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
-	- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
-
-Reference: `remote_ai_instruction_modules/ai-workflow-assignments.md`
-
+[ai-workflow-assignments.md](../remote_ai_instruction_modules/ai-workflow-assignments.md)
