@@ -17,11 +17,37 @@
 ## Core Instructions (**REQUIRED**)
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
-## Local AI Instructions (**REQUIRED**)
-[ai-local-instructions.md](../local_ai_instructions/ai-local-instructions.md)
+## Dynamic Workflow Orchestration (**REQUIRED**)
+Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
 
-### Dynamic Workflow/Assignment/Resolution Guide (**OPTIONAL**)
-Consult the [assignment-index.json](../local_ai_instructions/assignment-index.json) file to resolve dynamic workflows and assignments.
-- Consult the [ai-resolution-guide.md](../local_ai_instructions/ai-resolution-guide.md) for more information on how to use the index and resolve dynamic workflows and assignments.
+- Repository: nam20485/agent-instructions
+- Full repo URL: https://github.com/nam20485/agent-instructions
+- Branch: main
+- Dynamic workflows directory: ai_instruction_modules/dynamic_workflows/
+- Active workflows index in this workspace: see `remote_ai_instruction_modules/ai-dynamic-workflows.md`
 
-End of file.
+Active dynamic workflows (alias → canonical file):
+
+- initiate-new-repo → ai_instruction_modules/dynamic_workflows/initiate-new-repository.md
+	- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/dynamic_workflows/initiate-new-repository.md
+	- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/dynamic_workflows/initiate-new-repository.md
+
+Reference: `remote_ai_instruction_modules/ai-dynamic-workflows.md`
+
+## Assignments & Orchestration (**REQUIRED**)
+Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
+
+- Repository: nam20485/agent-instructions
+- Full repo URL: https://github.com/nam20485/agent-instructions
+- Branch: main
+- Assignments directory: ai_instruction_modules/ai-workflow-assignments/
+- Active assignments index in this workspace: see `remote_ai_instruction_modules/ai-workflow-assignments.md`
+
+Active assignment shortIds (shortId → canonical file):
+
+- initiate-new-repository → ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
+	- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
+	- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
+
+Reference: `remote_ai_instruction_modules/ai-workflow-assignments.md`
+
