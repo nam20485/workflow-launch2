@@ -1,3 +1,11 @@
+############################################################
+# IMPORTANT: **THIS SCRIPT IS TEMPORARILY DISABLED**        #
+# Reason: Per request, the entire body has been commented   #
+# out. Remove the block comment markers to re-enable.       #
+# Date: 2025-08-25                                          #
+############################################################
+
+<#
 param(
     [Parameter(Mandatory=$true)][string]$WorkflowName,
     [Parameter(Mandatory=$true)][string]$ContextRepoName,
@@ -203,3 +211,6 @@ Write-Host "Markdown:      $mdPath" -ForegroundColor Green
 if ($TraceOnly.IsPresent) {
     Write-Host "Trace-only mode: no actions executed." -ForegroundColor Yellow
 }
+
+# End of disabled body
+#>
