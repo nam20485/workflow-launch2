@@ -17,9 +17,29 @@
 ## Core Instructions (**REQUIRED**)
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
-## nam20485/agent-instructions Repository
+## Local AI Instructions (**REQUIRED**)
+Local AI instruction moduule files are located in the [local_ai_instruction_modules](../local_ai_instruction_modules) directory.
 
-Remote repository containing dynamic workflows and workflow assignments, and other ai instruction modules.
+## Dynamic Workflow Orchestration (**REQUIRED**)
+Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
+[ai-dynamic-workflows.md](../local_ai_instruction_modules/ai-dynamic-workflows.md)
+
+## Workflow Assignments (**REQUIRED**)
+Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
+[ai-workflow-assignments.md](../local_ai_instruction_modules/ai-workflow-assignments.md)
+
+## Terminal Commands (Optional)
+Read before running any terminal commands, of if you need Github CL.I
+- [ai-terminal-commands.md](../ocal_ai_instruction_modules/ai-initiate-new-repository-ops-notes.md)
+
+## **Remote Repository with Main/Canonical AI Instruction Modules**
+
+[nam20485/agent-instructions Repository](https://github.com/nam20485/agent-instructions/main)
+
+The main set of AI instruction modules is located in this remote repository. It contains the following:
+- Dynamic workflows
+- Workflow assignments
+- Main AI instruction modules
 
 ### Remote Repo Details
 
@@ -35,20 +55,3 @@ Single Source of Truth Policy:
 - Local golden files, cached plans, or mirrors must not be used to derive steps or acceptance criteria. Delete any such artifacts if present.
 - Changes to dynamic workflow or assignment files in the remote canonical repository take effect immediately on subsequent runs.
 - The orchestrator must always fetch and execute directly from the remote canonical URLs listed below.
-
-- Repository: nam20485/agent-instructions
-- Full repo URL: https://github.com/nam20485/agent-instructions
-- Branch: main
-- Dynamic workflows directory: ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/
- - Active workflows index in this workspace: see `local_ai_instruction_modules/ai-dynamic-workflows.md`
-
-## Dynamic Workflow Orchestration (**REQUIRED**)
-Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
-[ai-dynamic-workflows.md](../local_ai_instruction_modules/ai-dynamic-workflows.md)
-
-## Assignments & Orchestration (**REQUIRED**)
-Agents MUST resolve workflow assignments (by shortId) from the remote canonical repository. Do not use local mirrors.
-[ai-workflow-assignments.md](../local_ai_instruction_modules/ai-workflow-assignments.md)
-
-## Local Ops Notes (Optional)
-- [Initiate New Repository — Operational Notes](../local_ai_instruction_modules/ai-initiate-new-repository-ops-notes.md)
