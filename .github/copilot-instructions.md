@@ -30,7 +30,7 @@ Agents MUST resolve workflow assignments (by shortId) from the remote canonical 
 
 ## Terminal Commands (Optional)
 Read before running any terminal commands, of if you need Github CL.I
-- [ai-terminal-commands.md](../ocal_ai_instruction_modules/ai-initiate-new-repository-ops-notes.md)
+- [ai-terminal-commands.md](../local_ai_instruction_modules/ai-terminal-commands.md)
 
 ## **Remote Repository with Main/Canonical AI Instruction Modules**
 
