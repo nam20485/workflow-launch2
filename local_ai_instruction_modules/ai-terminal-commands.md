@@ -182,6 +182,14 @@ git commit -m "Seed docs, labels, milestones, workspace/devcontainer rename"
 git push -u origin development
 ```
 
+### Post-clone template initialization (idempotent)
+
+```powershell
+# Run after cloning the template-derived repo into dynamic_workflows/<repo>
+$repoPath = Join-Path $dynamicWorkflows $env:NEW_REPO_NAME
+./scripts/init-template-repo.ps1 -RepoPath $repoPath -RepoName $env:NEW_REPO_NAME
+```
+
 ## Issues and retries log (Run #2)
 
 - Wrong clone destination (rooted under sibling path)
