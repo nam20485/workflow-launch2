@@ -49,6 +49,32 @@ The main set of AI instruction modules is located in this remote repository. It 
 - Assignments directory: ai_instruction_modules/ai-workflow-assignments/
  - Active assignments index in this workspace: see `local_ai_instruction_modules/ai-workflow-assignments.md`
 
+#### OVERRIDE NOTE
+**IMPORTANT**: When accessing files in the remote repository, always use the RAW URL. Do not use the GitHub UI to view the file. The RAW URL is the URL that you get when you click on the "Raw" button in the GitHub UI. Most URLs referenced in these files of the GIT UI form. They must be translated to the RAW URL form before use. 
+
+Examples: 
+
+- GitHub UI for the `ai-core-instructions.md` file is: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md
+
+- RAW URL for the `ai-core-instructions.md` file is: https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-core-instructions.md.
+
+##### Translating URLs
+To translate a GitHub UI URL to a RAW URL, replace `https://github.com/` with `https://raw.githubusercontent.com/`.
+
+*https://github.com/nam20485/agent-instructions/blob/main/<file-path> --> https://raw.githubusercontent.com/nam20485/agent-instructions/main/<file-path>*
+
+For example, the followingGitHub UI URL: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md 
+
+is translated to the following RAW URL: https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-core-instructions.md
+
+Examples:
+
+- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md
+- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-core-instructions.md
+
+- GitHub UI: https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
+- Raw URL:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/ai_instruction_modules/ai-workflow-assignments/initiate-new-repository.md
+
 Single Source of Truth Policy:
 
 - Dynamic workflow files (under `ai_instruction_modules/ai-workflow-assignments/dynamic-workflows/`) and workflow assignment files (under `ai_instruction_modules/ai-workflow-assignments/`) in the `nam20485/agent-instructions` repository are the ONLY authoritative sources for steps and acceptance criteria.
