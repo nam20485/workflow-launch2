@@ -4,6 +4,9 @@
   "preferredEditor": "vscode",
   "autoAccept": "false",
   "contextFileName": "GEMINI.md",
+  "disabledTools": [
+    "web_fetch"
+  ],
   "mcpServers": {
    "sequential-thinking": {
 			"type": "stdio",

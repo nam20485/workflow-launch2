@@ -14,6 +14,12 @@
 - Files marked **REQUIRED** are ALWAYS active and so must be followed and read
 - Otherwise files are optionally active based on user needs and your assigned roles and workflow assignments
 
+## **IMPORTANT RULES**
+- Don't assume your shell is bash. Its probably pwsh. 
+- Detect what type of shell you have before running any commands.
+- Your web-fetch tool is disabled. Use powershell or curl to fetch files from the web.
+- If there are many files, then create a pwsh script to download them in parallel.
+
 ## Core Instructions (**REQUIRED**)
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
