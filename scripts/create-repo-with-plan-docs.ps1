@@ -21,23 +21,17 @@ Path to the directory containing plan docs to copy into the new repo's docs/ fol
 .PARAMETER CloneDestinationDirectory
 Path to the local parent directory where the repository will be cloned (final path will be <CloneDestinationDirectory>\<FullRepoName>).
 
-.PARAMETER DefaultBranch
-Default branch name for the local commit/push. Default: main
-
-.PARAMETER Private
-Create the repository as private. If not set, the repository will be public.
-
-.PARAMETER License
-SPDX license identifier for the repository license. Default: agpl-3.0
+.PARAMETER Visibility
+Repository visibility. Must be 'public' or 'private'.
 
 .PARAMETER DryRun
 Simulate remote operations (repo create, git push) and local file copies without making changes. Logs actions only.
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -DryRun -Verbose
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\docs\plans -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\docs\plans -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
 
 .OUTPUTS
 System.String. The absolute clone destination path of the created repository.
@@ -64,16 +58,9 @@ param(
 	[ValidateNotNullOrEmpty()]
 	[string]$CloneDestinationDirectory,
 
-	[Parameter()]
-	[ValidatePattern('^[A-Za-z0-9_.\-]+$')]
-	[string]$DefaultBranch = 'main',
-
-	[Parameter()]
-	[switch]$Private,
-
-	[Parameter()]
-	[ValidateNotNullOrEmpty()]
-	[string]$License = 'agpl-3.0',
+	[Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
+	[ValidateSet('public','private')]
+	[string]$Visibility,
 
 	[Parameter()]
 	[switch]$DryRun
@@ -87,7 +74,7 @@ function Test-ToolExists {
 	if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
 		throw "Required tool not found on PATH: $Name"
 	}
-}
+}`
 
 function Get-RandomSuffix {
 	[CmdletBinding()]
@@ -124,19 +111,18 @@ function Test-RepoExists {
 	return ($res.ExitCode -eq 0)
 }
 
+$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 function New-GitHubRepository {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 	param(
 		[Parameter(Mandatory)][string]$Owner,
 		[Parameter(Mandatory)][string]$Name,
-		[Parameter()][switch]$Private,
-		[Parameter()][string]$License
-	)
+		[Parameter(Mandatory)][ValidateSet('public','private')][string]$Visibility
+		)
 	$ghArgs = @('repo','create',"$Owner/$Name")
-	if ($Private) { $ghArgs += '--private' } else { $ghArgs += '--public' }
-	if ($License) { $ghArgs += @('--license', $License) }
+	if ($Visibility -eq 'private') { $ghArgs += '--private' } else { $ghArgs += '--public' }
 	# Create from template repo explicitly
-	$ghArgs += @('--template', "nam20485/ai-new-app-template")
+	$ghArgs += @('--template', $TEMPLATE)
 	Write-Verbose "Creating GitHub repository: $Owner/$Name"
 	if ($PSCmdlet.ShouldProcess("$Owner/$Name", 'Create GitHub repository')) {
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
@@ -170,20 +156,22 @@ function Invoke-GitClone {
 function Copy-PlanDocs {
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$SourceDir,[Parameter(Mandatory)][string]$RepoRoot)
-	$src = (Resolve-Path -LiteralPath $SourceDir).Path
-	if (-not (Test-Path -LiteralPath $src)) { throw "Plan docs directory not found: $SourceDir" }
 	$docs = Join-Path $RepoRoot 'docs'
-	if (-not (Test-Path -LiteralPath $docs)) { New-Item -ItemType Directory -Path $docs | Out-Null }
-	Write-Verbose "Copying plan docs: $src -> $docs"
-	if (-not $DryRun) {
-		Copy-Item -LiteralPath $src -Destination $docs -Recurse -Force
+	if ($DryRun) {
+		Write-Verbose "[dry-run] Would copy plan docs: $SourceDir -> $docs"
+		return
 	}
+	if (-not (Test-Path -LiteralPath $SourceDir)) { throw "Plan docs directory not found: $SourceDir" }
+	if (-not (Test-Path -LiteralPath $docs)) { New-Item -ItemType Directory -Path $docs | Out-Null }
+	$srcResolved = (Resolve-Path -LiteralPath $SourceDir).Path
+	Write-Verbose "Copying plan docs: $srcResolved -> $docs"
+	Copy-Item "$srcResolved\*" -Destination $docs -Recurse -Force
 }
 
 function Invoke-GitCommitAndPush {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
-	param([Parameter(Mandatory)][string]$RepoRoot,[Parameter(Mandatory)][string]$Branch)
-	Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'checkout','-B', $Branch) | Out-Null
+	param([Parameter(Mandatory)][string]$RepoRoot)
+	Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'checkout') | Out-Null
 	Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'add','.') | Out-Null
 	$commit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit','-m','Add plan docs') -AllowFail
 	if ($commit.ExitCode -ne 0) {
@@ -191,13 +179,24 @@ function Invoke-GitCommitAndPush {
 		if ($msg -match 'nothing to commit') {
 			Write-Verbose 'Nothing to commit (working tree clean)'
 		} else {
-			throw 'git commit failed'
+			throw 'git commit failed: $msg'
 		}
 	}
-	if ($PSCmdlet.ShouldProcess($RepoRoot, "Push branch '$Branch'")) {
-		Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push','-u','origin', $Branch) | Out-Null
+	if ($PSCmdlet.ShouldProcess($RepoRoot, "Push changes")) {
+		Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push') | Out-Null
 	}
 }
+
+#
+# Main execution
+#
+try
+{
+
+Write-Output ""
+$continue = Read-Host "Ready. Create repo with name: $RepoName with plan docs from $PlanDocsDirectory at \'$CloneDestinationDirectory\'? (y/N)"
+
+if ($continue -ne ('y'.ToLower())) { throw 'User aborted' }
 
 # Preconditions
 Test-ToolExists 'git'
@@ -218,20 +217,36 @@ if (-not $finalName) { throw "Unable to find an available repo name after multip
 Write-Verbose "Chosen repository name: $Owner/$finalName"
 
 # Create repository
-New-GitHubRepository -Owner $Owner -Name $finalName -Private:$Private -License $License
+New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
+Write-Verbose "Repository created: $Owner/$finalName"
 
 # Clone locally
 $clonePath = Get-ClonePath -Parent $CloneDestinationDirectory -Name $finalName
 Invoke-GitClone -Owner $Owner -Name $finalName -Dest $clonePath
+Write-Verbose "Repository cloned: $clonePath"
 
 # Copy plan docs
 Copy-PlanDocs -SourceDir $PlanDocsDirectory -RepoRoot $clonePath
+Write-Verbose "Plan docs copied: $PlanDocsDirectory -> $clonePath\docs"
 
 # Commit and push
-Invoke-GitCommitAndPush -RepoRoot $clonePath -Branch $DefaultBranch
+Invoke-GitCommitAndPush -RepoRoot $clonePath
+Write-Verbose "Changes committed and pushed"
 
 # Output clone destination path
-Write-Output $clonePath
+Write-Output "SUCCESS: \'$clonePath\' created and checkd in"
+
+} 
+catch
+{
+	"FAILED: Exception! $($_.Exception.Message)"	
+	exit 1
+}
+
+#
+#	Original Plan
+#
+
 #params
 # $repo-name
 # $plan docs directory
