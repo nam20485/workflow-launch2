@@ -15,11 +15,11 @@ Base repository name (prefix). A random suffix is appended to form the final rep
 .PARAMETER Owner
 GitHub organization or user that will own the repository. Default: nam20485
 
-.PARAMETER PlanDocsDirectory
+.PARAMETER PlanDocsDir
 Path to the directory containing plan docs to copy into the new repo's docs/ folder.
 
-.PARAMETER CloneDestinationDirectory
-Path to the local parent directory where the repository will be cloned (final path will be <CloneDestinationDirectory>\<FullRepoName>).
+.PARAMETER CloneParentDir
+Path to the local parent directory where the repository will be cloned (final path will be <CloneParentDir>\<FullRepoName>).
 
 .PARAMETER Visibility
 Repository visibility. Must be 'public' or 'private'.
@@ -52,18 +52,21 @@ param(
 
 	[Parameter(Mandatory, HelpMessage = 'Directory containing plan docs to copy.')]
 	[ValidateNotNullOrEmpty()]
-	[string]$PlanDocsDirectory,
+	[string]$PlanDocsDir,
 
 	[Parameter(Mandatory, HelpMessage = 'Parent directory to clone into.')]
 	[ValidateNotNullOrEmpty()]
-	[string]$CloneDestinationDirectory,
+	[string]$CloneParentDir,
 
 	[Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
 	[ValidateSet('public','private')]
 	[string]$Visibility,
 
 	[Parameter()]
-	[switch]$DryRun
+	[switch]$DryRun,
+
+	[Parameter()]
+	[switch]$LaunchEditor
 )
 
 $ErrorActionPreference = 'Stop'
@@ -193,11 +196,6 @@ function Invoke-GitCommitAndPush {
 try
 {
 
-Write-Output ""
-$continue = Read-Host "Ready. Create repo with name: $RepoName with plan docs from $PlanDocsDirectory at \'$CloneDestinationDirectory\'? (y/N)"
-
-if ($continue -ne ('y'.ToLower())) { throw 'User aborted' }
-
 # Preconditions
 Test-ToolExists 'git'
 Test-ToolExists 'gh'
@@ -214,6 +212,11 @@ for ($i=0; $i -lt 5 -and -not $finalName; $i++) {
 }
 if (-not $finalName) { throw "Unable to find an available repo name after multiple attempts for base '$RepoName'" }
 
+Write-Output ""
+	$continue = Read-Host "Ready. Create repo with name: '$Owner/$finalName' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
+
+if ($continue -ne ('y'.ToLower())) { throw 'User aborted' }
+
 Write-Verbose "Chosen repository name: $Owner/$finalName"
 
 # Create repository
@@ -221,13 +224,13 @@ New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
 Write-Verbose "Repository created: $Owner/$finalName"
 
 # Clone locally
-$clonePath = Get-ClonePath -Parent $CloneDestinationDirectory -Name $finalName
+$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
 Invoke-GitClone -Owner $Owner -Name $finalName -Dest $clonePath
 Write-Verbose "Repository cloned: $clonePath"
 
 # Copy plan docs
-Copy-PlanDocs -SourceDir $PlanDocsDirectory -RepoRoot $clonePath
-Write-Verbose "Plan docs copied: $PlanDocsDirectory -> $clonePath\docs"
+Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
+Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\docs"
 
 # Commit and push
 Invoke-GitCommitAndPush -RepoRoot $clonePath
@@ -235,6 +238,9 @@ Write-Verbose "Changes committed and pushed"
 
 # Output clone destination path
 Write-Output "SUCCESS: \'$clonePath\' created and checkd in"
+
+Read-Host "Launch editor? (y/N)"
+if ($continue -eq ('y'.ToLower())) { code-insiders $clonePath}
 
 } 
 catch
