@@ -38,6 +38,17 @@ Agents MUST resolve workflow assignments (by shortId) from the remote canonical 
 Read before running any terminal commands, of if you need Github CL.I
 - [ai-terminal-commands.md](../local_ai_instruction_modules/ai-terminal-commands.md)
 
+## Tools & Automation Protocol (REQUIRED)
+Agents must prefer automation-first approaches and use only the currently-selected tools. Review the local module for the full policy and the enumerated toolset:
+- [ai-tools-and-automation.md](../local_ai_instruction_modules/ai-tools-and-automation.md)
+- Selected toolset JSON (exactly 126 enabled tools): [toolset.selected.json](../local_ai_instruction_modules/toolset.selected.json)
+
+Key rules:
+- Use MCP GitHub tools first, then VS Code integration, and only fall back to terminal gh as a last resort.
+- The web-fetch tool is disabled; fetch remote files via PowerShell (Invoke-WebRequest) or curl.
+- Maintain ≥90% automation coverage for GitHub operations and document any manual exceptions.
+- If GitHub tools (MCP or gh) are not authorized, initiate the authentication/login flow (e.g., start gh auth login); the user will complete the interactive prompts.
+
 ## **Remote Repository with Main/Canonical AI Instruction Modules**
 
 [nam20485/agent-instructions Repository](https://github.com/nam20485/agent-instructions/main)

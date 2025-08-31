@@ -77,8 +77,11 @@ function Test-ToolExists {
 	if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
 		throw "Required tool not found on PATH: $Name"
 	}
-}`
+}
 
+# Dot-source common auth helper
+$commonAuth = Join-Path $PSScriptRoot 'common-auth.ps1'
+if (Test-Path -LiteralPath $commonAuth) { . $commonAuth } else { Write-Verbose 'common-auth.ps1 not found; proceeding without dot-sourcing' }
 function Get-RandomSuffix {
 	[CmdletBinding()]
 	param()
@@ -199,7 +202,14 @@ try
 # Preconditions
 Test-ToolExists 'git'
 Test-ToolExists 'gh'
-Invoke-External -FilePath 'gh' -ArgumentList @('auth','status') | Out-Null
+if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else {
+	# Fallback local check if helper not available
+	$st = Invoke-External -FilePath 'gh' -ArgumentList @('auth','status') -AllowFail
+	if ($st.ExitCode -ne 0) {
+		Write-Verbose 'GitHub CLI not authenticated. Initiating gh auth login...'
+		if ($DryRun) { Write-Warning '[dry-run] Would run: gh auth login' } else { Invoke-External -FilePath 'gh' -ArgumentList @('auth','login') | Out-Null }
+	}
+}
 
 # Determine final repo name (ensure not colliding; try up to 5 suffixes)
 $finalName = $null

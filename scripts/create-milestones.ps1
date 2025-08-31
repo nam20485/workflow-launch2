@@ -81,6 +81,14 @@ try {
     exit 1
 }
 
+# Dot-source common auth helper if present
+$commonAuth = Join-Path $PSScriptRoot 'common-auth.ps1'
+if (Test-Path -LiteralPath $commonAuth) { . $commonAuth }
+if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth } else {
+    $st = & gh auth status 2>$null; $code = $LASTEXITCODE
+    if ($code -ne 0) { Write-Warning 'GitHub CLI not authenticated. Initiating gh auth login...'; & gh auth login }
+}
+
 # Build the titles list from parameters
 $allTitles = @()
 if ($Titles) { $allTitles += $Titles }

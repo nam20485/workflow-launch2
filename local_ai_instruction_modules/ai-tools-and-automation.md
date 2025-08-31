@@ -134,3 +134,15 @@ Monthly review of:
 ---
 
 *This document serves as the authoritative guide for GitHub automation practices. Adherence to these protocols is mandatory for all GitHub-related workflows and assignments.*
+
+## Tools Inventory (Workspace Snapshot)
+
+Use the selected toolset file to enumerate exactly which tools are enabled in this workspace. Treat this file as the source of truth for tool availability.
+
+- Selected tools (enabled = 126): [toolset.selected.json](./toolset.selected.json)
+- Disabled tools: web-fetch, placeholder edit tool, and new-workspace scaffolding
+
+Guidance:
+- Always prefer MCP GitHub tools (`mcp_github_*`) for repo/project/issue operations.
+- Use VS Code GitHub integration next (`run_vscode_command`).
+- Use terminal `gh` only when neither of the above can fulfill the task; include justification per Automation Checkpoint.

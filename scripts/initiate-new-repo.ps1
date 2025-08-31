@@ -164,7 +164,8 @@ function Ensure-Tool {
 function Ensure-GhAuth {
   $res = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth','status') -AllowFail
   if ($res.ExitCode -ne 0) {
-    throw 'GitHub CLI not authenticated. Run: gh auth login'
+    Write-Warn 'GitHub CLI not authenticated. Initiating gh auth login so the user can complete prompts...'
+    Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth','login') -AllowFail | Out-Null
   }
 }
 
@@ -346,10 +347,14 @@ function Invoke-InitTemplateScript {
 
 Write-Host '=== Initiate New Repository (dynamic workflow) ===' -ForegroundColor Magenta
 
+# Dot-source common auth helper if present
+$commonAuth = Join-Path $PSScriptRoot 'common-auth.ps1'
+if (Test-Path -LiteralPath $commonAuth) { . $commonAuth }
+
 # Preconditions
 Ensure-Tool 'git'
 Ensure-Tool 'gh'
-Ensure-GhAuth
+if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth } else { Ensure-GhAuth }
 
 $wsRoot = Get-WorkspaceRoot -Explicit $WorkspaceRoot
 Write-Info ("Workspace root: {0}" -f $wsRoot)
