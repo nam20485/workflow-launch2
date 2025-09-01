@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaction Intelligence Platform v1.0 - Project Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A thematic, single-page dashboard. The structure is designed for non-linear exploration, prioritizing user understanding over mirroring the report's layout. Key sections include a project overview, an interactive feature roadmap organized by phases with clickable details, a visual technology stack, and key requirements. This dashboard approach allows stakeholders to quickly grasp the project's scope and drill down into specific areas of interest without reading the full document linearly. -->
+    <!-- Visualization & Content Choices: 
+        - Project Vision/Architecture -> Inform -> Tailwind card layout with icons -> Clickable details -> Justification: Provides a high-level summary upfront.
+        - Phased Features -> Organize/Compare/Inform -> Interactive buttons for filtering, card grid for features, modal for details, and a Chart.js Donut Chart for phase distribution -> Click to filter, click to view details -> Justification: The core of the SPA, making the dense feature list digestible and interactive. The donut chart gives a quick quantitative overview.
+        - Tech Stack -> Inform -> Tailwind card grid -> Static display -> Justification: A clean, visual way to present the project's technical foundation.
+        - Requirements -> Inform -> Styled lists and HTML/CSS progress bars -> Static display -> Justification: Clearly presents key project constraints and goals.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8; /* Warm off-white */
+            color: #4A4A4A;
+        }
+        .bg-primary { background-color: #FDFBF8; }
+        .bg-secondary { background-color: #FFFFFF; }
+        .text-accent { color: #D97706; } /* Amber */
+        .border-accent { border-color: #D97706; }
+        .bg-accent { background-color: #D97706; }
+        .bg-accent-light { background-color: #FEF3C7; }
+        .text-muted { color: #71717A; }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+        }
+        .nav-link:hover {
+            color: #D97706;
+            border-bottom-color: #D97706;
+        }
+        .active-phase {
+            background-color: #D97706 !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .feature-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        /* Modal styles */
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 80vh;
+        }
+    </style>
+</head>
+<body class="bg-primary">
+
+    <!-- Header & Navigation -->
+    <header class="bg-secondary/80 backdrop-blur-md sticky top-0 z-40 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-accent">Interaction Intelligence Platform</h1>
+            <div class="hidden md:flex space-x-8">
+                <a href="#overview" class="nav-link text-gray-600 font-medium border-b-2 border-transparent pb-1">Overview</a>
+                <a href="#roadmap" class="nav-link text-gray-600 font-medium border-b-2 border-transparent pb-1">Roadmap</a>
+                <a href="#stack" class="nav-link text-gray-600 font-medium border-b-2 border-transparent pb-1">Tech Stack</a>
+                <a href="#requirements" class="nav-link text-gray-600 font-medium border-b-2 border-transparent pb-1">Requirements</a>
+            </div>
+            <div class="md:hidden">
+                <select id="mobile-nav" class="bg-white border border-gray-300 rounded-md px-3 py-2">
+                    <option value="#overview">Overview</option>
+                    <option value="#roadmap">Roadmap</option>
+                    <option value="#stack">Tech Stack</option>
+                    <option value="#requirements">Requirements</option>
+                </select>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-12">
+
+        <!-- Overview Section -->
+        <section id="overview" class="mb-24">
+            <h2 class="text-4xl font-bold text-center mb-4">Project Vision & Architecture</h2>
+            <p class="text-center text-lg text-muted max-w-3xl mx-auto mb-12">
+                This platform is a new class of developer tooling for observability, explainability, and optimization of the developer-AI partnership. It's built on a "Trust by Design" philosophy, ensuring all analysis is personal, private, and secure.
+            </p>
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div class="bg-secondary p-8 rounded-xl shadow-sm">
+                    <div class="text-4xl mb-4">🖥️</div>
+                    <h3 class="text-xl font-bold mb-2">Desktop Client (The Hub)</h3>
+                    <p class="text-muted">The primary user-facing application for all visualization, analysis, and interaction.</p>
+                </div>
+                <div class="bg-secondary p-8 rounded-xl shadow-sm">
+                    <div class="text-4xl mb-4">📡</div>
+                    <h3 class="text-xl font-bold mb-2">Local Proxy Service (The Collector)</h3>
+                    <p class="text-muted">A background service that intercepts and captures raw API traffic for deep analysis.</p>
+                </div>
+                <div class="bg-secondary p-8 rounded-xl shadow-sm">
+                    <div class="text-4xl mb-4">🔌</div>
+                    <h3 class="text-xl font-bold mb-2">VS Code Extension (The Instrument)</h3>
+                    <p class="text-muted">A lightweight extension for deep IDE integration, providing real-time context.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Roadmap Section -->
+        <section id="roadmap" class="mb-24">
+            <h2 class="text-4xl font-bold text-center mb-4">Interactive Feature Roadmap</h2>
+            <p class="text-center text-lg text-muted max-w-3xl mx-auto mb-12">
+                The project is structured in three distinct phases. Select a phase to explore its features, or view the overall distribution in the chart.
+            </p>
+
+            <div class="flex flex-col md:flex-row items-center justify-center gap-12">
+                <div class="w-full md:w-1/2 lg:w-2/3">
+                    <div class="flex justify-center mb-8 bg-gray-100 p-2 rounded-full">
+                        <button class="phase-btn px-6 py-2 font-medium rounded-full flex-1 text-center active-phase" data-phase="all">All Phases</button>
+                        <button class="phase-btn px-6 py-2 font-medium rounded-full flex-1 text-center" data-phase="1">Phase 1</button>
+                        <button class="phase-btn px-6 py-2 font-medium rounded-full flex-1 text-center" data-phase="2">Phase 2</button>
+                        <button class="phase-btn px-6 py-2 font-medium rounded-full flex-1 text-center" data-phase="3">Phase 3</button>
+                    </div>
+                    <div id="feature-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Feature cards will be injected here by JavaScript -->
+                    </div>
+                </div>
+                 <div class="w-full md:w-1/2 lg:w-1/3">
+                    <div class="chart-container bg-secondary p-4 rounded-xl shadow-sm">
+                        <canvas id="phaseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section id="stack" class="mb-24">
+            <h2 class="text-4xl font-bold text-center mb-4">Technology Stack</h2>
+             <p class="text-center text-lg text-muted max-w-3xl mx-auto mb-12">
+                The platform is built on a modern, cross-platform, and high-performance technology stack chosen for reliability and scalability.
+            </p>
+            <div id="tech-stack-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 <!-- Tech stack cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- Requirements Section -->
+        <section id="requirements">
+            <h2 class="text-4xl font-bold text-center mb-4">Key Project Requirements</h2>
+            <p class="text-center text-lg text-muted max-w-3xl mx-auto mb-12">
+                The project adheres to strict non-functional requirements for performance, security, and quality, ensuring a professional-grade product.
+            </p>
+            <div class="bg-secondary rounded-xl shadow-sm p-8 grid md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Non-Functional Requirements</h3>
+                    <ul class="space-y-3 text-muted">
+                        <li class="flex items-start"><span class="text-accent font-bold mr-2">⚡</span> <strong>Performance:</strong> &lt;50ms proxy latency. UI remains responsive with large datasets.</li>
+                        <li class="flex items-start"><span class="text-accent font-bold mr-2">🛡️</span> <strong>Security:</strong> All sensitive data encrypted at rest (AES-256). No inbound network ports.</li>
+                        <li class="flex items-start"><span class="text-accent font-bold mr-2">💪</span> <strong>Reliability:</strong> Graceful failure handling with clear, user-friendly error messages.</li>
+                        <li class="flex items-start"><span class="text-accent font-bold mr-2">🎨</span> <strong>Usability:</strong> Intuitive UI for a technical audience with clear explanations for all features.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Testing & Quality Strategy</h3>
+                    <p class="text-muted mb-4">A comprehensive testing strategy ensures code quality and reliability across the entire application.</p>
+                    <div>
+                        <span class="font-medium">Unit Test Coverage</span>
+                        <div class="w-full bg-gray-200 rounded-full h-4 mt-1">
+                            <div class="bg-accent h-4 rounded-full flex items-center justify-center text-white text-xs font-bold" style="width: 90%;">90%+ Goal</div>
+                        </div>
+                    </div>
+                     <div class="mt-4">
+                        <span class="font-medium">Integration & UI Testing</span>
+                        <p class="text-sm text-muted">End-to-end tests cover the full data pipeline and critical user workflows like consent and session management.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Feature Detail Modal -->
+    <div id="feature-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0">
+        <div id="modal-content" class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8 transform scale-95">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 id="modal-title" class="text-2xl font-bold"></h3>
+                    <p id="modal-epic" class="text-muted font-medium"></p>
+                </div>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <div id="modal-body" class="prose max-w-none">
+                <!-- Modal content injected here -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    const projectData = {
+        features: [
+            { id: 'F-101', phase: 1, title: 'Multi-Source Log Aggregation', epic: 'Unified Event Stream & Advanced Data Grid', userStory: 'As a power user, I want to automatically capture and unify data from all relevant sources, so I have a complete dataset to analyze.', description: 'This foundational feature establishes the data ingestion pipeline, normalizing disparate data sources into a single, coherent event schema.', acceptanceCriteria: ['Logs parsed and stored within 2 seconds.', 'IDE events received and stored.', 'All events linked to a common session ID.'], techNotes: 'Requires a file-watching service, a robust parsing engine for different log formats, and a unified `Event` data model in ArangoDB.' },
+            { id: 'F-102', phase: 1, title: 'Deep Diagnostics Consent Wizard', epic: 'Deep Diagnostics Consent Wizard', userStory: 'As a new user, I want a clear process to approve network inspection, so I can feel confident and secure.', description: 'Implements the critical consent flow for enabling API interception via a multi-step, educational wizard.', acceptanceCriteria: ['Wizard appears on-demand.', 'Wizard explains purpose and technical requirements.', 'Consent requires deliberate action.', 'Feature remains disabled if wizard is closed.'], techNotes: 'Implement as a modal dialog with multiple views. User consent status must be stored persistently.' },
+            { id: 'F-103', phase: 1, title: 'Automated Certificate Installation', epic: 'Automated & Guided Certificate Installation', userStory: 'As a new user, I want the app to handle certificate installation for me, so I can enable API interception quickly.', description: 'Provides a wizard-like process for installing the local proxy\'s self-signed root certificate into the system\'s trust store.', acceptanceCriteria: ['Generates a unique root CA certificate.', 'Prompts for administrative privileges.', 'Executes platform-specific installation commands.', 'Shows clear success or failure messages.'], techNotes: 'Use .NET\'s `X509Certificates` APIs. Requires platform-specific logic for Windows, macOS, and Linux trust stores.' },
+            { id: 'F-104', phase: 1, title: '"Safe Sessions" Vault', epic: '"Safe Sessions" Vault', userStory: 'As a security-conscious user, I want all sensitive data encrypted on disk, so my data is protected.', description: 'Implements the core encryption-at-rest strategy. All sensitive data is immediately encrypted before being written to the database.', acceptanceCriteria: ['Payloads encrypted using AES-256.', 'User prompted to unlock vault to view data.', 'UI shows placeholders for encrypted content when locked.'], techNotes: 'Use `System.Security.Cryptography.Aes`. Derive key using PBKDF2. Integrate with system credential managers (Windows Hello, macOS Keychain).' },
+            { id: 'F-105', phase: 1, title: 'Unified Thread View', epic: 'Unified Thread View', userStory: 'As a developer, I want to see my chat conversation alongside technical logs to correlate my actions with AI behavior.', description: 'The primary data exploration view, presenting a two-panel layout with a clean chat view and a detailed log view.', acceptanceCriteria: ['Displays chat messages on the left.', 'Updates right panel on selection with full log details.', 'Supports collapsible sections for structured data.'], techNotes: 'Use a `SplitView` layout. Left panel: `ListBox` with UI virtualization. Right panel: `TreeView` for JSON.' },
+            { id: 'F-106', phase: 1, title: 'Session Security UI', epic: 'Session Security UI', userStory: 'As a user, I want clear, persistent feedback about the security state of my session.', description: 'Ensures the user is always aware of the application\'s security context with ambient visual cues and explicit controls.', acceptanceCriteria: ['Distinct visual indicators (border, icon) for unlocked state.', 'A prominent "Lock Session" button.', 'Auto-locks after a configurable period of inactivity.'], techNotes: 'Use a global state manager for `IsLocked` status. Bind UI styles to this state. Use a `DispatcherTimer` for the inactivity lock.' },
+            { id: 'F-107', phase: 1, title: 'Basic Performance Metrics', epic: 'Basic Performance Metrics', userStory: 'As a developer, I want to see basic performance data to quickly identify slow or expensive requests.', description: 'Surfaces critical performance metrics directly within the Unified Thread View for each interaction.', acceptanceCriteria: ['Displays Duration, Time to First Token, and Token Count.', 'Tooltip on token count shows prompt/completion breakdown.'], techNotes: 'Parse metrics from captured log/API data. Display in a dedicated section of the detail panel.' },
+            { id: 'F-201', phase: 2, title: 'Interaction Quality Report', epic: 'Interaction Quality Report', userStory: 'As a developer, I want a detailed analysis of my prompts to understand my strengths and weaknesses.', description: 'An on-demand analysis feature that evaluates a conversational turn against a rubric of prompt engineering best practices.', acceptanceCriteria: ['Generates a report with a radar chart and detailed sections.', 'Provides positive reinforcement and actionable recommendations.'], techNotes: 'Analysis engine will use heuristic rules and NLP techniques. Radar chart implemented with a charting library.' },
+            { id: 'F-202', phase: 2, title: 'Automated Remediation', epic: 'Automated Remediation', userStory: 'As a user, I want a one-click way to apply suggested prompt improvements to learn by doing.', description: 'Integrates with the Quality Report to offer an interactive button to apply recommended changes to a prompt.', acceptanceCriteria: ['"Improve My Prompt" button is shown with suggestions.', 'Clicking the button updates the chat input in the IDE.'], techNotes: 'Requires communication from the desktop app back to the VS Code extension via SignalR.' },
+            { id: 'F-203', phase: 2, title: 'The Prompt Simulator', epic: 'The Prompt Simulator', userStory: 'As a prompt engineer, I want to experiment with variations of past interactions to A/B test and understand AI responses.', description: 'An advanced "what-if" tool to edit past prompts/context and re-run them against the AI to see a live-diff of the new response.', acceptanceCriteria: ['Shows original interaction in "Simulation Mode".', 'Re-runs edited prompt and displays new response alongside original.', 'Shows new performance metrics for comparison.'], techNotes: 'Reconstructs request payload from logged data. Requires a text diffing library.' },
+            { id: 'F-204', phase: 2, title: 'Interactive Timeline View', epic: 'Interactive Timeline View', userStory: 'As a user, I want a visual timeline of my session to understand my workflow and identify bottlenecks.', description: 'Provides a graphical view of a session\'s data, plotting all events on a horizontal, zoomable timeline.', acceptanceCriteria: ['Displays a timeline with nodes for different event types.', 'Tooltip on hover shows event summary.', 'Clicking a node navigates to the event in the Thread View.'], techNotes: 'Requires a custom canvas or charting library with timeline support. Must support zooming and panning.' },
+            { id: 'F-205', phase: 2, title: 'Token Flow Visualization', epic: 'Token Flow Visualization', userStory: 'As a developer, I want to understand my prompt\'s token count to use the context window more efficiently.', description: 'Provides a graphical breakdown of the prompt\'s token composition using a Sankey diagram.', acceptanceCriteria: ['Displays a Sankey diagram for a selected interaction.', 'Shows flows for User Prompt, Chat History, and Code Context with their token counts.'], techNotes: 'Requires a charting library that supports Sankey diagrams. Data is parsed from the `usage` block in logs.' },
+            { id: 'F-206', phase: 2, title: 'Context Map', epic: 'Context Map', userStory: 'As a user, I want to see which files the AI used as context to debug misunderstandings.', description: 'Provides transparency for commands like `@workspace` by rendering a file tree highlighting the files and snippets included in the prompt.', acceptanceCriteria: ['"Context Map" panel is visible for relevant interactions.', 'Displays a file tree with highlighted context files.', 'Clicking a file shows the specific code snippet sent.'], techNotes: 'Log data must contain file paths and line numbers. A `TreeView` control can render the file structure.' },
+            { id: 'F-301', phase: 3, title: 'Prompt Snippets & Templates', epic: 'Prompt Snippets & Templates', userStory: 'As a developer, I want to save effective prompts as reusable templates to work more efficiently.', description: 'Allows users to create, manage, and execute a library of personal prompt templates with dynamic placeholders.', acceptanceCriteria: ['"Save as Template" action for successful interactions.', 'A library view to manage saved templates.', 'A VS Code command to insert templates into the chat input.'], techNotes: 'Templates stored in the local database. VS Code extension needs a new command and Quick Pick UI.' },
+            { id: 'F-302', phase: 3, title: 'Automated Session Summarization', epic: 'Automated Session Summarization', userStory: 'As a developer, I want an automated summary of my AI interactions to easily document my progress.', description: 'At the end of a session, the user can trigger an AI-powered summarization of the entire conversation.', acceptanceCriteria: ['Generates a summary via an AI model.', 'Summary includes key problems, solutions, and code snippets.', 'Can be saved as a Markdown file in the project directory.'], techNotes: 'Makes a meta-call to an AI model with a condensed version of the chat history.' },
+            { id: 'F-303', phase: 3, title: 'Conversation Trajectory Analysis', epic: 'Conversation Trajectory Analysis', userStory: 'As a reflective practitioner, I want to visualize how my thought process evolves during a complex task.', description: 'Uses NLP topic modeling to analyze and visualize the semantic drift in topics over the course of a conversation.', acceptanceCriteria: ['Renders a visualization of topic evolution.', 'Clearly delineates dominant topics at different points in the conversation.'], techNotes: 'Requires a locally runnable NLP library. Visualization could be a stacked area chart or a force-directed graph.' },
+            { id: 'F-304', phase: 3, title: 'Knowledge Base Integration', epic: 'Knowledge Base Integration', userStory: 'As a user, I want to seamlessly save valuable AI interactions to my personal knowledge base.', description: '(Future) Will provide a plugin system for integration with tools like Obsidian and Logseq, starting with a direct file export.', acceptanceCriteria: ['"Export to Knowledge Base" action is available.', 'Creates a pre-formatted Markdown file in a user-configured directory.'], techNotes: 'Initial version will write Markdown files directly. Future versions will have a plugin architecture.' }
+        ],
+        techStack: [
+            { name: '.NET 8+ / C#', rationale: 'Provides a modern, high-performance, cross-platform foundation for the desktop client and backend services.' },
+            { name: 'Avalonia UI', rationale: 'A cross-platform UI framework that allows for a single codebase across Windows, macOS, and Linux.' },
+            { name: '.NET Aspire', rationale: 'Simplifies the orchestration and management of the multi-process application architecture.' },
+            { name: 'ArangoDB', rationale: 'A powerful multi-model database with native graph support, critical for deep analysis features.' },
+            { name: 'SignalR', rationale: 'Provides a robust, real-time communication layer between the desktop app and the VS Code extension.' },
+            { name: 'YARP', rationale: 'A highly efficient and extensible reverse proxy for building the local API interception service.' },
+            { name: 'TypeScript', rationale: 'The standard for VS Code extensions, offering strong typing and excellent API integration.' },
+            { name: 'GitHub Actions', rationale: 'For continuous integration, testing, and automated builds for all target platforms.' }
+        ]
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const featureGrid = document.getElementById('feature-grid');
+        const techStackGrid = document.getElementById('tech-stack-grid');
+        const phaseBtns = document.querySelectorAll('.phase-btn');
+        const phaseChartCtx = document.getElementById('phaseChart').getContext('2d');
+        
+        const modal = document.getElementById('feature-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalEpic = document.getElementById('modal-epic');
+        const modalBody = document.getElementById('modal-body');
+
+        const mobileNav = document.getElementById('mobile-nav');
+        mobileNav.addEventListener('change', (e) => {
+            window.location.href = e.target.value;
+        });
+
+        const renderFeatures = (phase = 'all') => {
+            featureGrid.innerHTML = '';
+            const filteredFeatures = phase === 'all' 
+                ? projectData.features 
+                : projectData.features.filter(f => f.phase == phase);
+
+            filteredFeatures.forEach(feature => {
+                const card = document.createElement('div');
+                card.className = 'feature-card bg-secondary p-6 rounded-xl shadow-sm cursor-pointer';
+                card.dataset.featureId = feature.id;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-sm text-accent bg-accent-light px-2 py-1 rounded-full">Phase ${feature.phase}</span>
+                        <span class="font-mono text-xs text-muted">${feature.id}</span>
+                    </div>
+                    <h4 class="text-lg font-bold mt-4 mb-2">${feature.title}</h4>
+                    <p class="text-sm text-muted">${feature.userStory}</p>
+                `;
+                card.addEventListener('click', () => openModal(feature.id));
+                featureGrid.appendChild(card);
+            });
+        };
+        
+        const renderTechStack = () => {
+            techStackGrid.innerHTML = '';
+            projectData.techStack.forEach(tech => {
+                const card = document.createElement('div');
+                card.className = 'bg-secondary p-6 rounded-xl shadow-sm';
+                card.innerHTML = `
+                    <h4 class="text-lg font-bold mb-2">${tech.name}</h4>
+                    <p class="text-sm text-muted">${tech.rationale}</p>
+                `;
+                techStackGrid.appendChild(card);
+            });
+        };
+
+        const openModal = (featureId) => {
+            const feature = projectData.features.find(f => f.id === featureId);
+            if (!feature) return;
+
+            modalTitle.textContent = feature.title;
+            modalEpic.textContent = feature.epic;
+            
+            let criteriaHtml = feature.acceptanceCriteria.map(c => `<li>${c}</li>`).join('');
+            
+            modalBody.innerHTML = `
+                <h5 class="font-bold text-lg mb-2">User Story</h5>
+                <p class="mb-4 p-4 bg-gray-50 rounded-md border-l-4 border-accent"><em>${feature.userStory}</em></p>
+                <h5 class="font-bold text-lg mb-2">Description</h5>
+                <p class="mb-4">${feature.description}</p>
+                <h5 class="font-bold text-lg mb-2">Acceptance Criteria</h5>
+                <ul class="list-disc pl-5 mb-4 space-y-1">${criteriaHtml}</ul>
+                <h5 class="font-bold text-lg mb-2">Technical Notes</h5>
+                <p>${feature.techNotes}</p>
+            `;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        phaseBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                phaseBtns.forEach(b => b.classList.remove('active-phase'));
+                btn.classList.add('active-phase');
+                renderFeatures(btn.dataset.phase);
+            });
+        });
+
+        const phaseCounts = projectData.features.reduce((acc, feature) => {
+            acc[feature.phase - 1] = (acc[feature.phase - 1] || 0) + 1;
+            return acc;
+        }, []);
+
+        new Chart(phaseChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Phase 1: Foundation', 'Phase 2: Analytics', 'Phase 3: Integration'],
+                datasets: [{
+                    label: 'Features per Phase',
+                    data: phaseCounts,
+                    backgroundColor: [
+                        'rgba(217, 119, 6, 0.7)',  // Amber
+                        'rgba(107, 114, 128, 0.7)', // Gray
+                        'rgba(55, 65, 81, 0.7)'     // Dark Gray
+                    ],
+                    borderColor: [
+                        '#D97706',
+                        '#6B7280',
+                        '#374151'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Feature Distribution by Phase',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+
+        renderFeatures();
+        renderTechStack();
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Plan: MCP C++ SDK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap"
+        rel="stylesheet">
+    <!-- Chosen Palette: Technical Neutrals & Slate Blue -->
+    <!-- Application Structure Plan: A dashboard-style layout with a fixed sidebar for primary navigation is chosen to provide immediate context and structure. The source report, a multi-phase technical plan, is not well-suited for linear reading. This structure allows a developer or project manager to instantly jump to a specific phase (e.g., 'Testing' or 'SDK Implementation') without scrolling. Within each phase, steps are presented as distinct, interactive cards, making the dense information digestible. An interactive architecture diagram is included upfront to provide a visual anchor for the components discussed throughout the plan. This non-linear, component-driven approach is far more effective for a technical audience than a simple document conversion. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Project Phases -> Goal: Organize/Navigate -> Viz: Fixed Sidebar Navigation + Content Panes. Interaction: Click to switch views. Justification: Provides clear, persistent navigation for a multi-part plan.
+        - Report Info: Key Components (McpClient, IToolProvider) -> Goal: Explain Relationships -> Viz: Interactive Diagram (HTML/CSS). Interaction: Click component to highlight and display its description. Justification: Visually communicates the system architecture described in the text, making it easier to understand component roles.
+        - Report Info: Dependency List -> Goal: Inform -> Viz: Styled List. Justification: Clear and legible presentation of technical dependencies.
+        - Report Info: Code Snippets -> Goal: Instruct/Example -> Viz: Styled Code Blocks (HTML/CSS). Interaction: Copy button. Justification: Improves usability for developers wanting to use the example code.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            background-color: #1e293b; /* slate-800 */
+            color: #e2e8f0; /* slate-200 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+        .code-block .token.keyword { color: #93c5fd; } /* blue-300 */
+        .code-block .token.class-name { color: #6ee7b7; } /* emerald-300 */
+        .code-block .token.string { color: #fde047; } /* yellow-300 */
+        .code-block .token.comment { color: #9ca3af; } /* gray-400 */
+        .code-block .token.function { color: #c4b5fd; } /* violet-300 */
+        .code-block .token.punctuation { color: #cbd5e1; } /* slate-300 */
+        .nav-item.active {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0c4a6e; /* sky-800 */
+            font-weight: 600;
+        }
+        .component-diagram .component.active {
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+
+<body class="text-slate-700">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-white border-r border-slate-200 p-4 md:p-6 flex-shrink-0">
+            <h1 class="text-xl font-bold text-slate-800 mb-6">MCP C++ SDK Plan</h1>
+            <nav id="main-nav">
+                <ul class="space-y-2">
+                    <li><a href="#overview" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span>Overview</span>
+                    </a></li>
+                    <li><a href="#phase-0" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                        <span>Phase 0: Setup</span>
+                    </a></li>
+                    <li><a href="#phase-1" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+                        <span>Phase 1: SDK Core</span>
+                    </a></li>
+                    <li><a href="#phase-2" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M21 12H3"/><path d="M12 3v18"/></svg>
+                        <span>Phase 2: Server & Tests</span>
+                    </a></li>
+                    <li><a href="#phase-3" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-slate-600 hover:bg-slate-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                        <span>Phase 3: Docs & Examples</span>
+                    </a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 lg:p-10">
+            <div id="content-panes">
+                <!-- Overview Pane -->
+                <section id="overview" class="content-pane space-y-8">
+                    <div class="max-w-4xl">
+                        <h2 class="text-3xl font-bold text-slate-800 mb-2">Interactive SDK Implementation Plan</h2>
+                        <p class="text-lg text-slate-600">This application transforms the technical specification for the MCP C++ SDK into an interactive, explorable guide. Navigate through the development phases using the sidebar, and interact with the components below to understand the project architecture.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-white rounded-xl border border-slate-200">
+                        <h3 class="text-xl font-semibold text-slate-800 mb-4">Interactive Architecture</h3>
+                        <p class="text-slate-600 mb-6">Click on a component in the diagram to learn more about its role in the SDK. This visualizes how the core pieces of the project fit together.</p>
+                        
+                        <div class="component-diagram grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                            <!-- Client -->
+                            <div class="component p-4 text-center bg-sky-50 border-2 border-transparent rounded-lg transition-all" data-component="client">
+                                <h4 class="font-semibold text-sky-800">McpClient (SDK)</h4>
+                                <p class="text-sm text-sky-700">High-level user API</p>
+                            </div>
+
+                            <!-- Arrow -->
+                            <div class="text-center text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                <p class="text-xs">gRPC</p>
+                            </div>
+
+                            <!-- Server -->
+                            <div class="flex flex-col gap-4">
+                               <div class="component p-4 text-center bg-violet-50 border-2 border-transparent rounded-lg transition-all" data-component="server">
+                                    <h4 class="font-semibold text-violet-800">McpServiceImpl (Server)</h4>
+                                    <p class="text-sm text-violet-700">Handles RPC calls</p>
+                               </div>
+                               <div class="text-center text-slate-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block transform -rotate-90"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                                </div>
+                                <div class="component p-4 text-center bg-emerald-50 border-2 border-transparent rounded-lg transition-all" data-component="registry">
+                                    <h4 class="font-semibold text-emerald-800">ToolRegistry</h4>
+                                    <p class="text-sm text-emerald-700">Dispatches to providers</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="component-info" class="mt-6 p-4 bg-slate-50 rounded-lg min-h-[100px] border border-slate-200 transition-opacity duration-300 opacity-0">
+                            <h4 id="info-title" class="font-semibold text-slate-800"></h4>
+                            <p id="info-desc" class="text-slate-600 mt-1"></p>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- Phase 0 Pane -->
+                <section id="phase-0" class="content-pane space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800 border-b pb-2">Phase 0: Project Validation & Environment Setup</h2>
+                    <p class="text-slate-600">This initial phase focuses on validating the existing project structure and ensuring the build environment is correctly configured with all necessary dependencies. It's the foundation for the entire development lifecycle.</p>
+                    
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 0.1: Validate Project Structure & Build System</h3>
+                        <p>Review the repository layout (`sdk/`, `server/`, etc.) and root `CMakeLists.txt`. The excellent separation of concerns promotes modularity. The existing `CMakePresets.json` is critical for ensuring a consistent build experience and will be used for all commands.</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 0.2: Verify Dependency Management</h3>
+                        <p>Inspect the `vcpkg.json` manifest file, the single source of truth for external dependencies. Confirm the root `CMakeLists.txt` correctly points to the vcpkg toolchain file.</p>
+                        <div class="code-block">
+<pre><code><span class="token-punctuation">{</span>
+  <span class="token-string">"name"</span><span class="token-punctuation">:</span> <span class="token-string">"mcpcpp"</span><span class="token-punctuation">,</span>
+  <span class="token-string">"version-string"</span><span class="token-punctuation">:</span> <span class="token-string">"0.1.0"</span><span class="token-punctuation">,</span>
+  <span class="token-string">"dependencies"</span><span class="token-punctuation">:</span> <span class="token-punctuation">[</span>
+    <span class="token-string">"grpc"</span><span class="token-punctuation">,</span>
+    <span class="token-string">"protobuf"</span><span class="token-punctuation">,</span>
+    <span class="token-string">"catch2"</span>
+  <span class="token-punctuation">]</span>
+<span class="token-punctuation">}</span></code></pre>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 0.3: Verify Proto Compilation</h3>
+                        <p>Confirm that the existing CMake scripts correctly compile the `.proto` files in the `protos/` directory and that the generated C++ classes are accessible to the `sdk` and `server` library targets.</p>
+                    </div>
+                </section>
+
+                <!-- Phase 1 Pane -->
+                <section id="phase-1" class="content-pane space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800 border-b pb-2">Phase 1: Core SDK Library Implementation (`sdk/`)</h2>
+                     <p class="text-slate-600">This phase is about building the high-level, easy-to-use C++ library that developers will interact with. This library abstracts away the complexities of gRPC and provides the core framework for extensibility.</p>
+                    
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 1.1: Implement the High-Level Client (`McpClient`)</h3>
+                        <p>Create the `McpClient` class within the `sdk` library. This is the primary entry point for developers. It will encapsulate the gRPC channel and stub, providing simple, intuitive methods that accept native C++ types and handle the underlying Protobuf/gRPC complexity.</p>
+                        <div class="code-block">
+<pre><code><span class="token-comment">// sdk/include/mcp/client.h</span>
+<span class="token-keyword">#include</span> <span class="token-string">&lt;mcp/protos/mcp.grpc.pb.h&gt;</span>
+<span class="token-keyword">#include</span> <span class="token-string">&lt;grpcpp/grpcpp.h&gt;</span>
+<span class="token-keyword">#include</span> <span class="token-string">&lt;string&gt;</span>
+<span class="token-keyword">#include</span> <span class="token-string">&lt;memory&gt;</span>
+
+<span class="token-keyword">class</span> <span class="token-class-name">McpClient</span> <span class="token-punctuation">{</span>
+<span class="token-keyword">public</span><span class="token-punctuation">:</span>
+    <span class="token-keyword">explicit</span> <span class="token-function">McpClient</span><span class="token-punctuation">(</span><span class="token-keyword">const</span> std<span class="token-punctuation">::</span>string<span class="token-operator">&</span> server_address<span class="token-punctuation">)</span><span class="token-punctuation">;</span>
+
+    std<span class="token-punctuation">::</span>optional<span class="token-operator">&lt;</span>std<span class="token-punctuation">::</span>string<span class="token-operator">&gt;</span> <span class="token-function">QueryKnowledge</span><span class="token-punctuation">(</span><span class="token-keyword">const</span> std<span class="token-punctuation">::</span>string<span class="token-operator">&</span> query<span class="token-punctuation">,</span> <span class="token-keyword">const</span> std<span class="token-punctuation">::</span>string<span class="token-operator">&</span> search_type<span class="token-punctuation">)</span><span class="token-punctuation">;</span>
+
+<span class="token-keyword">private</span><span class="token-punctuation">:</span>
+    std<span class="token-punctuation">::</span>shared_ptr<span class="token-operator">&lt;</span>grpc<span class="token-punctuation">::</span>Channel<span class="token-operator">&gt;</span> channel_<span class="token-punctuation">;</span>
+    std<span class="token-punctuation">::</span>unique_ptr<span class="token-operator">&lt;</span>mcp<span class="token-punctuation">::</span>McpOrchestrator<span class="token-punctuation">::</span>Stub<span class="token-operator">&gt;</span> stub_<span class="token-punctuation">;</span>
+<span class="token-punctuation">}</span><span class="token-punctuation">;</span></code></pre>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 1.2: Design the Extensible Tool Provider Framework</h3>
+                        <p>Create the `IToolProvider` abstract base class. This interface is the cornerstone of the SDK's extensibility. Using `google::protobuf::Any` is a key design choice, enabling true plug-and-play functionality for new tools without modifying the core server code. Also, create the `ToolRegistry` class to manage and dispatch to these providers.</p>
+                         <div class="code-block">
+<pre><code><span class="token-comment">// sdk/include/mcp/tool_provider.h</span>
+<span class="token-keyword">class</span> <span class="token-class-name">IToolProvider</span> <span class="token-punctuation">{</span>
+<span class="token-keyword">public</span><span class="token-punctuation">:</span>
+    <span class="token-keyword">virtual</span> <span class="token-function">~IToolProvider</span><span class="token-punctuation">(</span><span class="token-punctuation">)</span> <span class="token-operator">=</span> <span class="token-keyword">default</span><span class="token-punctuation">;</span>
+    <span class="token-keyword">virtual</span> std<span class="token-punctuation">::</span>string <span class="token-function">GetToolName</span><span class="token-punctuation">(</span><span class="token-punctuation">)</span> <span class="token-keyword">const</span> <span class="token-operator">=</span> <span class="token-number">0</span><span class="token-punctuation">;</span>
+    <span class="token-keyword">virtual</span> grpc<span class="token-punctuation">::</span>Status <span class="token-function">Execute</span><span class="token-punctuation">(</span><span class="token-keyword">const</span> google<span class="token-punctuation">::</span>protobuf<span class="token-punctuation">::</span>Any<span class="token-operator">&</span> request<span class="token-punctuation">,</span> google<span class="token-punctuation">::</span>protobuf<span class="token-punctuation">::</span>Any<span class="token-operator">*</span> response<span class="token-punctuation">)</span> <span class="token-operator">=</span> <span class="token-number">0</span><span class="token-punctuation">;</span>
+<span class="token-punctuation">}</span><span class="token-punctuation">;</span></code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Phase 2 Pane -->
+                <section id="phase-2" class="content-pane space-y-6 hidden">
+                    <h2 class="text-2xl font-bold text-slate-800 border-b pb-2">Phase 2: Server Logic & Testing (`server/`, `tests/`)</h2>
+                    <p class="text-slate-600">This phase implements the server's business logic to handle incoming requests and ensures the entire system is reliable and correct through comprehensive testing.</p>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 2.1: Implement the MCP Service Logic</h3>
+                        <p>Within the `server` project, create a class (e.g., `McpServiceImpl`) that inherits from the generated gRPC service interface. This class will use the `ToolRegistry` to find the correct `IToolProvider` and delegate execution, forming the core dispatch logic of the server.</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 2.2: Write Unit Tests with Catch2</h3>
+                        <p>For each key component in the SDK, create a corresponding test file in the `tests/` project. Use Catch2's `TEST_CASE` and `SECTION` macros to validate the functionality of individual components in isolation. For example, test the `ToolRegistry` for correct registration and retrieval.</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 2.3: Write Integration Tests</h3>
+                        <p>This is the most critical step for ensuring the protocol is implemented correctly. Follow the "Arrange-Act-Assert" pattern to test the full client-server communication pipeline. Start a test server, have the client connect and make a call, and assert that the response is what the test provider was programmed to return.</p>
+                    </div>
+                </section>
+                
+                <!-- Phase 3 Pane -->
+                <section id="phase-3" class="content-pane space-y-6 hidden">
+                     <h2 class="text-2xl font-bold text-slate-800 border-b pb-2">Phase 3: Documentation (`docs/`) & Examples (`examples/`)</h2>
+                     <p class="text-slate-600">This final phase creates comprehensive and user-friendly documentation that makes the SDK easy to learn and use, fulfilling the primary objective of ease of use.</p>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 3.1: Configure Doxygen</h3>
+                        <p>Create a `Doxyfile` in the `docs/` directory. Configure it to scan public headers and generate HTML output. Integrate Doxygen with CMake to create a custom `doc` build target for easy generation.</p>
+                    </div>
+                    
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 3.2: Add API Documentation Comments</h3>
+                        <p>Meticulously go through all public headers and add Doxygen-style comments (`/** ... */`) to all classes, methods, and parameters. Explain what the code does (`@brief`), detail each parameter (`@param`), and describe the return value (`@return`).</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl border border-slate-200 space-y-4">
+                        <h3 class="font-semibold text-lg text-slate-800">Step 3.3: Write Usage Guides and Implement Examples</h3>
+                        <p>In the `docs/` directory, create Markdown files for step-by-step tutorials (`GettingStarted.md`, `BuildingAClient.md`, `BuildingAServer.md`). Implement the full, compilable source code for these tutorials in the `examples/` directory to provide users with complete, working projects to reference.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            const contentPanes = document.querySelectorAll('.content-pane');
+            const components = document.querySelectorAll('.component');
+            const infoContainer = document.getElementById('component-info');
+            const infoTitle = document.getElementById('info-title');
+            const infoDesc = document.getElementById('info-desc');
+
+            const componentData = {
+                client: {
+                    title: 'McpClient (SDK)',
+                    description: 'The primary entry point for developers using the SDK. It wraps the low-level gRPC calls into simple, high-level methods, abstracting away network complexity.'
+                },
+                server: {
+                    title: 'McpServiceImpl (Server)',
+                    description: 'The core server logic that implements the gRPC service interface. It receives incoming RPCs and is responsible for orchestrating the response.'
+                },
+                registry: {
+                    title: 'ToolRegistry & IToolProvider',
+                    description: 'The heart of the server\'s extensibility. The registry holds a collection of "tools" that implement the IToolProvider interface. It dispatches requests to the correct tool based on the call.'
+                }
+            };
+
+            function setActivePane(hash) {
+                const targetHash = hash || '#overview';
+
+                navItems.forEach(item => {
+                    if (item.getAttribute('href') === targetHash) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+
+                contentPanes.forEach(pane => {
+                    if (`#${pane.id}` === targetHash) {
+                        pane.classList.remove('hidden');
+                    } else {
+                        pane.classList.add('hidden');
+                    }
+                });
+            }
+
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetHash = e.currentTarget.getAttribute('href');
+                    history.pushState(null, null, targetHash);
+                    setActivePane(targetHash);
+                });
+            });
+
+            components.forEach(component => {
+                component.addEventListener('click', () => {
+                    const componentKey = component.dataset.component;
+                    const data = componentData[componentKey];
+
+                    components.forEach(c => c.classList.remove('active'));
+                    component.classList.add('active');
+
+                    infoTitle.textContent = data.title;
+                    infoDesc.textContent = data.description;
+                    infoContainer.classList.remove('opacity-0');
+                });
+            });
+
+            window.addEventListener('popstate', () => {
+                 setActivePane(window.location.hash);
+            });
+
+            // Initial load
+            setActivePane(window.location.hash);
+        });
+    </script>
+</body>
+
+</html>
