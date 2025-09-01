@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infographic: Agent as a Service (AaaS) Platform Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Energetic & Playful -->
+    <!-- Application Structure Plan: The infographic is designed as a single, scrollable narrative. The original top-down structure is maintained for its clear, guided flow. A new "Dynamic Use-Case" section has been added at the end, which uses the Gemini API to generate practical examples of how the platform can be used. This provides a compelling, action-oriented conclusion to the narrative. Additionally, "Explain" buttons have been integrated into the Architecture and Tech Stack sections to provide on-demand, AI-generated simplifications of complex topics, enhancing user understanding without cluttering the main layout. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Core Architecture -> Goal: Organize/Relationships -> Viz/Method: Custom HTML/CSS Flow Chart. Justification: A visual diagram is the most effective way to communicate complex system architecture.
+        - Report Info: Service Composition -> Goal: Inform -> Viz/Method: Donut Chart (Chart.js). Justification: Provides a simple, quantitative visual break.
+        - Report Info: Technology Stack & Features -> Goal: Organize -> Viz/Method: Styled Cards & Lists with Unicode Icons. Justification: Visually engaging and digestible format.
+        - New Feature: AI Explanations -> Goal: Simplify/Inform -> Viz/Method: Button-triggered dynamic text generation. Interaction: User clicks a button; Gemini API provides a simple explanation. Justification: Increases accessibility for non-technical audiences.
+        - New Feature: Use-Case Generation -> Goal: Illustrate/Engage -> Viz/Method: Button-triggered dynamic text generation. Interaction: User clicks a button; Gemini API generates a sample agent use-case and implementation strategy. Justification: Makes the platform's value proposition tangible and demonstrates its practical application.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFDFD;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #FF7F50, #1E90FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #F3F4F6;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(30, 144, 255, 0.1), 0 10px 10px -5px rgba(30, 144, 255, 0.04);
+        }
+        .section-title {
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #1F2937;
+        }
+        .flow-line {
+            position: relative;
+            border-left: 2px dashed #9CA3AF;
+        }
+        .flow-line::after {
+            content: '▼';
+            position: absolute;
+            bottom: -2px;
+            left: -9px;
+            color: #9CA3AF;
+            font-size: 1rem;
+        }
+        .gemini-loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #D1D5DB;
+            border-top: 2px solid #1E90FF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+
+    <!-- Header -->
+    <header class="text-center py-16 px-4 bg-gray-50">
+        <h1 class="section-title text-4xl md:text-6xl">Agent as a Service</h1>
+        <p class="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">A blueprint for a scalable, multi-tenant, cloud-native platform for building and deploying advanced AI agents.</p>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8">
+
+        <!-- Architecture Section -->
+        <section class="py-16">
+            <h2 class="section-title text-3xl md:text-4xl text-center mb-12">Platform Architecture</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+                The platform is built on a .NET Aspire-orchestrated microservice architecture. A central Orchestration Service acts as the brain, delegating tasks to specialized services for knowledge, memory, verification, and tooling.
+            </p>
+            
+            <div class="w-full max-w-4xl mx-auto">
+                <div class="text-center mb-6">
+                    <div class="card inline-block p-4">
+                        <p class="font-bold text-lg">👤 Blazor WebAssembly UI</p>
+                        <p class="text-sm text-gray-500">User Management Portal</p>
+                    </div>
+                </div>
+                <div class="h-12 w-px mx-auto flow-line"></div>
+                <div class="card p-6 md:p-8 text-center bg-blue-50 border-blue-200">
+                    <div class="flex justify-center items-center mb-2">
+                        <h3 class="font-bold text-xl md:text-2xl text-blue-800">⚙️ Orchestration Service</h3>
+                        <button class="gemini-explain-btn ml-3" data-topic="Orchestration Service" data-context="Manages Agentic Workflows (MCP Server)">✨ Explain</button>
+                    </div>
+                    <p class="text-blue-600">Manages Agentic Workflows (MCP Server)</p>
+                    <div class="gemini-output" data-output-for="Orchestration Service"></div>
+                </div>
+                <div class="h-12 w-px mx-auto flow-line"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+                    <div class="card p-4">
+                        <p class="text-2xl mb-2">🧠</p>
+                        <h4 class="font-bold text-orange-600">Knowledge</h4>
+                        <p class="text-sm text-gray-500 mb-2">GraphRAG</p>
+                        <button class="gemini-explain-btn" data-topic="Knowledge Service with GraphRAG" data-context="Provides deep knowledge from documents.">✨ Explain</button>
+                        <div class="gemini-output" data-output-for="Knowledge Service with GraphRAG"></div>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-2xl mb-2">💾</p>
+                        <h4 class="font-bold text-teal-600">Memory</h4>
+                        <p class="text-sm text-gray-500 mb-2">Mem0</p>
+                        <button class="gemini-explain-btn" data-topic="Memory Service with Mem0" data-context="Remembers past conversations and user preferences.">✨ Explain</button>
+                        <div class="gemini-output" data-output-for="Memory Service with Mem0"></div>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-2xl mb-2">🔎</p>
+                        <h4 class="font-bold text-yellow-600">Verification</h4>
+                        <p class="text-sm text-gray-500 mb-2">Grounding RAG</p>
+                        <button class="gemini-explain-btn" data-topic="Verification Service with Grounding RAG" data-context="Fact-checks agent responses against trusted sources.">✨ Explain</button>
+                        <div class="gemini-output" data-output-for="Verification Service with Grounding RAG"></div>
+                    </div>
+                    <div class="card p-4">
+                        <p class="text-2xl mb-2">🛠️</p>
+                        <h4 class="font-bold text-indigo-600">Tooling</h4>
+                        <p class="text-sm text-gray-500 mb-2">Secure Sandbox</p>
+                        <button class="gemini-explain-btn" data-topic="Tooling Service" data-context="Allows the agent to perform actions like calling APIs.">✨ Explain</button>
+                        <div class="gemini-output" data-output-for="Tooling Service"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section class="py-16 bg-gray-50 rounded-2xl">
+            <h2 class="section-title text-3xl md:text-4xl text-center mb-12">Technology Stack</h2>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div class="chart-container relative h-64 md:h-80 max-w-sm mx-auto w-full">
+                    <canvas id="techStackChart"></canvas>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">C# & .NET 9</p>
+                        <p class="text-sm text-gray-500">Core Language</p>
+                    </div>
+                    <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">.NET Aspire</p>
+                        <p class="text-sm text-gray-500">Orchestration</p>
+                    </div>
+                    <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">Neo4j</p>
+                        <p class="text-sm text-gray-500">Graph Database</p>
+                    </div>
+                    <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">Qdrant</p>
+                        <p class="text-sm text-gray-500">Vector Database</p>
+                    </div>
+                     <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">Semantic Kernel</p>
+                        <p class="text-sm text-gray-500">AI SDK</p>
+                    </div>
+                     <div class="card p-4 text-center">
+                        <p class="font-bold text-lg">Docker</p>
+                        <p class="text-sm text-gray-500">Containerization</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features & Deliverables Section -->
+        <section class="py-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="section-title text-2xl md:text-3xl mb-6">Key Features</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start"><span class="text-green-500 mr-3 text-xl">✅</span><span class="text-gray-600"><strong>Multi-Tenancy:</strong> Secure data isolation for all users and agents.</span></li>
+                        <li class="flex items-start"><span class="text-green-500 mr-3 text-xl">✅</span><span class="text-gray-600"><strong>Knowledge Management:</strong> UI for uploading documents (.txt, .pdf, .md) and monitoring indexing jobs.</span></li>
+                        <li class="flex items-start"><span class="text-green-500 mr-3 text-xl">✅</span><span class="text-gray-600"><strong>Custom Tool Interface:</strong> Securely register custom tools via OpenAPI specifications.</span></li>
+                        <li class="flex items-start"><span class="text-green-500 mr-3 text-xl">✅</span><span class="text-gray-600"><strong>Agent Monitoring:</strong> Real-time dashboard for API calls, token usage, and performance metrics.</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="section-title text-2xl md:text-3xl mb-6">Project Deliverables</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start"><span class="text-blue-500 mr-3 text-xl">📦</span><span class="text-gray-600">A complete .NET Aspire solution with all microservices and the Blazor frontend.</span></li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-3 text-xl">📦</span><span class="text-gray-600">Fully functional Blazor management portal implementing the entire user journey.</span></li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-3 text-xl">📦</span><span class="text-gray-600">Comprehensive, auto-generated Swagger/OpenAPI documentation for each service.</span></li>
+                        <li class="flex items-start"><span class="text-blue-500 mr-3 text-xl">📦</span><span class="text-gray-600">Configuration files and scripts for cloud deployment (Docker, Kubernetes).</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Use Case Section -->
+        <section class="py-16 bg-gray-50 rounded-2xl">
+            <h2 class="section-title text-3xl md:text-4xl text-center mb-6">✨ Dynamic Use-Case Generator</h2>
+            <p class="text-center text-gray-600 max-w-2xl mx-auto mb-8">
+                Click the button to see an AI-generated example of a business agent that could be built with this platform, and how the different services would support it.
+            </p>
+            <div class="text-center">
+                 <button id="generate-usecase-btn" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition-transform hover:scale-105 shadow-lg">Generate New Use-Case</button>
+            </div>
+            <div id="usecase-output" class="mt-8 max-w-4xl mx-auto card p-6 hidden">
+                <div id="usecase-loader" class="gemini-loader mx-auto" style="width:30px; height:30px;"></div>
+                <div id="usecase-content" class="prose prose-sm max-w-none"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="text-center py-10 mt-12 bg-gray-800 text-gray-400">
+        <p>Agent as a Service Platform Blueprint</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('techStackChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Backend Services (.NET)', 'AI/Data Layer', 'Frontend (Blazor)', 'Orchestration (.NET Aspire)'],
+                    datasets: [{
+                        label: 'Technology Distribution',
+                        data: [40, 30, 15, 15],
+                        backgroundColor: [
+                            '#1E90FF', // Deep Blue
+                            '#FF7F50', // Orange
+                            '#20B2AA', // Teal
+                            '#FFD700'  // Yellow
+                        ],
+                        borderColor: '#FDFDFD',
+                        borderWidth: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#4B5563',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1F2937',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#FFFFFF',
+                            padding: 10,
+                            cornerRadius: 4,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const item = tooltipItems[0];
+                                    let label = item.chart.data.labels[item.dataIndex];
+                                    if (Array.isArray(label)) {
+                                      return label.join(' ');
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            async function callGemini(prompt) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content.parts[0].text) {
+                        return result.candidates[0].content.parts[0].text;
+                    }
+                    return "Sorry, I couldn't generate a response.";
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    return "An error occurred. Please check the console.";
+                }
+            }
+
+            document.querySelectorAll('.gemini-explain-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const topic = e.target.dataset.topic;
+                    const context = e.target.dataset.context;
+                    const outputDiv = document.querySelector(`[data-output-for="${topic}"]`);
+                    
+                    if (!outputDiv) return;
+
+                    outputDiv.style.display = 'block';
+                    outputDiv.innerHTML = '<div class="gemini-loader mx-auto"></div>';
+
+                    const prompt = `Explain the following software concept like I'm a new project manager, using a simple real-world analogy. The concept is: "${topic}". Context: "${context}"`;
+                    const explanation = await callGemini(prompt);
+
+                    outputDiv.innerHTML = `<p class="text-xs text-gray-600 mt-2 p-2 bg-gray-100 rounded">${explanation.replace(/\n/g, '<br>')}</p>`;
+                });
+            });
+            
+            const generateUseCaseBtn = document.getElementById('generate-usecase-btn');
+            const useCaseOutput = document.getElementById('usecase-output');
+            const useCaseLoader = document.getElementById('usecase-loader');
+            const useCaseContent = document.getElementById('usecase-content');
+
+            generateUseCaseBtn.addEventListener('click', async () => {
+                useCaseOutput.style.display = 'block';
+                useCaseLoader.style.display = 'block';
+                useCaseContent.innerHTML = '';
+
+                const prompt = `
+                    You are an expert solutions architect. Generate a brief, compelling business use-case for an AI agent that could be built on an "Agent as a Service" platform.
+                    
+                    The platform has these microservices: Knowledge, Memory, Verification, and Tooling.
+
+                    Your response should have three parts:
+                    1.  **Use-Case Title:** A clear, catchy title (e.g., "AI Onboarding Buddy for New Hires").
+                    2.  **Description:** A short paragraph explaining what the agent does.
+                    3.  **Platform Usage:** A brief explanation of how each of the 4 platform services would be used to build this specific agent.
+
+                    Format the response using simple Markdown (e.g., use ### for headings and * for bullet points).
+                `;
+
+                const useCaseText = await callGemini(prompt);
+                
+                let html = useCaseText
+                    .replace(/### (.*$)/gim, '<h4 class="text-lg font-semibold text-gray-800 mt-4 mb-2">$1</h4>')
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\* (.*$)/gim, '<li class="flex items-start mt-2"><span class="mr-2 text-blue-500 font-bold">•</span><span>$1</span></li>')
+                    .replace(/(<li>.*<\/li>)/gs, '<ul class="space-y-1">$1</ul>')
+                    .replace(/<\/ul>\s*<ul>/g, '')
+                    .replace(/\n/g, '<br>');
+
+                useCaseContent.innerHTML = html;
+                useCaseLoader.style.display = 'none';
+            });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Specification: Agent as a Service (AaaS)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: "Cool Slate & Sky Blue" - A professional and modern palette using slate grays for text and backgrounds, with a calming sky blue for accents, interactive elements, and highlights. This creates a clean, tech-focused aesthetic that is easy on the eyes and promotes clarity. -->
+    <!-- Application Structure Plan: The SPA is structured around a top-level tabbed navigation. The original sections (Overview, Architecture, etc.) are retained, and a new "✨ AI Agent Planner" tab has been added. This new section provides a direct, value-added interactive tool that leverages an LLM to generate agent implementation strategies. Furthermore, "Explain Simply" buttons have been integrated into the Architecture and Tech Stack sections to make complex topics more accessible. This enhances the user's ability to not only explore the spec but also to apply its concepts and understand them more deeply. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: System Architecture -> Goal: Organize/Relationships -> Viz/Method: Interactive HTML/CSS Diagram (Flexbox/Grid). Interaction: Click to highlight component and display its detailed description. Justification: Transforms a static, complex concept into an engaging, explorable model.
+        - Report Info: Technology Stack -> Goal: Inform/Organize -> Viz/Method: Interactive Cards. Interaction: Click to reveal a modal/drawer with the rationale for the technology's selection. Justification: Provides a high-level summary while allowing for optional deep dives.
+        - New Feature: Agent Planning -> Goal: Assist/Synthesize -> Viz/Method: Text input and dynamically generated text output. Interaction: User provides a prompt; Gemini API generates a strategic plan. Justification: Adds a powerful, practical tool that demonstrates the core value proposition of the AaaS platform.
+        - New Feature: Simplified Explanations -> Goal: Inform/Simplify -> Viz/Method: Button-triggered dynamic text generation. Interaction: User clicks a button; Gemini API provides a simple explanation for a complex topic. Justification: Increases accessibility for a broader audience.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .tab-active {
+            border-color: #3b82f6; /* blue-500 */
+            color: #3b82f6; /* blue-500 */
+            font-weight: 600;
+        }
+        .tab-inactive {
+            border-color: transparent;
+            color: #475569; /* slate-600 */
+        }
+        .section-active {
+            display: block;
+        }
+        .section-inactive {
+            display: none;
+        }
+        .arch-component {
+            transition: all 0.3s ease-in-out;
+            cursor: pointer;
+        }
+        .arch-component-active {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px #3b82f6; /* blue-500 */
+            border-color: #3b82f6; /* blue-500 */
+        }
+        .tech-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .tech-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .gemini-loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body class="text-slate-800">
+
+    <header class="bg-slate-800 text-white py-8 px-4 text-center">
+        <h1 class="text-3xl md:text-4xl font-bold">Interactive Specification</h1>
+        <h2 class="text-xl md:text-2xl font-light text-slate-300 mt-1">Agent as a Service (AaaS) Platform</h2>
+    </header>
+
+    <nav class="sticky top-0 bg-white/80 backdrop-blur-sm shadow-md z-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-center border-b border-slate-200">
+                <button data-tab="overview" class="nav-tab tab-active text-sm md:text-base py-4 px-3 md:px-6 border-b-2">Overview</button>
+                <button data-tab="architecture" class="nav-tab tab-inactive text-sm md:text-base py-4 px-3 md:px-6 border-b-2">Architecture</button>
+                <button data-tab="tech-stack" class="nav-tab tab-inactive text-sm md:text-base py-4 px-3 md:px-6 border-b-2">Tech Stack</button>
+                <button data-tab="implementation" class="nav-tab tab-inactive text-sm md:text-base py-4 px-3 md:px-6 border-b-2">Implementation</button>
+                <button data-tab="planner" class="nav-tab tab-inactive text-sm md:text-base py-4 px-3 md:px-6 border-b-2">✨ AI Agent Planner</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        
+        <!-- Overview Section -->
+        <section id="overview" class="tab-content section-active">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-900 mb-4">Platform Vision: Agent as a Service</h3>
+                <p class="text-slate-600 mb-6">
+                    This document specifies a comprehensive, enterprise-grade solution that abstracts away the immense complexity of building, hosting, and managing sophisticated AI agents. The platform enables developers to deploy agents capable of advanced reasoning, memory, and tool use through a scalable, multi-tenant, cloud-native microservices architecture orchestrated by .NET Aspire.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-3">The "Graph-of-Graphs" Architecture</h4>
+                        <p class="text-slate-600">
+                            The platform's key architectural differentiator is its "graph-of-graphs" model. It maintains a large-scale knowledge graph (via the Knowledge Service) representing the objective "collective unconscious" of a domain. Concurrently, it builds a unique, isolated memory graph for each agent (via the Memory Service), representing its subjective "personal consciousness" and interaction history. This dual-graph approach allows for an unprecedented level of contextual understanding and personalization.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-3">Advanced Orchestration Patterns</h4>
+                        <p class="text-slate-600">
+                            The core Orchestration Service acts as a "meta-agent" or conductor. It offloads complex, multi-step workflows (e.g., searching memory, querying knowledge, verifying facts) from the agent itself. This makes agents built on the platform far more robust and performant, as the complex logic is centralized, optimized, and maintained by the platform.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section id="architecture" class="tab-content section-inactive">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Interactive System Architecture</h3>
+                <p class="text-slate-600 mb-8">Click on any component below to see its detailed description and role within the AaaS platform. The diagram illustrates the flow of a user request through the system.</p>
+                
+                <div class="lg:flex lg:gap-8">
+                    <!-- Diagram -->
+                    <div class="lg:w-2/3 w-full mb-8 lg:mb-0">
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            <div class="relative text-center">
+                                <div class="mb-4">
+                                    <div class="arch-component inline-block bg-white p-3 rounded-lg border-2 border-slate-300 shadow-sm" data-component="blazor">
+                                        <span class="font-semibold">👤 User via Blazor WA</span>
+                                    </div>
+                                    <div class="h-8 border-l-2 border-slate-400 border-dashed mx-auto w-0"></div>
+                                </div>
+                                <div class="arch-component bg-sky-100 p-4 rounded-lg border-2 border-sky-300 shadow" data-component="orchestration">
+                                    <h4 class="font-bold text-sky-800">Orchestration Service (MCP Server)</h4>
+                                    <p class="text-sm text-sky-700">Manages Agentic Workflows</p>
+                                </div>
+                                <div class="h-8 border-l-2 border-slate-400 border-dashed mx-auto w-0"></div>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div class="arch-component bg-white p-3 rounded-lg border-2 border-slate-300 shadow-sm" data-component="knowledge">
+                                        <h5 class="font-semibold">Knowledge Service</h5>
+                                        <p class="text-xs text-slate-500">GraphRAG</p>
+                                    </div>
+                                    <div class="arch-component bg-white p-3 rounded-lg border-2 border-slate-300 shadow-sm" data-component="memory">
+                                        <h5 class="font-semibold">Memory Service</h5>
+                                        <p class="text-xs text-slate-500">Mem0</p>
+                                    </div>
+                                    <div class="arch-component bg-white p-3 rounded-lg border-2 border-slate-300 shadow-sm" data-component="verification">
+                                        <h5 class="font-semibold">Verification Service</h5>
+                                        <p class="text-xs text-slate-500">Grounding RAG</p>
+                                    </div>
+                                    <div class="arch-component bg-white p-3 rounded-lg border-2 border-slate-300 shadow-sm" data-component="tooling">
+                                        <h5 class="font-semibold">Tooling Service</h5>
+                                        <p class="text-xs text-slate-500">Secure Sandbox</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Details Pane -->
+                    <div id="component-details" class="lg:w-1/3 w-full bg-slate-50 p-6 rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-start">
+                             <h4 id="details-title" class="text-xl font-bold text-slate-900 mb-3">Select a Component</h4>
+                             <button id="explain-simply-arch-btn" class="gemini-explain-btn text-xs bg-sky-100 text-sky-700 font-semibold py-1 px-2 rounded-full hover:bg-sky-200 transition-colors hidden">✨ Explain Simply</button>
+                        </div>
+                        <p id="details-description" class="text-slate-600">Click on a component in the diagram to the left to learn more about its function and technology.</p>
+                        <div id="explain-simply-arch-output" class="mt-4 text-sm p-3 bg-sky-50 rounded-md border border-sky-200 hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section id="tech-stack" class="tab-content section-inactive">
+             <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Core Technology Stack</h3>
+                <p class="text-slate-600 mb-8">The AaaS platform is built on a modern, robust, and scalable technology stack. Each component was chosen to fulfill a specific architectural need.</p>
+                <div id="tech-stack-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Tech cards will be injected here by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Implementation Section -->
+        <section id="implementation" class="tab-content section-inactive">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-900 mb-6">Implementation & Project Details</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-4">Project Structure</h4>
+                        <div class="bg-slate-800 text-white p-4 rounded-lg text-sm font-mono overflow-x-auto">
+<pre>
+/src
+  /AspireAaaS.AppHost
+  /AspireAaaS.ServiceDefaults
+  /Services
+    /AaaS.Orchestration
+    /AaaS.Knowledge
+    /AaaS.Memory
+    /AaaS.Verification
+    /AaaS.Tooling
+  /Web
+    /AaaS.WebApp
+  /Shared
+    /AaaS.Shared.Models
+/docker-compose.yml
+</pre>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-slate-800 mb-4">Key Deliverables</h4>
+                        <ul id="deliverables-list" class="list-disc list-inside space-y-2 text-slate-600">
+                           <!-- JS will populate this -->
+                        </ul>
+                    </div>
+                </div>
+                 <div class="mt-8">
+                    <h4 class="text-xl font-semibold text-slate-800 mb-4">Acceptance Criteria</h4>
+                    <ul id="acceptance-criteria-list" class="space-y-4 text-slate-600">
+                        <!-- JS will populate this -->
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Agent Planner Section -->
+        <section id="planner" class="tab-content section-inactive">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-sm">
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">✨ AI Agent Planner</h3>
+                <p class="text-slate-600 mb-6">Describe the purpose of the AI agent you want to build. The AI planner will generate a high-level strategy suggesting how to best leverage the AaaS platform's capabilities.</p>
+                
+                <div>
+                    <label for="agent-prompt" class="block text-sm font-medium text-slate-700">Agent's Purpose:</label>
+                    <textarea id="agent-prompt" rows="4" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., An internal customer support agent for our SaaS product that can answer questions from our documentation and create support tickets."></textarea>
+                </div>
+
+                <div class="mt-4">
+                    <button id="generate-plan-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Generate Strategy
+                    </button>
+                </div>
+
+                <div id="planner-output" class="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+                    <div id="planner-loader" class="gemini-loader mx-auto hidden"></div>
+                    <div id="planner-content" class="prose prose-sm max-w-none"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-6 mt-8 border-t border-slate-200">
+        <p class="text-sm text-slate-500">Interactive Specification generated from source document.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            const appData = {
+                components: {
+                    blazor: {
+                        title: 'User via Blazor WebAssembly',
+                        description: 'The platform\'s primary user interface is a rich single-page application (SPA) built with Blazor WebAssembly. It provides a comprehensive management portal for users to configure agents, manage knowledge bases, define custom tools, and monitor agent activity and resource consumption in real-time.'
+                    },
+                    orchestration: {
+                        title: 'Orchestration Service',
+                        description: 'This service functions as an advanced implementation of the Model Context Protocol (MCP) server concept, acting as the primary entry point for agent interactions. It manages the complex agentic workflow by making calls to other specialized, independent microservices.'
+                    },
+                    knowledge: {
+                        title: 'Knowledge Service',
+                        description: 'Implements the GraphRAG methodology using the `neo4j-graphrag` library, backed by a dedicated Neo4j database. This service is responsible for the asynchronous, resource-intensive process of ingesting and indexing user-provided documents into a rich knowledge graph.'
+                    },
+                    memory: {
+                        title: 'Memory Service',
+                        description: 'Implements the Mem0 memory layer, utilizing its Python SDK with a hybrid backend of a Qdrant vector store and a Neo4j graph store. This service provides agents with stateful, personalized long-term memory, ensuring data is strictly partitioned by tenant ID.'
+                    },
+                    verification: {
+                        title: 'Verification Service',
+                        description: 'Implements the Grounding RAG pattern. This is a lightweight, high-speed RAG service pointed at a corpus of highly trusted, frequently updated data. Its sole purpose is to fact-check specific claims generated by an agent before the response is sent to the user.'
+                    },
+                    tooling: {
+                        title: 'Tooling Service',
+                        description: 'Provides a secure, sandboxed environment for executing agent-defined "tools" or "functions." This service manages a library of predefined, safe, platform-provided tools and offers a framework for users to securely register their own custom tools.'
+                    }
+                },
+                techStack: [
+                    { name: '.NET Aspire', description: 'Chosen to simplify the complexity of developing and debugging a distributed microservices application, providing a unified dashboard for logs, traces, and service discovery out-of-the-box.' },
+                    { name: 'ASP.NET Core', description: 'Used for building high-performance, cross-platform web APIs for all backend microservices.' },
+                    { name: 'Blazor WebAssembly', description: 'The framework for creating the rich, interactive, client-side web UI with .NET, enabling a seamless development experience.' },
+                    { name: 'Microsoft.SemanticKernel', description: 'Selected as the core AI SDK due to its robust support for planners, prompt templating, and its extensible model for defining and connecting plugins (tools).' },
+                    { name: 'Neo4j', description: 'Chosen for its unparalleled ability to model and query the complex relationships required by both the GraphRAG knowledge graphs and the Mem0 memory graphs.' },
+                    { name: 'Qdrant', description: 'Selected for its high-performance, scalable vector similarity search capabilities, which are essential for the retrieval phase of all RAG-based services.' },
+                    { name: 'Server-Sent Events (SSE)', description: 'Chosen for streaming agent responses to the client, which significantly improves the perceived performance and user experience.' },
+                    { name: 'Docker', description: 'All microservices and backing stores will be fully containerized to ensure consistency across development, testing, and production environments.' }
+                ],
+                deliverables: [
+                    "A .NET Aspire solution containing all backend microservices and the frontend web application.",
+                    "A fully functional Blazor WebAssembly management portal.",
+                    "Comprehensive API documentation (Swagger/OpenAPI) for each service.",
+                    "A suite of unit and integration tests for critical business logic.",
+                    "Configuration files (e.g., `docker-compose.yml`, Kubernetes manifests) for deployment."
+                ],
+                acceptanceCriteria: [
+                    "Given a new user has registered, when they create a new agent and upload a 10-page PDF, then the Knowledge Service should successfully index the document, and the user should be able to ask a question related to the PDF's content and receive a correct answer.",
+                    "Given an agent is configured with a custom tool via the UI, when the user's prompt is intended to trigger that tool, then the Orchestration service must securely call the external API defined by the tool, and the agent's final response must incorporate the result from that API call.",
+                    "Given the .NET Aspire AppHost is started, all defined microservices and containerized databases (Neo4j, Qdrant) must launch successfully, and the developer must be able to view correlated logs and traces for a single request across multiple services in the Aspire dashboard."
+                ]
+            };
+
+            const tabs = document.querySelectorAll('.nav-tab');
+            const contents = document.querySelectorAll('.tab-content');
+            const archComponents = document.querySelectorAll('.arch-component');
+            const detailsTitle = document.getElementById('details-title');
+            const detailsDescription = document.getElementById('details-description');
+            const explainArchBtn = document.getElementById('explain-simply-arch-btn');
+            const explainArchOutput = document.getElementById('explain-simply-arch-output');
+            const techStackGrid = document.getElementById('tech-stack-grid');
+            const deliverablesList = document.getElementById('deliverables-list');
+            const acceptanceCriteriaList = document.getElementById('acceptance-criteria-list');
+            const generatePlanBtn = document.getElementById('generate-plan-btn');
+            const agentPromptText = document.getElementById('agent-prompt');
+            const plannerOutput = document.getElementById('planner-output');
+            const plannerLoader = document.getElementById('planner-loader');
+            const plannerContent = document.getElementById('planner-content');
+
+            let currentArchComponent = null;
+
+            async function callGemini(prompt) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content.parts[0].text) {
+                        return result.candidates[0].content.parts[0].text;
+                    }
+                    return "Sorry, I couldn't generate a response. Please try again.";
+                } catch (error) {
+                    console.error("Gemini API call error:", error);
+                    return "An error occurred while contacting the AI. Please check the console for details.";
+                }
+            }
+
+            function switchTab(tabId) {
+                tabs.forEach(tab => {
+                    tab.classList.toggle('tab-active', tab.dataset.tab === tabId);
+                    tab.classList.toggle('tab-inactive', tab.dataset.tab !== tabId);
+                });
+                contents.forEach(content => {
+                    content.classList.toggle('section-active', content.id === tabId);
+                    content.classList.toggle('section-inactive', content.id !== tabId);
+                });
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            archComponents.forEach(component => {
+                component.addEventListener('click', () => {
+                    const componentId = component.dataset.component;
+                    currentArchComponent = componentId;
+                    const componentData = appData.components[componentId];
+
+                    archComponents.forEach(c => c.classList.remove('arch-component-active'));
+                    component.classList.add('arch-component-active');
+                    
+                    detailsTitle.textContent = componentData.title;
+                    detailsDescription.textContent = componentData.description;
+                    explainArchBtn.classList.remove('hidden');
+                    explainArchOutput.classList.add('hidden');
+                    explainArchOutput.innerHTML = '';
+                });
+            });
+
+            explainArchBtn.addEventListener('click', async () => {
+                if (!currentArchComponent) return;
+                const componentData = appData.components[currentArchComponent];
+                const prompt = `Explain the following concept from a software architecture document in a simple way, using an analogy if possible: "${componentData.title} - ${componentData.description}"`;
+                
+                explainArchOutput.innerHTML = '<div class="gemini-loader mx-auto"></div>';
+                explainArchOutput.classList.remove('hidden');
+
+                const explanation = await callGemini(prompt);
+                explainArchOutput.innerHTML = explanation.replace(/\n/g, '<br>');
+            });
+
+            function populateTechStack() {
+                appData.techStack.forEach(tech => {
+                    const card = document.createElement('div');
+                    card.className = 'tech-card bg-white p-6 rounded-lg border border-slate-200 shadow-sm flex flex-col';
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <h4 class="text-lg font-bold text-slate-900 mb-2">${tech.name}</h4>
+                            <p class="text-slate-600 text-sm">${tech.description}</p>
+                        </div>
+                        <div class="mt-4">
+                            <button data-tech-name="${tech.name}" class="gemini-explain-btn text-xs bg-sky-100 text-sky-700 font-semibold py-1 px-2 rounded-full hover:bg-sky-200 transition-colors">✨ Explain Simply</button>
+                        </div>
+                        <div data-tech-output="${tech.name}" class="mt-3 text-sm p-3 bg-sky-50 rounded-md border border-sky-200 hidden"></div>
+                    `;
+                    techStackGrid.appendChild(card);
+                });
+            }
+
+            techStackGrid.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('gemini-explain-btn')) {
+                    const techName = e.target.dataset.techName;
+                    const techData = appData.techStack.find(t => t.name === techName);
+                    const outputDiv = document.querySelector(`[data-tech-output="${techName}"]`);
+                    
+                    const prompt = `Explain what ${techData.name} is and why it's used in software development, in a simple way. Here is its description for context: "${techData.description}"`;
+                    
+                    outputDiv.innerHTML = '<div class="gemini-loader mx-auto"></div>';
+                    outputDiv.classList.remove('hidden');
+
+                    const explanation = await callGemini(prompt);
+                    outputDiv.innerHTML = explanation.replace(/\n/g, '<br>');
+                }
+            });
+
+            function populateLists() {
+                appData.deliverables.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    deliverablesList.appendChild(li);
+                });
+
+                appData.acceptanceCriteria.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = "border-l-4 border-sky-500 pl-4 py-2 bg-slate-50 rounded";
+                    li.innerHTML = `<span class="font-semibold text-slate-700">Criteria:</span> ${item.replace(/Given/g, '<b>Given</b>').replace(/When/g, '<b>When</b>').replace(/Then/g, '<b>Then</b>')}`;
+                    acceptanceCriteriaList.appendChild(li);
+                });
+            }
+
+            generatePlanBtn.addEventListener('click', async () => {
+                const userInput = agentPromptText.value;
+                if (!userInput.trim()) {
+                    plannerContent.innerHTML = '<p class="text-red-600">Please describe your agent\'s purpose first.</p>';
+                    plannerOutput.classList.remove('hidden');
+                    return;
+                }
+
+                plannerOutput.classList.remove('hidden');
+                plannerLoader.classList.remove('hidden');
+                plannerContent.classList.add('hidden');
+
+                const prompt = `
+                    You are an expert solutions architect for an "Agent as a Service" (AaaS) platform.
+                    A user wants to build an AI agent with the following purpose: "${userInput}".
+
+                    The AaaS platform provides the following microservices:
+                    - Knowledge Service: For answering questions from a large set of documents using GraphRAG.
+                    - Memory Service: For remembering past conversations and user preferences.
+                    - Verification Service: For fact-checking agent responses.
+                    - Tooling Service: For executing actions like calling APIs or running scripts.
+
+                    Based on the user's request, generate a high-level implementation strategy. Your response should include:
+                    1.  A "Core Services" section, recommending which of the AaaS services are essential for this agent and why.
+                    2.  A "Knowledge Strategy" section, suggesting what kind of documents should be loaded into the Knowledge Service.
+                    3.  A "Tooling Strategy" section, suggesting 2-3 specific tools the agent might need.
+                    4.  A "Sample Prompt" section with a basic system prompt to guide the agent's behavior.
+
+                    Format the response using simple Markdown.
+                `;
+
+                const strategy = await callGemini(prompt);
+                
+                    .replace(/### (.*$)/gim, '<h4 class="text-lg font-semibold text-slate-800 mt-4 mb-2">$1</h4>')
+                    .replace(/## (.*$)/gim, '<h3 class="text-xl font-bold text-slate-900 mt-4 mb-2">$1</h3>')
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\* ([^*]+)/g, '<li class="ml-4">$1</li>')
+                    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+                    .replace(/<\/ul>\s*<ul>/g, '')
+                    .replace(/`([^`]+)`/g, '<code class="text-sm bg-slate-200 text-slate-800 rounded px-1 py-0.5">$1</code>')
+                    .replace(/\n/g, '<br>');
+
+                plannerContent.innerHTML = html;
+                plannerLoader.classList.add('hidden');
+                plannerContent.classList.remove('hidden');
+            });
+            
+            populateTechStack();
+            populateLists();
+            
+            document.querySelector('[data-component="orchestration"]').click();
+        });
+    </script>
+
+</body>
+</html>
