@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Reads a JSON file (array of label objects as exported via:
-        gh api repos/<owner>/<repo>/labels --paginate > labels.json
+        gh api repos/<owner>/<repo>/labels --paginate > .labels.json
     ) and ensures the target repository has the same labels.
 
     - Creates missing labels
@@ -15,7 +15,7 @@
     Target repository in the form "owner/repo" (e.g., "nam20485/agent-instructions").
 
 .PARAMETER LabelsFile
-    Path to the JSON labels file (default: ./labels.json).
+    Path to the JSON labels file (default: ./.labels.json).
 
 .PARAMETER DryRun
     Show what would change without making any changes.
@@ -25,11 +25,11 @@
 
 .EXAMPLE
     # Preview changes
-    ./scripts/import-labels.ps1 -Repo "owner/target-repo" -LabelsFile "./labels.json" -DryRun
+    ./scripts/import-labels.ps1 -Repo "owner/target-repo" -LabelsFile "./.labels.json" -DryRun
 
 .EXAMPLE
     # Apply changes (create/update)
-    ./scripts/import-labels.ps1 -Repo "owner/target-repo" -LabelsFile "./labels.json"
+    ./scripts/import-labels.ps1 -Repo "owner/target-repo" -LabelsFile "./.labels.json"
 
 .EXAMPLE
     # Apply changes and delete labels not in the file
@@ -46,7 +46,7 @@ param(
     [string]$Repo,
 
     [Parameter()]
-    [string]$LabelsFile = "./labels.json",
+    [string]$LabelsFile = "./.labels.json",
 
     [switch]$DryRun,
     [switch]$DeleteMissing
