@@ -17,22 +17,31 @@ This is a **workflow launch repository** that orchestrates dynamic AI workflows 
 
 ```
 workflow-launch2/
-├── dynamic_workflows/           # Dynamic workflow implementations
-│   └── advanced-memory/        # Main project: Advanced Memory System
-│       ├── src/advanced_memory/    # Core Python package
-│       │   ├── models/         # Pydantic data models (knowledge, memory, MCP)
-│       │   └── providers/      # GraphRAG and Mem0 provider implementations
-│       ├── tests/              # Pytest test suite with async support
-│       ├── infrastructure/     # Docker Compose & Terraform configs
-│       └── pyproject.toml      # uv project configuration
+├── dynamic_workflows/           # Dynamic workflow implementations (created as needed)
+│   └── [project-name]/         # Individual project repositories cloned here
 ├── scripts/                    # PowerShell automation scripts
 │   ├── initiate-new-repo.ps1  # Complete repository creation orchestrator
-│   ├── create-repo-with-plan-docs.ps1
+│   ├── create-repo-with-plan-docs.ps1  # Repository with planning docs
 │   ├── import-labels.ps1       # GitHub labels automation
-│   └── create-milestones.ps1   # Project milestone creation
+│   ├── create-milestones.ps1   # Project milestone creation
+│   ├── update-remote-indices.ps1  # Remote instruction synchronization
+│   ├── common-auth.ps1         # Shared GitHub authentication
+│   ├── query.ps1               # General query utilities
+│   ├── validate-toolset.ps1    # AI toolset validation
+│   └── init-template-repo.ps1  # Template initialization
 ├── docs/                       # Project documentation templates
-├── local_ai_instruction_modules/ # AI workflow instructions
-└── .github/copilot-instructions.md # Remote instruction system config
+├── local_ai_instruction_modules/ # Local AI workflow instructions
+│   ├── ai-dynamic-workflows.md # Dynamic workflow orchestration
+│   ├── ai-workflow-assignments.md # Workflow assignment resolution
+│   ├── ai-terminal-commands.md # Terminal command guidance
+│   ├── ai-tools-and-automation.md # Tools and automation protocol
+│   └── toolset.selected.json  # Currently selected AI tools (126 tools)
+├── .github/                    
+│   ├── copilot-instructions.md # Remote instruction system config
+│   └── README.md               # GitHub-specific documentation
+├── .gemini/GEMINI.md          # Gemini AI configuration
+├── global.json                # Global configuration
+└── developer-pwsh.ps1         # Developer PowerShell utilities
 ```
 
 ## AI Instruction System
@@ -57,9 +66,21 @@ TO:   https://raw.githubusercontent.com/nam20485/agent-instructions/main/<path>
 
 ## Development Commands
 
-### Advanced Memory System (Python/uv)
+### General Repository Operations
 ```powershell
-# Navigate to project
+# Create new repository with full setup
+./scripts/initiate-new-repo.ps1 -RepoName "project-name"
+
+# Import GitHub labels from configuration
+./scripts/import-labels.ps1 -RepoName "owner/repo"
+
+# Validate current AI toolset configuration
+./scripts/validate-toolset.ps1
+```
+
+### Advanced Memory System (Python/uv) - When Available
+```powershell
+# Navigate to project (if cloned in dynamic_workflows)
 cd dynamic_workflows/advanced-memory
 
 # Install dependencies (including dev tools)
@@ -115,6 +136,12 @@ terraform apply
 
 # Skip specific steps
 ./scripts/initiate-new-repo.ps1 -RepoName "my-new-repo" -SkipLabels -SkipMilestones
+
+# Other repository automation scripts
+./scripts/import-labels.ps1         # Import GitHub labels
+./scripts/create-milestones.ps1     # Create project milestones
+./scripts/create-repo-with-plan-docs.ps1  # Create repo with planning docs
+./scripts/update-remote-indices.ps1 # Update remote instruction indices
 ```
 
 ## Advanced Memory System Architecture
@@ -208,3 +235,26 @@ All quality tools integrated with pre-commit hooks for automated checking.
 - **Branch handling**: Template repos may default to `development` branch  
 - **JSON handling**: Use PowerShell `ConvertFrom-Json` instead of jq
 - **File paths with spaces**: Use `-LiteralPath` parameter
+
+## Available PowerShell Scripts
+
+### Core Repository Management
+- **initiate-new-repo.ps1**: Complete repository creation orchestrator with GitHub integration
+- **create-repo-with-plan-docs.ps1**: Repository creation with planning documentation
+- **import-labels.ps1**: Automated GitHub labels import from JSON configuration
+- **create-milestones.ps1**: Project milestone creation and management
+- **update-remote-indices.ps1**: Synchronize remote instruction indices
+
+### Utilities & Authentication
+- **common-auth.ps1**: Shared authentication functions for GitHub operations
+- **query.ps1**: General-purpose query and search utilities
+- **validate-toolset.ps1**: Validation for AI toolset configurations
+- **init-template-repo.ps1**: Template repository initialization
+
+### Script Usage Pattern
+```powershell
+# Most scripts support common parameters
+-DryRun          # Test mode without making changes
+-Verbose         # Detailed operation logging
+-WhatIf         # Preview actions without execution
+```
