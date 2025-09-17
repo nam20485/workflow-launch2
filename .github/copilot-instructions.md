@@ -24,7 +24,7 @@
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
 ## Local AI Instructions (**REQUIRED**)
-Local AI instruction moduule files are located in the [local_ai_instruction_modules](../local_ai_instruction_modules) directory.
+Local AI instruction module files are located in the [local_ai_instruction_modules](../local_ai_instruction_modules) directory.
 
 ## Dynamic Workflow Orchestration (**REQUIRED**)
 Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
