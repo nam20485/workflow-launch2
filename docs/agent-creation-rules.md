@@ -1,3 +1,15 @@
+Do another analysis, review, feedback, improve (ARFI) pass, this time take into acount specifically the following items:
+
+1. THINK DEEPLY for this task
+2. Use these suggestions and tips from agents from Anthropic. Incporporate as many as you can that make sense.
+https://www.anthropic.com/engineering/claude-code-best-practices
+3. Collaborate with Gemini (1. /prompt-gemini-cli prompt or if that doens't work brainstorm/consulr via gemini-mcp server tools)
+4. Researcher example: readonly for existing code or other project files, but allowed to create scratchpads or docs, or other files related to the task she's ask to do
+   1. The researcher should be able to create new files for its research output, such as `brief.md` and `sources.json`.
+   2. allow more tools for web searching, and file/source code/project reading, and doc sites reading (context7, deepwiki, ms-docs, etc.)
+
+---
+
 # Custom Agents Authoring Guide (Claude + Gemini)
 
 This document defines how to design and configure a suite of Claude custom agents (Claude Code subagents) that collaborate using targeted delegation and a minimal toolset to build production-ready applications from templates. It incorporates explicit research delegation to Gemini (via gemini-mcp), Windows/pwsh operational defaults, and repository-aware behavior.
@@ -201,7 +213,8 @@ Review checklist:
 - UX/UI Designer
 - Database Admin
 - Mobile Developer
-- Developer
+- General Developer
+- API Designer
 
 ---
 
