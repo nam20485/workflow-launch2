@@ -1,5 +1,6 @@
 ---
 mode: agent
+model: gemini-2.5-pro
 ---
 description: Invoke Gemini CLI non-interactive mode with a prompt, and optionally specifying model.
 ---
@@ -7,7 +8,7 @@ arguments:
   - name: prompt
     description: The prompt to send to Gemini.
   - name: model
-    description: The model to use for Gemini. Defaults to gemini-pro.
+    description: The model to use for Gemini. Defaults to `gemini-2.5-pro`.
     allowed-values: ["gemini-2.5-pro", "gemini-2.5-flash"]
 ---
 
@@ -16,20 +17,21 @@ A prompt used by GitHub Copilot Chat to invoke the Gemini CLI in a non-interacti
 
 Implemented by using a terminal run command or shell run command to execute the Gemini CLI in non-interactive mode and capture output.
 
-- Runs in sandbox mode
 - All tools approved.
 - Read output from stdout.
 
 ## How to Invoke
+
+### Poweshell command
 ```powershell
 # Example (PowerShell):
-gemini $prompt --model $model --sandbox --yolo
+gemini $prompt --model $model --approval-mode yolo
 ```
 
-# bash shell example
+### Bash shell command
 ```bash
 # Example (Bash):
-gemini $prompt --model $model --sandbox --yolo
+gemini $prompt --model $model --approval-mode yolo
 
 
 ---
