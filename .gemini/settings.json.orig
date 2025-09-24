@@ -1,10 +1,6 @@
 {
-	"tools": {
-		"autoAccept": "false"
-	},
-	"context": {
-		"fileName": "GEMINI.md"
-	},
+	"autoAccept": "false",
+	"contextFileName": "GEMINI.md",
 	"mcpServers": {
 		"sequential-thinking": {
 			"type": "stdio",
@@ -56,7 +52,7 @@
 			],
 			"env": {
 				"OPENAPI_MCP_HEADERS": {
-					"Authorization": "Bearer ${env:NOTION_INTEGRATION_TOKEN}",
+					"Authorization": "Bearer ${input:NOTION_TOKEN}",
 					"Notion-Version": "2022-06-28"
 				}
 			},
@@ -132,19 +128,18 @@
 			]
 		}
 	},
-	"general": {
-		"preferredEditor": "vscode"
-	},
-	"security": {
-		"auth": {
-			"selectedType": "oauth-personal"
-		}
-	},
-	"ui": {
-		"theme": "Default"
-	},
+	"preferredEditor": "vscode",
+	"selectedAuthType": "oauth-personal",
+	"theme": "Default",
 	"disabledTools": [
 		"web_fetch"
 	],
-	"inputs": []
+	"inputs": [
+		{
+			"id": "NOTION_TOKEN",
+			"type": "promptString",
+			"description": "Notion API Token (https://www.notion.so/profile/integrations)",
+			"password": true
+		}
+	]
 }
