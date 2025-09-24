@@ -1,5 +1,21 @@
 # Custom Agents Authoring Guide (Claude + Gemini)
 
+## Meta: Analysis Instructions for this document
+
+Do another analysis, review, feedback, improve (ARFI) pass, this time take into acount specifically the following items:
+
+1. THINK DEEPLY for this task
+2. Use these suggestions and tips from agents from Anthropic. Incorporate as many as you can that make sense.
+<https://www.anthropic.com/engineering/claude-code-best-practices>
+3. Collaborate with Gemini (1. /prompt-gemini-cli prompt or if that doesn't work brainstorm/consult via gemini-mcp server tools)
+4. Researcher example: readonly for existing code or other project files, but allowed to create scratchpads or docs, or other files related to the task she's ask to do
+   1. The researcher should be able to create new files for its research output, such as `brief.md` and `sources.json`.
+   2. allow more tools for web searching, and file/source code/project reading, and doc sites reading (context7, deepwiki, ms-docs, etc.)
+
+---
+
+## The Actual Authoring Guide (Claude + Gemini)
+
 This document defines how to design and configure a suite of Claude custom agents (Claude Code subagents) that collaborate using targeted delegation and a minimal toolset to build production-ready applications from templates. It incorporates explicit research delegation to Gemini (via gemini-mcp), Windows/pwsh operational defaults, and repository-aware behavior.
 
 Assumptions and scope
@@ -9,6 +25,12 @@ Assumptions and scope
 - GitHub automation should prefer MCP GitHub tools first; use VS Code integration next; gh CLI as a last resort.
 - This guide defines enforceable patterns and example subagent files in the official format.
 - Create every agent in the list.
+
+Additional constraints for this project
+- Researcher is read-only on source/config/tests but may create research artifacts under `docs/research/` or `.research/` (e.g., `brief.md`, `sources.json`, and optional `raw/` snapshots).
+- Gemini collaboration is mandatory for research: use gemini-mcp tools when available; otherwise fall back to pwsh `Invoke-WebRequest`/`curl` for RAW URLs.
+- Research tools permitted (subject to environment availability): gemini-mcp, context7, deepwiki, ms-docs, and local file readers (Read/Grep/Glob). Avoid generic Web UIs; prefer canonical docs and RAW files.
+- Automation-first policy applies to GitHub operations (target ≥90% coverage); document any manual exceptions with justification.
 
 ## 1) Guiding principles
 
@@ -108,7 +130,7 @@ QA delegation
 Save these as Markdown files with YAML frontmatter under `.claude/agents/` (project) or `~/.claude/agents/` (user). Use `/agents` in Claude Code to create/edit via the interactive UI.
 
 Example A — Team Lead Orchestrator (`.claude/agents/orchestrator.md`)
-```
+```markdown
 ---
 name: orchestrator
 description: Primary orchestrator. Plans, delegates, and approves. Must not implement code directly. Prefer MCP GitHub tools. Limit parallel delegations to 2.
@@ -133,29 +155,43 @@ Windows/pwsh defaults apply. Use Invoke-WebRequest/curl when needed. Avoid Linux
 ```
 
 Example B — Researcher (`.claude/agents/researcher.md`)
-```
+```markdown
 ---
 name: researcher
 description: Dedicated research subagent. MUST use gemini-mcp tools explicitly to gather broad context and produce a distilled brief with citations.
-tools: WebFetch, Read, Grep, Glob
+tools: Read, Grep, Glob
 ---
 
 You are the Researcher. Responsibilities:
 - Use gemini-mcp tools explicitly to gather context from allowed sources.
 - Produce a concise brief (objective, findings, risks, next actions) with citations.
-- Avoid code changes or repo writes; deliver artifacts as brief.md and sources.
+- Read-only for the existing codebase and project files. Do not modify source, configs, or tests.
+- You MAY create research artifacts (scratchpads and outputs) under a dedicated folder: `.research/` or `docs/research/` within the repo.
+- Use Windows/pwsh defaults for any downloads: prefer Invoke-WebRequest (or curl) via a terminal if gemini-mcp cannot fetch directly.
 
 Deliverables:
-- brief.md with sections: Objective, Sources (with links), Findings, Risks, Recommendations.
-- sources.json (optional) with structured citations.
+- `docs/research/<topic>/brief.md` with sections: Objective, Sources (with links and dates), Findings, Risks, Recommendations, Next Actions.
+- `docs/research/<topic>/sources.json` (optional) with structured citations (title, url, accessedAt, notes, confidence).
+- Optional raw captures under `docs/research/<topic>/raw/` when needed for auditability.
+
+Constraints:
+- Zero writes outside `.research/` or `docs/research/` paths.
+- Respect robots.txt and site terms. Attribute sources. Prefer primary docs (standards, vendor docs) and stable canonical URLs.
+- Keep the brief concise (<= 2 pages), but include enough links for verification.
+
+Runbook (when invoked):
+1) Clarify research objective and acceptance criteria.
+2) Use gemini-mcp tools to collect broad context; when unavailable, use pwsh Invoke-WebRequest to fetch RAW URLs only.
+3) Distill findings into brief.md with traceable citations; store machine-readable sources.json.
+4) Highlight risks, unknowns, and concrete next actions. Mark confidence per source if applicable.
 ```
 
 Example C — Code Reviewer (`.claude/agents/code-reviewer.md`)
-```
+```markdown
 ---
 name: code-reviewer
 description: Expert code review specialist. Reviews diffs/PRs for correctness, security, performance, and style. Approves or requests changes. Use proactively after changes.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Pwsh
 ---
 
 You are a senior code reviewer ensuring high standards. Process:
@@ -175,10 +211,17 @@ Review checklist:
 
 - Scope small tasks; confirm acceptance criteria.
 - Ensure the right agent performed the work with minimal tools.
-- If research was required, verify a Researcher brief exists with sources.
+- If research was required, verify a Researcher brief exists with sources in `docs/research/<topic>/` and citations are reproducible.
 - Tests exist and pass locally; QA sign-off recorded.
 - Code review completed with explicit Approve.
 - PR has linked issues and concise summary of changes.
+
+Anthropic/Claude Code self-checks (add to DoD when code changed):
+- A short plan preceded implementation; changes are small and incremental.
+- Tests cover the change (happy path + 1-2 edge cases) and are green.
+- Code is readable, cohesive, and typed or type-hinted where appropriate.
+- Side-effects isolated; logs/metrics added for observability where it matters.
+- Docs and runbooks updated where behavior changed.
 
 ## 10) Agent list (reference)
 
@@ -203,9 +246,76 @@ Review checklist:
 - UX/UI Designer
 - Database Admin
 - Mobile Developer
-- Developer
+- General Developer
+- API Designer
 
 ---
 
 Appendix — Rationale for delegation
 - Long-running, multi-purpose agents accumulate context that degrades performance. Keeping agents short-lived and focused, and pushing research/auxiliary steps to specialized delegates, preserves context quality and improves outcomes.
+
+## 11) Claude Code best practices (Anthropic) — distilled integration
+
+This guide aligns with Anthropic’s "Claude Code" best practices. Integrate the following into daily workflows and agent templates:
+- Plan-first, code-second: Start with a 3–7 line plan and success criteria; keep changes small and reviewable.
+- Iterate in small diffs and PRs: Prefer a sequence of tiny improvements over one large change.
+- Tests early: Add or update a minimal test before/during the change. Keep feedback loops tight.
+- Read–run–edit loop: Skim context, run a minimal repro or tests, then change code.
+- Be explicit: Call out assumptions, constraints, and risks in PR descriptions and briefs.
+- Keep functions small and pure where possible; isolate side effects.
+- Add types or type hints where supported; favor clarity over cleverness.
+- Instrument key paths with lightweight logs/metrics; ensure errors are actionable.
+- Design for testability: dependency injection, boundary seams, and deterministic units.
+- Prefer stable APIs and canonical sources; link to RAW URLs for canonical instruction files.
+- Windows/pwsh-first ops: scripts and examples default to PowerShell; avoid bash-only steps.
+
+Embed these checks into the orchestrator review and code reviewer checklist to standardize quality.
+
+## 12) Gemini collaboration protocol
+
+Purpose: Make research explicit, reproducible, and minimally invasive to the codebase.
+
+When research is needed:
+1) The delegating agent creates a sub-task stating the objective and acceptance criteria.
+2) The Researcher uses gemini-mcp to gather broad context. If gemini-mcp is unavailable, use pwsh `Invoke-WebRequest` or `curl` to fetch RAW pages. Store outputs only under `docs/research/<topic>/`.
+3) Deliver brief.md and sources.json. Surface risks and unknowns. Include a short executive summary.
+4) The orchestrator reviews the brief, decides next steps, and either closes the research task or delegates implementation.
+
+Note: In constrained environments where gemini tools are not available, follow the same protocol using approved local tools and PowerShell for retrieval. Always attribute sources and record access timestamps.
+
+## 13) Directory conventions for research outputs (read-only code, writable research)
+
+Recommended structure:
+- `docs/research/<topic>/brief.md` — distilled research brief with links and dates
+- `docs/research/<topic>/sources.json` — structured citations (title, url, accessedAt, notes, confidence)
+- `docs/research/<topic>/raw/` — optional raw exports or snapshots
+
+Naming guidance:
+- `<topic>` should be kebab-case and date-suffixed if repeated (e.g., `azure-deploy-2025-09-16`).
+- Keep briefs <= 2 pages; move extended appendices into `raw/`.
+
+Permissions guidance:
+- Researcher: read-only to source tree; write allowed only within docs/research/ or .research/.
+- Other agents: avoid modifying research outputs unless explicitly delegated.
+
+## 14) Automation checkpoint (GitHub operations)
+
+Adopt the automation-first policy with measurable targets:
+- Inventory available GitHub tools before starting an assignment; prefer MCP GitHub tools, then VS Code integration, then `gh` CLI as a last resort.
+- Target ≥90% automation coverage for GitHub operations. Document any manual steps with justification.
+- Include a per-assignment table (in issue or PR) summarizing tool usage and automation status.
+
+Template (for issues/PRs):
+
+Automation Checkpoint
+- [ ] Tool discovery completed (100% coverage)
+- [ ] Automation strategy documented
+- [ ] Manual steps justified with tool limitations
+- [ ] Target automation coverage: ≥90%
+
+| Task | Tool Used | Automation Status | Manual Justification |
+|------|-----------|-------------------|---------------------|
+| Example: Create labels | MCP GitHub | Auto | — |
+| Example: Push files | MCP GitHub | Auto | — |
+| Example: Update milestone | VS Code GitHub | Auto | — |
+| Example: One-off triage | — | Manual | Tool not authorized in this context |

@@ -1,12 +1,6 @@
 {
-	"selectedAuthType": "oauth-personal",
-	"theme": "Default",
-	"preferredEditor": "vscode",
 	"autoAccept": "false",
 	"contextFileName": "GEMINI.md",
-	"disabledTools": [
-		"web_fetch"
-	],
 	"mcpServers": {
 		"sequential-thinking": {
 			"type": "stdio",
@@ -27,19 +21,20 @@
 			"version": "0.0.1"
 		},
 		"github": {
-			"type": "http",
-			"url": "https://api.githubcopilot.com/mcp",
-			"version": "0.0.1"
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-github"
+			]
 		},
 		"filesystem": {
-			"command": "npx",
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-filesystem",
-				"${env:USERPROFILE}",
+				"C:\\Users\\nmill",
 				"."
-			],
-			"type": "stdio"
+			]
 		},
 		"gemini-cli": {
 			"command": "npx",
@@ -72,8 +67,11 @@
 			"type": "stdio"
 		},
 		"microsoft-docs": {
-			"url": "https://learn.microsoft.com/api/mcp",
-			"type": "http"
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-microsoft-docs"
+			]
 		},
 		"deepwiki": {
 			"url": "https://mcp.deepwiki.com/sse",
@@ -94,17 +92,48 @@
 			"env": {}
 		},
 		"web-browser": {
-			"type": "stdio",
-			"command": "cmd",
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
 			"args": [
-				"/c",
-				"uv",
-				"tool",
-				"run",
-				"web-browser-mcp-server"
+				"-y",
+				"@modelcontextprotocol/server-web-browser"
+			]
+		},
+		"Tavily": {
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-tavily"
+			]
+		},
+		"firebase": {
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"firebase-tools@latest",
+				"experimental:mcp"
+			]
+		},
+		"Tavily Expert": {
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-tavily"
+			]
+		},
+		"Tavily: Expert": {
+			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-tavily"
 			]
 		}
 	},
+	"preferredEditor": "vscode",
+	"selectedAuthType": "oauth-personal",
+	"theme": "Default",
+	"disabledTools": [
+		"web_fetch"
+	],
 	"inputs": [
 		{
 			"id": "NOTION_TOKEN",
