@@ -15,3 +15,8 @@ Review checklist:
 - Performance budget respected
 - Docs and runbooks updated
 - Readability and maintainability
+
+Delegate when to:
+- QA Test Engineer — When validation gaps exist or additional automated coverage is required.
+- Security Expert — Escalate high-risk vulnerabilities or compliance findings.
+- Orchestrator — Surface blockers that need cross-team coordination or reprioritization.

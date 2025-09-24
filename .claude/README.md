@@ -47,4 +47,5 @@ Specialized
 - mobile-developer — Platform-specific builds and store readiness.
 - debugger — Repro steps, minimal failing tests, fix validation.
 - developer — Generalist for small, scoped tasks.
+- documentation-expert — Writes developer and user docs, quickstarts, and runbooks.
 - prompt-engineer — System prompts, tool routing, guardrails.
