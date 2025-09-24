@@ -24,7 +24,7 @@
 [ai-core-instructions.md](https://github.com/nam20485/agent-instructions/blob/main/ai_instruction_modules/ai-core-instructions.md)
 
 ## Local AI Instructions (**REQUIRED**)
-Local AI instruction module files are located in the [local_ai_instruction_modules](../local_ai_instruction_modules) directory.
+Local AI instruction module files are located locally in this repo in the [local_ai_instruction_modules](../local_ai_instruction_modules) directory.
 
 ## Dynamic Workflow Orchestration (**REQUIRED**)
 Agents MUST resolve dynamic workflows from the remote canonical repository. Do not use local mirrors.
@@ -64,7 +64,7 @@ The main set of AI instruction modules is located in this remote repository. It 
 - Full repo URL: https://github.com/nam20485/agent-instructions
 - Branch: main
 - Assignments directory: ai_instruction_modules/ai-workflow-assignments/
- - Active assignments index in this workspace: see `local_ai_instruction_modules/ai-workflow-assignments.md`
+ - Active assignments index in this workspace: see [ai-workflow-assignments.md](../local_ai_instruction_modules/ai-workflow-assignments.md)
 
 #### OVERRIDE NOTE
 **IMPORTANT**: When accessing files in the remote repository, always use the RAW URL. Do not use the GitHub UI to view the file. The RAW URL is the URL that you get when you click on the "Raw" button in the GitHub UI. Most URLs referenced in these files of the GIT UI form. They must be translated to the RAW URL form before use. 
@@ -98,3 +98,11 @@ Single Source of Truth Policy:
 - Local golden files, cached plans, or mirrors must not be used to derive steps or acceptance criteria. Delete any such artifacts if present.
 - Changes to dynamic workflow or assignment files in the remote canonical repository take effect immediately on subsequent runs.
 - The orchestrator must always fetch and execute directly from the remote canonical URLs listed below.
+- All agent sintructions files are located in the remote repository except for the `local_ai_instruction_modules`
+which are located in the local (this) repo under [local_ai_instruction_modules](../local_ai_instruction_modules)
+    - [ai-dynamic-workflows.md](../local_ai_instruction_modules\ai-dynamic-workflows.md)
+    - [ai-local-instructions.md](../local_ai_instruction_modules\ai-local-instructions.md)
+    - [ai-terminal-commands.md](../local_ai_instruction_modules\ai-terminal-commands.md)
+    - [ai-tools-and-automation.md](../local_ai_instruction_modules\ai-tools-and-automation.md)
+    - [ai-workflow-assignments.m](../local_ai_instruction_modules\ai-workflow-assignments.md)
+- The `local_ai_instruction_modules` are allowed to be read from the local repo's copies.
