@@ -49,7 +49,7 @@ workflow-launch2/
 ### Core Architecture
 - **Remote Canonical Source**: `nam20485/agent-instructions` repository
 - **Single Source of Truth**: Dynamic workflows MUST be fetched from remote
-- **Local Instructions**: Located in `local_ai_instruction_modules/`
+- **Local Instructions**: Located in [local_ai_instruction_modules](./local_ai_instruction_modules/)
 - **URL Translation Required**: GitHub UI → RAW URLs
 
 ### URL Translation Rule (CRITICAL)
