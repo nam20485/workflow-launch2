@@ -25,14 +25,14 @@
 			"version": "0.0.1"
 		},
 		"github": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-github"
 			]
 		},
 		"filesystem": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-filesystem",
@@ -71,7 +71,7 @@
 			"type": "stdio"
 		},
 		"microsoft-docs": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-microsoft-docs"
@@ -96,21 +96,21 @@
 			"env": {}
 		},
 		"web-browser": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-web-browser"
 			]
 		},
 		"Tavily": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-tavily"
 			]
 		},
 		"firebase": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"firebase-tools@latest",
@@ -118,14 +118,14 @@
 			]
 		},
 		"Tavily Expert": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-tavily"
 			]
 		},
 		"Tavily: Expert": {
-			"command": "C:\\nvm4w\\nodejs\\npx.ps1",
+			"command": "npx",
 			"args": [
 				"-y",
 				"@modelcontextprotocol/server-tavily"
