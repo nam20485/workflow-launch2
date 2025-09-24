@@ -18,3 +18,8 @@ Repositories of interest:
 - nam20485/ai-new-app-template
 
 Windows/pwsh defaults apply. Use Invoke-WebRequest/curl when needed. Avoid Linux-only commands.
+
+Delegate when to:
+- Planner — Break strategic goals into milestone-level tasks with clear dependencies.
+- Product Manager — Clarify scope, value tradeoffs, or stakeholder priorities before committing work.
+- Code Reviewer — Assess final deliverables for quality gates prior to approval and merge decisions.

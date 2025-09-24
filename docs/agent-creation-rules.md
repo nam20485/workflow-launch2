@@ -24,6 +24,7 @@ Assumptions and scope
 - Operating environment defaults to Windows with PowerShell (pwsh) shell; avoid any bash-only assumptions.
 - GitHub automation should prefer MCP GitHub tools first; use VS Code integration next; gh CLI as a last resort.
 - This guide defines enforceable patterns and example subagent files in the official format.
+- Create every agent in the list.
 
 Additional constraints for this project
 - Researcher is read-only on source/config/tests but may create research artifacts under `docs/research/` or `.research/` (e.g., `brief.md`, `sources.json`, and optional `raw/` snapshots).
@@ -83,7 +84,7 @@ Tool permissions
 - Grant only the tools required for the role. Researcher uniquely has gemini-mcp research tools. Most agents have MCP GitHub tools and local file operations when appropriate. Avoid broad web-fetch; use PowerShell/curl if download is strictly required.
 
 Delegation patterns
-- delegate → perform → approve: A delegating agent issues a targeted sub-task, receives deliverables, evaluates, and either approves or requests iteration. Keep parallel delegations low (1–2 max) unless the task is embarrassingly parallel.
+- delegate → perform → approve: A delegating agent issues a targeted sub-task, receives deliverables, evaluates, and either approves or requests iteration. Keep parallel delegations low (2 max) unless the task is embarrassingly parallel.
 
 Termination
 - Stop when acceptance criteria are met with evidence (tests passing, PR ready, docs updated) or when a blocker requires escalation.
@@ -142,7 +143,8 @@ You are the Team Lead Orchestrator. Your job is to:
 - Prefer MCP GitHub tools for issues/PRs. Summarize decisions succinctly.
 
 Delegation pattern:
-- Delegate-perform-approve. Keep parallel delegations ≤ 2. Require acceptance criteria for each sub-task.
+- Delegate-perform-approve. Keep parallel per agent delegations ≤ 2. Require acceptance criteria for each sub-task.
+- Keep parallel per workspace delegations <= 10
 
 Repositories of interest:
 - nam20485/agent-instructions
