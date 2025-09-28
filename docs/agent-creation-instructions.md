@@ -46,7 +46,7 @@ Before finalizing the agent, it's important to test it to ensure it behaves as e
 Once the agent has been tested and refined, it can be shared with other users. 
 
 *   **Versioning:** Increment the `version` number in the agent's frontmatter whenever you make changes to the agent. This will help you keep track of changes and ensure that other users are aware of the updates.
-*   **Sharing:** Project-level agents (located in the `.claude/agents/` directory) are automatically shared with other users who have access to the project. User-level agents (located in the `~/.claude/agents/` directory) are are available to
+*   **Sharing:** Project-level agents (located in the `.claude/agents/` directory) are automatically shared with other users who have access to the project. User-level agents (located in the `~/.claude/agents/` directory) are are available tob
 
 ## 6. Finalization
 
