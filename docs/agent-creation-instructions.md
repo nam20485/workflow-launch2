@@ -2,6 +2,14 @@
 
 This document outlines the process for creating a new Claude agent using the provided template. The process is designed to be iterative, with a focus on feedback and refinement.
 
+## 0. Documentation
+
+Review and familiarize yourself with the following official Claude Code sub-agent documentation before starting the agent creation process:
+[Sub-Agents Documentation](https://docs.claude.com/en/docs/claude-code/sub-agents)
+
+If you need any clarification or more information about CClaude Code, please refer to the official documentation:
+[Claude Code Documentation](https://docs.claude.com/en/docs/claude-code/)
+
 ## 1. Initial Agent Creation
 
 1.  **Copy the template:** Make a copy of the `template-agent.md` file in the `.claude/agents/` directory and rename it to `[new-agent-name].md`.
