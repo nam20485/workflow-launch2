@@ -294,10 +294,13 @@ try {
 
 	if (-not $Yes) {
 		$launch = Read-Host 'Launch editor? (y/N)'
-		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor ) { code-insiders $clonePath }
+		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
+		{
+			code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace')
+		}
 	}
- else {
-		if ($LaunchEditor) { code-insiders $clonePath }
+	else {
+		if ($LaunchEditor) { code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace') }
 	}
 
 } 
