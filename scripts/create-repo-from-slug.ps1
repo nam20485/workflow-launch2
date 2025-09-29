@@ -8,15 +8,14 @@ param(
     [string]$Visibility,
 
     [Parameter()]
-	[switch]$Yes
+    [switch]$Yes
 )
 
-if ($Yes)
-{
+if ($Yes) {
     ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./pladocs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility
 }
 
 
