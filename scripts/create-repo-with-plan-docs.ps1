@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into docs/, commit, and push.
+Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into plan_docs/, commit, and push.
 
 .DESCRIPTION
 This script creates a new repository named <RepoName>-<randomWord><twoDigits> under the specified owner, clones it
@@ -16,7 +16,7 @@ Base repository name (prefix). A random suffix is appended to form the final rep
 GitHub organization or user that will own the repository. Default: nam20485
 
 .PARAMETER PlanDocsDir
-Path to the directory containing plan docs to copy into the new repo's docs/ folder.
+Path to the directory containing plan docs to copy into the new repo's plan_docs/ folder.
 
 .PARAMETER CloneParentDir
 Path to the local parent directory where the repository will be cloned (final path will be <CloneParentDir>\<FullRepoName>).
@@ -31,10 +31,10 @@ Simulate remote operations (repo create, git push) and local file copies without
 Non-interactive mode. Assume 'yes' for the create confirmation and do not prompt. The editor will only be launched if -LaunchEditor is also provided.
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\plan_docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\docs\plans -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\plan_docs -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
 
 .OUTPUTS
 System.String. The absolute clone destination path of the created repository.
@@ -171,7 +171,7 @@ function Invoke-GitClone {
 function Copy-PlanDocs {
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$SourceDir, [Parameter(Mandatory)][string]$RepoRoot)
-	$docs = Join-Path $RepoRoot 'docs'
+	$docs = Join-Path $RepoRoot $docsDir
 	if ($DryRun) {
 		Write-Verbose "[dry-run] Would copy plan docs: $SourceDir -> $docs"
 		return
@@ -232,6 +232,8 @@ function Invoke-GitCommitAndPush {
 	}
 }
 
+$docsDir = 'plan_docs'
+
 #
 # Main execution
 #
@@ -283,7 +285,7 @@ try {
 
 	# Copy plan docs
 	Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
-	Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\docs"
+	Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\$docsDir"
 
 	# Commit and push
 	Invoke-GitCommitAndPush -RepoRoot $clonePath
@@ -294,8 +296,7 @@ try {
 
 	if (-not $Yes) {
 		$launch = Read-Host 'Launch editor? (y/N)'
-		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
-		{
+		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor ) {
 			code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace')
 		}
 	}

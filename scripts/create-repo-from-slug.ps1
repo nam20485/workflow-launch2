@@ -8,7 +8,10 @@ param(
     [string]$Visibility,
 
     [Parameter()]
-    [switch]$Yes
+    [switch]$Yes,
+
+    [Parameter()]
+    [switch]$LaunchAgent
 )
 
 if ($Yes) {
