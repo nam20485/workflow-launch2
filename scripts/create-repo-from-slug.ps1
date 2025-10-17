@@ -4,9 +4,9 @@ param(
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$Slug,
     
-    [Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
+    [Parameter(HelpMessage = 'Repository visibility: public or private')]
     [ValidateSet('public', 'private')]
-    [string]$Visibility,
+    [string]$Visibility = 'private',
 
     [Parameter()]
     [switch]$Yes,
