@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Import labels into a GitHub repository from a JSON export file.
@@ -46,7 +47,7 @@ param(
     [string]$Repo,
 
     [Parameter()]
-    [string]$LabelsFile = "./.labels.json",
+    [string]$LabelsFile = './.labels.json',
 
     [switch]$DryRun,
     [switch]$DeleteMissing
@@ -61,7 +62,8 @@ function Test-CommandExists {
 
 try {
     Test-CommandExists gh
-} catch {
+}
+catch {
     Write-Error $_.Exception.Message
     exit 1
 }
@@ -82,7 +84,8 @@ if (-not (Test-Path -LiteralPath $LabelsFile)) {
 # Load labels from file
 try {
     $sourceLabels = Get-Content -LiteralPath ${LabelsFile} -Raw | ConvertFrom-Json
-} catch {
+}
+catch {
     Write-Error "Failed to parse JSON from ${LabelsFile}: $($_.Exception.Message)"
     exit 1
 }
@@ -95,7 +98,8 @@ if (-not $sourceLabels) {
 # Load existing labels from target repo (up to 100)
 try {
     $existingLabels = gh api "repos/$Repo/labels" --paginate | ConvertFrom-Json
-} catch {
+}
+catch {
     Write-Error "Failed to fetch labels from repo '$Repo'. Ensure you have access and are authenticated."
     exit 1
 }
@@ -122,13 +126,13 @@ foreach ($label in $sourceLabels) {
     if (-not $name) { continue }
 
     $color = ConvertTo-NormalizedColor -Color $label.color
-    $desc  = if ($null -ne $label.description) { [string]$label.description } else { '' }
+    $desc = if ($null -ne $label.description) { [string]$label.description } else { '' }
 
     $key = $name.ToLowerInvariant()
     $existing = $existingByName[$key]
 
     if (-not $existing) {
-        $actions += @{ action='create'; name=$name; color=$color; description=$desc }
+        $actions += @{ action = 'create'; name = $name; color = $color; description = $desc }
         continue
     }
 
@@ -142,7 +146,7 @@ foreach ($label in $sourceLabels) {
     if ($existingDesc -ne $desc) { $needsUpdate = $true }
 
     if ($needsUpdate) {
-        $actions += @{ action='update'; name=$name; color=$color; description=$desc }
+        $actions += @{ action = 'update'; name = $name; color = $color; description = $desc }
     }
 }
 
@@ -156,21 +160,21 @@ if ($DeleteMissing) {
     foreach ($e in $existingLabels) {
         $ekey = $e.name.ToLowerInvariant()
         if (-not $sourceNames.ContainsKey($ekey)) {
-            $actions += @{ action='delete'; name=$e.name }
+            $actions += @{ action = 'delete'; name = $e.name }
         }
     }
 }
 
 if ($actions.Count -eq 0) {
-    Write-Host "No changes required. Target repo labels are up to date." -ForegroundColor Green
+    Write-Host 'No changes required. Target repo labels are up to date.' -ForegroundColor Green
     exit 0
 }
 
-Write-Host "Planned actions:" -ForegroundColor Cyan
-$actions | ForEach-Object { Write-Host (" - {0}: {1}" -f $_.action, $_.name) }
+Write-Host 'Planned actions:' -ForegroundColor Cyan
+$actions | ForEach-Object { Write-Host (' - {0}: {1}' -f $_.action, $_.name) }
 
 if ($DryRun) {
-    Write-Host "Dry run specified. No changes made." -ForegroundColor Yellow
+    Write-Host 'Dry run specified. No changes made.' -ForegroundColor Yellow
     exit 0
 }
 
@@ -206,4 +210,4 @@ foreach ($a in $actions) {
     }
 }
 
-Write-Host "Done." -ForegroundColor Green
+Write-Host 'Done.' -ForegroundColor Green
