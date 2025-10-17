@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 param(
     [Parameter(Mandatory, HelpMessage = 'Slug to use for repo name and docs directory.')]
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]

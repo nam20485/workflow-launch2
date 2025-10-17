@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
 	[Parameter(Mandatory, HelpMessage = 'Directory containing plan docs; each subfolder is one plan.')]
@@ -41,7 +42,7 @@ function ConvertTo-RepoSafeName {
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$Name)
 	# Match child script's RepoName validation: only letters, digits, underscore, dot, dash
-	$safe = ($Name -replace "[^A-Za-z0-9_.-]", '-')
+	$safe = ($Name -replace '[^A-Za-z0-9_.-]', '-')
 	# Trim leading/trailing dashes that can arise from replacement
 	return $safe.Trim('-')
 }
@@ -64,14 +65,14 @@ foreach ($dir in $planDirs) {
 		# Forward verbosity/debug flags to helper if enabled
 		$common = @{}
 		if ($VerbosePreference -eq 'Continue') { $common['Verbose'] = $true }
-		if ($DebugPreference -eq 'Continue')   { $common['Debug']   = $true }
+		if ($DebugPreference -eq 'Continue') { $common['Debug'] = $true }
 
 		& $helperScript \
-			-RepoName $repoBase \
-			-PlanDocsDir $dir.FullName \
-			-CloneParentDir $CloneParentDir \
-			-Visibility $Visibility \
-			-Owner $owner \
-			-Yes @common
+		-RepoName $repoBase \
+		-PlanDocsDir $dir.FullName \
+		-CloneParentDir $CloneParentDir \
+		-Visibility $Visibility \
+		-Owner $owner \
+		-Yes @common
 	}
 }

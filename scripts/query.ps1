@@ -11,9 +11,9 @@ Requires: GitHub CLI (gh) authenticated with repo scope
 
 [CmdletBinding()]
 param(
-    [string]$Owner = "nam20485",
-    [string]$Repo = "agent-instructions",
-    [int]$PullRequestNumber = 9,
+    [string]$Owner = 'nam20485',
+    [string]$Repo,
+    [int]$PullRequestNumber,
     # Selection controls
     [string]$ThreadId,
     [string]$Path,
@@ -38,32 +38,34 @@ if (-not (Test-Tool gh)) {
     throw "GitHub CLI (gh) not found. Install from https://cli.github.com and authenticate via 'gh auth login'."
 }
 
-if ($VerboseLogging) { gh auth status || Write-Host "(gh auth status failed to display; continuing)" -ForegroundColor DarkYellow }
+if ($VerboseLogging) { gh auth status || Write-Host '(gh auth status failed to display; continuing)' -ForegroundColor DarkYellow }
 
 function Invoke-GHGraphQLQuery {
     param(
         [Parameter(Mandatory)][string]$Query,
         [hashtable]$Vars
     )
-    $ghArgs = @('api','graphql','-f',"query=$Query")
+    $ghArgs = @('api', 'graphql', '-f', "query=$Query")
     foreach ($kv in $Vars.GetEnumerator()) {
         $k = $kv.Key
         $v = $kv.Value
         if ($v -is [int] -or $v -is [long] -or $v -is [double] -or $v -is [decimal] -or $v -is [bool]) {
             # Use -F to pass raw JSON value for correct GraphQL typing
-            $ghArgs += @('-F',"$k=$v")
-        } else {
-            $ghArgs += @('-f',"$k=$v")
+            $ghArgs += @('-F', "$k=$v")
+        }
+        else {
+            $ghArgs += @('-f', "$k=$v")
         }
     }
     if ($VerboseLogging) { Write-Host "gh $($ghArgs -join ' ')" -ForegroundColor DarkGray }
     $out = gh @ghArgs
     if ([string]::IsNullOrWhiteSpace($out)) {
-        throw "GraphQL returned empty response"
+        throw 'GraphQL returned empty response'
     }
     try {
         $json = $out | ConvertFrom-Json
-    } catch {
+    }
+    catch {
         if ($VerboseLogging) { Write-Host "Non-JSON response: $out" -ForegroundColor DarkYellow }
         throw "Failed to parse GraphQL JSON: $($_.Exception.Message)"
     }
@@ -73,7 +75,8 @@ function Invoke-GHGraphQLQuery {
     try {
         $null = $json.errors
         $hasErrorsProp = $true
-    } catch { $hasErrorsProp = $false }
+    }
+    catch { $hasErrorsProp = $false }
     if ($hasErrorsProp -and $null -ne $json.errors) {
         $errs = $json.errors
         if ($errs -is [array]) { $errMsgs = $errs | ForEach-Object { $_.message } }
@@ -85,8 +88,8 @@ function Invoke-GHGraphQLQuery {
 }
 
 function Get-UnresolvedReviewThreads {
-    param([string]$Owner,[string]$Repo,[int]$PR)
-        $q = @'
+    param([string]$Owner, [string]$Repo, [int]$PR)
+    $q = @'
 query($owner:String!, $repo:String!, $number:Int!) {
   repository(owner: $owner, name: $repo) {
     name
@@ -116,11 +119,11 @@ query($owner:String!, $repo:String!, $number:Int!) {
   }
 }
 '@
-    $vars = @{ owner=$Owner; repo=$Repo; number=$PR }
+    $vars = @{ owner = $Owner; repo = $Repo; number = $PR }
     $resp = Invoke-GHGraphQLQuery -Query $q -Vars $vars
     $threads = @()
     if ($null -eq $resp -or $null -eq $resp.data -or $null -eq $resp.data.repository -or $null -eq $resp.data.repository.pullRequest) {
-        throw "GraphQL response missing expected data for repository/pullRequest."
+        throw 'GraphQL response missing expected data for repository/pullRequest.'
     }
     $nodes = $resp.data.repository.pullRequest.reviewThreads.nodes
     if ($nodes) {
@@ -136,7 +139,7 @@ query($owner:String!, $repo:String!, $number:Int!) {
             }
         }
     }
-    return ,$threads
+    return , $threads
 }
 
 function Get-LastComment {
@@ -156,7 +159,7 @@ mutation($threadId:ID!) {
   }
 }
 '@
-    $resp = Invoke-GHGraphQLQuery -Query $m -Vars @{ threadId=$ThreadId }
+    $resp = Invoke-GHGraphQLQuery -Query $m -Vars @{ threadId = $ThreadId }
     return $resp
 }
 
@@ -169,9 +172,9 @@ function Send-ReplyToReviewComment {
         [Parameter(Mandatory)][string]$Body
     )
     $ghArgs = @(
-        'api','-X','POST',
+        'api', '-X', 'POST',
         "repos/$Owner/$Repo/pulls/comments/$CommentId/replies",
-        '-f',"body=$Body"
+        '-f', "body=$Body"
     )
     if ($VerboseLogging) { Write-Host "gh $($ghArgs -join ' ')" -ForegroundColor DarkGray }
     gh @ghArgs | Out-Null
@@ -201,15 +204,15 @@ $unresolvedCount = ($selected | Measure-Object).Count
 $summaryPath = Join-Path (Get-Location) 'pr-review-threads-summary.md'
 $md = @()
 $md += "# PR #$PullRequestNumber Unresolved Review Threads"
-$md += ""
+$md += ''
 $md += "- Repository: $Owner/$Repo"
 $md += "- Count: $unresolvedCount"
-$md += ""
+$md += ''
 $bt = [char]96
 foreach ($t in $selected) {
     $last = Get-LastComment $t
-    $snippet = if ($last) { ($last.body -replace "\r?\n"," ") } else { '' }
-    if ($snippet.Length -gt 100) { $snippet = $snippet.Substring(0,100) + '…' }
+    $snippet = if ($last) { ($last.body -replace '\r?\n', ' ') } else { '' }
+    if ($snippet.Length -gt 100) { $snippet = $snippet.Substring(0, 100) + '…' }
     $lastBy = if ($last -and $last.author) { $last.author.login } else { '' }
     $line = "- ThreadId: $bt$($t.ThreadId)$bt Path: $bt$($t.Path)$bt LastBy: $bt$lastBy$bt Snippet: $snippet"
     $md += $line
@@ -220,7 +223,7 @@ Write-Host "Wrote summary -> $summaryPath" -ForegroundColor Cyan
 Write-Host $mdText
 
 if ($NoResolve) {
-    Write-Host "NoResolve flag set; exiting without resolving threads." -ForegroundColor Yellow
+    Write-Host 'NoResolve flag set; exiting without resolving threads.' -ForegroundColor Yellow
     exit 0
 }
 
@@ -251,20 +254,22 @@ $resolved = 0
 if ($Interactive -or (-not $AutoResolve -and $unresolvedCount -gt 1)) {
     foreach ($t in $selected) {
         $last = Get-LastComment $t
-        $snippet = if ($last) { ($last.body -replace "\r?\n"," ") } else { '' }
-        if ($snippet.Length -gt 140) { $snippet = $snippet.Substring(0,140) + '…' }
+        $snippet = if ($last) { ($last.body -replace '\r?\n', ' ') } else { '' }
+        if ($snippet.Length -gt 140) { $snippet = $snippet.Substring(0, 140) + '…' }
         Write-Host "\nThreadId: $($t.ThreadId)" -ForegroundColor Cyan
         Write-Host "Path    : $($t.Path)"
         if ($last) { Write-Host "LastBy  : $($last.author.login) @ $($last.createdAt)" }
         if ($snippet) { Write-Host "Snippet : $snippet" }
-        $ans = Read-Host "Resolve this thread now? (y/N)"
+        $ans = Read-Host 'Resolve this thread now? (y/N)'
         if ($ans -match '^(y|yes)$') {
             try { Resolve-OneThread -Thread $t; $resolved++ } catch { Write-Warning "Failed to resolve $($t.ThreadId): $($_.Exception.Message)" }
-        } else {
+        }
+        else {
             Write-Host "Skipped $($t.ThreadId)"
         }
     }
-} else {
+}
+else {
     foreach ($t in $selected) {
         try { Resolve-OneThread -Thread $t; $resolved++ } catch { Write-Warning "Failed to resolve $($t.ThreadId): $($_.Exception.Message)" }
     }

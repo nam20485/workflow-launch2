@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #requires -Version 7.0
 <#
 .SYNOPSIS
@@ -151,53 +152,55 @@ function Get-WorkspaceRoot {
   try {
     $gitRoot = (& git rev-parse --show-toplevel 2>$null)
     if ($LASTEXITCODE -eq 0 -and $gitRoot) { return $gitRoot.Trim() }
-  } catch {}
+  }
+  catch {}
   return (Resolve-Path '.').Path
 }
 
 function Ensure-Tool {
-  param([Parameter(Mandatory=$true)][string]$Name)
+  param([Parameter(Mandatory = $true)][string]$Name)
   $found = Get-Command $Name -ErrorAction SilentlyContinue
   if (-not $found) { throw "Required tool not found on PATH: $Name" }
 }
 
 function Ensure-GhAuth {
-  $res = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth','status') -AllowFail
+  $res = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth', 'status') -AllowFail
   if ($res.ExitCode -ne 0) {
     Write-Warn 'GitHub CLI not authenticated. Initiating gh auth login so the user can complete prompts...'
-    Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth','login') -AllowFail | Out-Null
+    Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('auth', 'login') -AllowFail | Out-Null
   }
 }
 
 function Ensure-OwnerProject {
-  param([string]$Owner,[string]$Title)
+  param([string]$Owner, [string]$Title)
   Write-Info "Ensuring owner-level project exists: $Owner / $Title"
-  $list = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('project','list','--owner', $Owner, '--limit','200','--format','json')
+  $list = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('project', 'list', '--owner', $Owner, '--limit', '200', '--format', 'json')
   $projects = @()
-  if ($list.Output) { try { $projects = ($list.Output -join "`n") | ConvertFrom-Json } catch { $projects=@() } }
+  if ($list.Output) { try { $projects = ($list.Output -join "`n") | ConvertFrom-Json } catch { $projects = @() } }
   $existing = $projects | Where-Object { $_.title -eq $Title } | Select-Object -First 1
   if ($existing) {
-    Write-Ok ("Project exists: #{0} -> {1}" -f $existing.number, $existing.shortDescriptionURL)
+    Write-Ok ('Project exists: #{0} -> {1}' -f $existing.number, $existing.shortDescriptionURL)
     return
   }
-  $created = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('project','create','--owner', $Owner, '--title', $Title, '--format','json')
+  $created = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('project', 'create', '--owner', $Owner, '--title', $Title, '--format', 'json')
   if (-not $DryRun) {
     $obj = ($created.Output -join "`n") | ConvertFrom-Json
-    Write-Ok ("Created project #{0} -> {1}" -f $obj.number, $obj.url)
-  } else {
+    Write-Ok ('Created project #{0} -> {1}' -f $obj.number, $obj.url)
+  }
+  else {
     Write-Ok "[dry-run] Would create project $Owner/$Title"
   }
 }
 
 function Ensure-Repository {
-  param([string]$Owner,[string]$Name,[string]$Template,[switch]$IsPublic,[string]$License)
+  param([string]$Owner, [string]$Name, [string]$Template, [switch]$IsPublic, [string]$License)
   Write-Info "Ensuring repository exists: $Owner/$Name"
-  $view = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('repo','view',"$Owner/$Name") -AllowFail
+  $view = Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('repo', 'view', "$Owner/$Name") -AllowFail
   if ($view.ExitCode -eq 0) {
     Write-Ok "Repository exists: $Owner/$Name"
     return
   }
-  $args = @('repo','create',"$Owner/$Name",'--template', $Template)
+  $args = @('repo', 'create', "$Owner/$Name", '--template', $Template)
   if ($IsPublic) { $args += '--public' } else { $args += '--private' }
   if ($License) { $args += @('--license', $License) }
   Invoke-ExternalCommand -FilePath 'gh' -ArgumentList $args | Out-Null
@@ -205,14 +208,14 @@ function Ensure-Repository {
 }
 
 function Ensure-DefaultBranch {
-  param([string]$Owner,[string]$Name,[string]$Branch)
+  param([string]$Owner, [string]$Name, [string]$Branch)
   Write-Info "Ensuring default branch for $Owner/$Name is '$Branch'"
-  Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('repo','edit',"$Owner/$Name",'--default-branch', $Branch) | Out-Null
+  Invoke-ExternalCommand -FilePath 'gh' -ArgumentList @('repo', 'edit', "$Owner/$Name", '--default-branch', $Branch) | Out-Null
   Write-Ok "Default branch ensured: $Branch"
 }
 
 function Get-DestPath {
-  param([string]$WorkspaceRoot,[string]$RepoName)
+  param([string]$WorkspaceRoot, [string]$RepoName)
   $dynamicWorkflows = Join-Path $WorkspaceRoot 'dynamic_workflows'
   if (-not (Test-Path -LiteralPath $dynamicWorkflows)) {
     New-Item -ItemType Directory -Path $dynamicWorkflows | Out-Null
@@ -225,19 +228,19 @@ function Get-DestPath {
 }
 
 function Ensure-Clone {
-  param([string]$Owner,[string]$Name,[string]$Dest)
+  param([string]$Owner, [string]$Name, [string]$Dest)
   Write-Info "Ensuring clone at: $Dest"
   if (Test-Path -LiteralPath $Dest) {
     Write-Ok "Folder exists: $Dest (skipping clone)"
     return
   }
   New-Item -ItemType Directory -Path $Dest | Out-Null
-  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('clone',"https://github.com/$Owner/$Name.git", $Dest) | Out-Null
+  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('clone', "https://github.com/$Owner/$Name.git", $Dest) | Out-Null
   Write-Ok "Cloned into: $Dest"
 }
 
 function Copy-SeedDocs {
-  param([string]$WorkspaceRoot,[string]$Dest)
+  param([string]$WorkspaceRoot, [string]$Dest)
   $srcDir = Join-Path $WorkspaceRoot 'docs/advanced_memory'
   $destDocs = Join-Path $Dest 'docs'
   if (-not (Test-Path -LiteralPath $srcDir)) {
@@ -247,7 +250,7 @@ function Copy-SeedDocs {
   if (-not (Test-Path -LiteralPath $destDocs)) {
     New-Item -ItemType Directory -Path $destDocs | Out-Null
   }
-  $specificFiles = @('Advanced Memory .NET - Dev Plan.md','index.html')
+  $specificFiles = @('Advanced Memory .NET - Dev Plan.md', 'index.html')
   $copied = $false
   foreach ($f in $specificFiles) {
     $src = Join-Path $srcDir $f
@@ -256,29 +259,30 @@ function Copy-SeedDocs {
       Write-Info "Copying: $src -> $dst"
       if (-not $DryRun) { Copy-Item -LiteralPath $src -Destination $dst -Force }
       $copied = $true
-    } else {
+    }
+    else {
       Write-Warn "Missing source file: $src"
     }
   }
   if (-not $copied) {
     # Fallback: copy all md and html
-    $patterns = @('*.md','*.html','*.htm')
+    $patterns = @('*.md', '*.html', '*.htm')
     foreach ($pat in $patterns) {
       $fileMatches = Get-ChildItem -LiteralPath $srcDir -Filter $pat -File -ErrorAction SilentlyContinue
       foreach ($m in $fileMatches) {
         $dst = Join-Path $destDocs $m.Name
-        Write-Info ("Copying (fallback): {0} -> {1}" -f $m.FullName, $dst)
+        Write-Info ('Copying (fallback): {0} -> {1}' -f $m.FullName, $dst)
         if (-not $DryRun) { Copy-Item -LiteralPath $m.FullName -Destination $dst -Force }
         $copied = $true
       }
     }
     if (-not $copied) { Write-Warn "No seed docs found to copy in $srcDir" }
   }
-  Write-Ok "Seed docs copy complete"
+  Write-Ok 'Seed docs copy complete'
 }
 
 function Invoke-ImportLabels {
-  param([string]$RepoRoot,[string]$Owner,[string]$Repo)
+  param([string]$RepoRoot, [string]$Owner, [string]$Repo)
   $scriptLocal = Join-Path $RepoRoot 'scripts/import-labels.ps1'
   $scriptFallback = Join-Path (Get-WorkspaceRoot $null) 'scripts/import-labels.ps1'
   $scriptPath = if (Test-Path -LiteralPath $scriptLocal) { $scriptLocal } elseif (Test-Path -LiteralPath $scriptFallback) { $scriptFallback } else { $null }
@@ -291,15 +295,16 @@ function Invoke-ImportLabels {
   Write-Info "Importing labels using: $scriptPath"
   if (-not $DryRun) {
     & pwsh -NoProfile -File $scriptPath -Owner $Owner -Repo $Repo -LabelsPath $labelsJson
-  } else {
+  }
+  else {
     Write-Ok "[dry-run] Would import labels for $Owner/$Repo from $labelsJson"
   }
 }
 
 function Invoke-CreateMilestones {
-  param([string]$RepoRoot,[string]$Owner,[string]$Repo,[string[]]$Titles,[string[]]$DueDates)
+  param([string]$RepoRoot, [string]$Owner, [string]$Repo, [string[]]$Titles, [string[]]$DueDates)
   if ($Titles.Count -ne $DueDates.Count) {
-    throw "MilestoneTitles and MilestoneDueDates must have same length"
+    throw 'MilestoneTitles and MilestoneDueDates must have same length'
   }
   $scriptLocal = Join-Path $RepoRoot 'scripts/create-milestones.ps1'
   $scriptFallback = Join-Path (Get-WorkspaceRoot $null) 'scripts/create-milestones.ps1'
@@ -308,31 +313,33 @@ function Invoke-CreateMilestones {
   Write-Info "Creating milestones using: $scriptPath"
   if (-not $DryRun) {
     & pwsh -NoProfile -File $scriptPath -Owner $Owner -Repo $Repo -Titles $Titles -DueDates $DueDates -SkipExisting
-  } else {
+  }
+  else {
     Write-Ok "[dry-run] Would create milestones for ${Owner}/${Repo}: $($Titles -join ', ')"
   }
 }
 
 function Invoke-CommitAndPush {
-  param([string]$RepoRoot,[string]$Branch)
+  param([string]$RepoRoot, [string]$Branch)
   Write-Info "Committing and pushing changes on branch '$Branch'"
-  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'checkout','-B', $Branch) | Out-Null
-  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'add','.') | Out-Null
-  $commit = Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit','-m','Seed docs, labels, milestones, workspace/devcontainer rename') -AllowFail
+  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'checkout', '-B', $Branch) | Out-Null
+  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'add', '.') | Out-Null
+  $commit = Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit', '-m', 'Seed docs, labels, milestones, workspace/devcontainer rename') -AllowFail
   if ($commit.ExitCode -ne 0) {
     $msg = ($commit.Output -join ' ')
     if ($msg -match 'nothing to commit') {
       Write-Warn 'Nothing to commit (working tree clean)'
-    } else {
+    }
+    else {
       throw 'git commit failed'
     }
   }
-  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push','-u','origin', $Branch) | Out-Null
+  Invoke-ExternalCommand -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push', '-u', 'origin', $Branch) | Out-Null
   Write-Ok 'Pushed changes'
 }
 
 function Invoke-InitTemplateScript {
-  param([string]$RepoRoot,[string]$RepoName)
+  param([string]$RepoRoot, [string]$RepoName)
   $scriptLocal = Join-Path $RepoRoot 'scripts/init-template-repo.ps1'
   $scriptFallback = Join-Path (Get-WorkspaceRoot $null) 'scripts/init-template-repo.ps1'
   $scriptPath = if (Test-Path -LiteralPath $scriptLocal) { $scriptLocal } elseif (Test-Path -LiteralPath $scriptFallback) { $scriptFallback } else { $null }
@@ -340,7 +347,8 @@ function Invoke-InitTemplateScript {
   Write-Info "Running init-template-repo.ps1 using: $scriptPath"
   if (-not $DryRun) {
     & pwsh -NoProfile -File $scriptPath -RepoPath $RepoRoot -RepoName $RepoName
-  } else {
+  }
+  else {
     Write-Ok "[dry-run] Would run init-template-repo.ps1 for $RepoName at $RepoRoot"
   }
 }
@@ -357,10 +365,10 @@ Ensure-Tool 'gh'
 if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth } else { Ensure-GhAuth }
 
 $wsRoot = Get-WorkspaceRoot -Explicit $WorkspaceRoot
-Write-Info ("Workspace root: {0}" -f $wsRoot)
+Write-Info ('Workspace root: {0}' -f $wsRoot)
 
 $dest = Get-DestPath -WorkspaceRoot $wsRoot -RepoName $RepoName
-Write-Info ("Destination path: {0}" -f $dest)
+Write-Info ('Destination path: {0}' -f $dest)
 
 # Create owner-level project
 if (-not $SkipProject) { Ensure-OwnerProject -Owner $Owner -Title $RepoName }

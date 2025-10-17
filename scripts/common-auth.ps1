@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 # Common authentication helpers for GitHub CLI
 # Dot-source this file from scripts that need to ensure authentication.
 
@@ -20,7 +21,8 @@ function Initialize-GitHubAuth {
 		Write-Warning 'GitHub CLI not authenticated. Initiating gh auth login so the user can complete prompts...'
 		if ($DryRun) {
 			Write-Host '[dry-run] Would run: gh auth login' -ForegroundColor Yellow
-		} else {
+		}
+		else {
 			& gh auth login | Out-Null
 		}
 	}

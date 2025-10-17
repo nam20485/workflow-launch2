@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Initialize a repository cloned from a template by renaming workspace/devcontainer artifacts.
@@ -51,15 +52,17 @@ $existingWorkspace = Get-ChildItem -LiteralPath $root -Filter '*.code-workspace'
 if ($existingWorkspace) {
     if ($existingWorkspace.FullName -ieq $desiredWorkspace) {
         Write-Ok "Workspace file already named correctly: $($existingWorkspace.Name)"
-    } else {
+    }
+    else {
         Write-Info "Renaming workspace file '$($existingWorkspace.Name)' -> '$(Split-Path -Leaf $desiredWorkspace)'"
         Rename-Item -LiteralPath $existingWorkspace.FullName -NewName (Split-Path -Leaf $desiredWorkspace)
-        Write-Ok "Workspace file renamed."
+        Write-Ok 'Workspace file renamed.'
     }
-} else {
+}
+else {
     # If none exists, create a minimal one to satisfy structure
     Write-Warn "No .code-workspace file found. Creating minimal workspace file: $(Split-Path -Leaf $desiredWorkspace)"
-    $ws = @{ folders = @(@{ path = "." }); settings = @{} } | ConvertTo-Json -Depth 4
+    $ws = @{ folders = @(@{ path = '.' }); settings = @{} } | ConvertTo-Json -Depth 4
     Set-Content -LiteralPath $desiredWorkspace -Value $ws -Encoding UTF8
 }
 
@@ -69,7 +72,8 @@ if (Test-Path -LiteralPath $devcontainerPath -PathType Leaf) {
     Write-Info "Updating devcontainer name in: $devcontainerPath"
     try {
         $json = Get-Content -LiteralPath $devcontainerPath -Raw | ConvertFrom-Json
-    } catch {
+    }
+    catch {
         throw "Failed to parse JSON from ${devcontainerPath}: $($_.Exception.Message)"
     }
     $desiredName = "$RepoName-devcontainer"
@@ -77,15 +81,17 @@ if (Test-Path -LiteralPath $devcontainerPath -PathType Leaf) {
         $json | Add-Member -NotePropertyName name -NotePropertyValue $desiredName -Force
         ($json | ConvertTo-Json -Depth 10) | Set-Content -LiteralPath $devcontainerPath -Encoding UTF8
         Write-Ok "Devcontainer name set to: $desiredName"
-    } else {
+    }
+    else {
         Write-Ok "Devcontainer name already correct: $desiredName"
     }
-} else {
+}
+else {
     Write-Warn "Devcontainer file not found. Creating minimal devcontainer at: $devcontainerPath"
     $devDir = Split-Path -Parent $devcontainerPath
     if (-not (Test-Path -LiteralPath $devDir)) { New-Item -ItemType Directory -Path $devDir | Out-Null }
-    $minimal = @{ name = "$RepoName-devcontainer"; image = "mcr.microsoft.com/devcontainers/dotnet:9.0"; features = @{} } | ConvertTo-Json -Depth 10
+    $minimal = @{ name = "$RepoName-devcontainer"; image = 'mcr.microsoft.com/devcontainers/dotnet:9.0'; features = @{} } | ConvertTo-Json -Depth 10
     Set-Content -LiteralPath $devcontainerPath -Value $minimal -Encoding UTF8
 }
 
-Write-Ok "Template initialization complete."
+Write-Ok 'Template initialization complete.'
