@@ -62,17 +62,17 @@ param(
 	[ValidateNotNullOrEmpty()]
 	[string]$CloneParentDir,
 
-	[Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
+	[Parameter(HelpMessage = 'Repository visibility: public or private')]
 	[ValidateSet('public', 'private')]
-	[string]$Visibility,
+	[string]$Visibility = 'private',
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Dry run, don''t make any changes.')]
 	[switch]$DryRun,
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Assume yes for all prompts')]
 	[switch]$Yes,
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Launch editor with workspace from new repo after creation')]
 	[switch]$LaunchEditor
 )
 
@@ -131,7 +131,7 @@ function New-RepoSecret {
 	param([Parameter(Mandatory)][string]$SecretName)	
 	$secretBody = [System.Environment]::GetEnvironmentVariable($SecretName)
 	if (-not $secretBody) { throw "Environment variable for secret '$SecretName' not found." }
-	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody)
+	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody, '--repo', "$Owner/$finalName")
 	Write-Verbose "Creating GitHub repo secret: $SecretName"
 	if ($PSCmdlet.ShouldProcess($SecretName, 'Create GitHub repo secret')) {
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
@@ -294,8 +294,9 @@ try {
 	New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
 	Write-Verbose "Repository created: $Owner/$finalName"
 
-	#Create repo secrets needed for agent auth
+	# Create repo secrets needed for agent auth
 	New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
+	New-RepoSecret 'GEMINI_API_KEY'
 
 	# Clone locally
 	$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
