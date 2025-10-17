@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #requires -Version 7.0
 <#
 .SYNOPSIS
@@ -125,6 +126,21 @@ function Test-RepoExists {
 	return ($res.ExitCode -eq 0)
 }
 
+function New-RepoSecret {
+	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+	param([Parameter(Mandatory)][string]$SecretName)	
+	$secretBody = [System.Environment]::GetEnvironmentVariable($SecretName)
+	if (-not $secretBody) { throw "Environment variable for secret '$SecretName' not found." }
+	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody)
+	Write-Verbose "Creating GitHub repo secret: $SecretName"
+	if ($PSCmdlet.ShouldProcess($SecretName, 'Create GitHub repo secret')) {
+		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
+	}
+ else {
+		Write-Verbose 'Creation skipped by ShouldProcess'
+	}
+}
+
 $TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 function New-GitHubRepository {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
@@ -165,7 +181,7 @@ function Invoke-GitClone {
 		return
 	}
 	New-Item -ItemType Directory -Path $Dest | Out-Null
-	Invoke-External -FilePath 'git' -ArgumentList @('clone', "https://github.com/$Owner/$Name.git", $Dest) | Out-Null
+	Invoke-External -FilePath 'git' -ArgumentList @('clone', "git@github.com:$Owner/$Name.git", $Dest) | Out-Null
 }
 
 function Copy-PlanDocs {
@@ -277,6 +293,9 @@ try {
 	# Create repository
 	New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
 	Write-Verbose "Repository created: $Owner/$finalName"
+
+	#Create repo secrets needed for agent auth
+	New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
 
 	# Clone locally
 	$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
