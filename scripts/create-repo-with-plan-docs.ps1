@@ -141,6 +141,22 @@ function New-RepoSecret {
 	}
 }
 
+function New-RepoVariable {
+	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+	param(
+		[Parameter(Mandatory)][string]$VariableName,
+		[Parameter(Mandatory)][string]$VariableValue
+	)	
+	$ghArgs = @('variable', 'set', $VariableName, '--body', $VariableValue, '--repo', "$Owner/$finalName")
+	Write-Verbose "Creating GitHub repo variable: $VariableName"
+	if ($PSCmdlet.ShouldProcess($VariableName, 'Create GitHub repo variable')) {
+		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
+	}
+ else {
+		Write-Verbose 'Creation skipped by ShouldProcess'
+	}
+}
+
 $TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 function New-GitHubRepository {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
@@ -297,8 +313,11 @@ try {
 	# Create repo secrets needed for agent auth
 	New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
 	New-RepoSecret 'GEMINI_API_KEY'
+	# need to add repository variables
+	#VERSION_PREFIX = '0.0.1'
+	New-RepoVariable 'VERSION_PREFIX' '0.0.1'
+	Write-Verbose 'Repository secrets and variables created'
 
-	# Clone locally
 	$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
 	Invoke-GitClone -Owner $Owner -Name $finalName -Dest $clonePath
 	Write-Verbose "Repository cloned: $clonePath"
