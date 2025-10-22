@@ -47,36 +47,22 @@ This document provides a comprehensive list of .NET technologies, libraries, and
 ## Rendering & Graphics
 
 ### 2D/2.5D Rendering (Phase 1 MVP)
-- **SkiaSharp 2.88.x+**
-  - High-performance 2D graphics library
-  - Used by Avalonia internally
-  - Hardware-accelerated canvas rendering
-  - Immediate-mode API
-  - Cross-platform (Skia engine)
+**Option 3: Helix Toolkit**
+- 3D graphics toolkit for WPF/UWP
+- Full Avalonia support
+- Good for rapid prototyping
 
 **Platform-Specific Assets:**
 - **SkiaSharp.NativeAssets.Linux** (for Linux GPU acceleration)
 - **SkiaSharp.NativeAssets.macOS** (for Metal backend on macOS)
 
 ### 3D Rendering (Phase 3)
-**Option 1: Silk.NET.OpenGL**
-- Modern .NET bindings for OpenGL
-- Low-level control over GPU
-- Supports OpenGL 3.3+ / OpenGL ES / WebGL
-- Cross-platform
-
-**Option 2: Veldrid**
-- High-level 3D rendering library
-- Abstracts over OpenGL, Vulkan, Direct3D 11, Metal
-- Scene graph and shader management
-- Easier to use than raw OpenGL
-
 **Option 3: Helix Toolkit**
 - 3D graphics toolkit for WPF/UWP
-- May have limited Avalonia support
+- Full Avalonia support
 - Good for rapid prototyping
 
-**Recommendation for Production:** Silk.NET.OpenGL for maximum control and performance
+**Recommendation for Production:** Helix Toolkit for ease of use and integration with Avalonia
 
 ---
 
