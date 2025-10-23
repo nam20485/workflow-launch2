@@ -15,6 +15,7 @@ Communication with the backend is handled exclusively via a high-performance gRP
 **Document Links**
 
 * Architecture Overview: ODB++ Viewer (Version 4.0+)  
+* Development Plan - ODB++ Desktop Viewer (devlopment plan for)
 * ODB++ Shape Definitions and Feature Architecture (Serves as the technical reference for implementing the geometry rendering engine)
 * DOTNET_TECHNOLOGIES.md (.NET technology evaluation and selection document)
 * ODB_SHAPE_DEFINITIONS.md (Technical reference for ODB++ shape definitions)
