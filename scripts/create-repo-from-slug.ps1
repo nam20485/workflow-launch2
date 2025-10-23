@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+#!/usr/bin/env pwsh-preview
 param(
     [Parameter(Mandatory, HelpMessage = 'Slug to use for repo name and docs directory.')]
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
