@@ -9,6 +9,10 @@ param(
     [string]$Visibility = 'private',
 
     [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string]$Owner = 'nam20485',
+
+    [Parameter()]
     [switch]$Yes,
 
     [Parameter()]
@@ -16,10 +20,10 @@ param(
 )
 
 if ($Yes) {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Yes -LaunchEditor
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner
 }
 
 
