@@ -23,7 +23,7 @@ function Get-MatchingRepos {
     }
     
     # Get all repos and filter by prefix and visibility
-    $allRepos = gh repo list --json "name,visibility" --limit 1000 | ConvertFrom-Json
+    $allRepos = gh repo list --json 'name,visibility' --limit 1000 | ConvertFrom-Json
     if ($LASTEXITCODE -ne 0) {
         Write-Error 'Fetching repositories command failed.'
         return @()
@@ -49,7 +49,7 @@ else {
     if ($confirmation -eq 'YES') {
         foreach ($repo in $reposToDelete) {
             Write-Host "Deleting repository: $($repo.name)"
-            gh repo delete $repo.name --confirm
+            gh repo delete $repo.name --yes
         }
         Write-Host 'Deletion process completed.'
     }
