@@ -1,21 +1,29 @@
+#!/usr/bin/env pwsh-preview
 param(
     [Parameter(Mandatory, HelpMessage = 'Slug to use for repo name and docs directory.')]
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$Slug,
     
-    [Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
+    [Parameter(HelpMessage = 'Repository visibility: public or private')]
     [ValidateSet('public', 'private')]
-    [string]$Visibility,
+    [string]$Visibility = 'private',
 
     [Parameter()]
-    [switch]$Yes
+    [ValidateNotNullOrEmpty()]
+    [string]$Owner = 'nam20485',
+
+    [Parameter()]
+    [switch]$Yes,
+
+    [Parameter()]
+    [switch]$LaunchAgent
 )
 
 if ($Yes) {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Yes -LaunchEditor
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner
 }
 
 

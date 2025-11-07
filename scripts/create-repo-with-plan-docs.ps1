@@ -1,7 +1,8 @@
+#!/usr/bin/env pwsh
 #requires -Version 7.0
 <#
 .SYNOPSIS
-Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into docs/, commit, and push.
+Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into plan_docs/, commit, and push.
 
 .DESCRIPTION
 This script creates a new repository named <RepoName>-<randomWord><twoDigits> under the specified owner, clones it
@@ -16,7 +17,7 @@ Base repository name (prefix). A random suffix is appended to form the final rep
 GitHub organization or user that will own the repository. Default: nam20485
 
 .PARAMETER PlanDocsDir
-Path to the directory containing plan docs to copy into the new repo's docs/ folder.
+Path to the directory containing plan docs to copy into the new repo's plan_docs/ folder.
 
 .PARAMETER CloneParentDir
 Path to the local parent directory where the repository will be cloned (final path will be <CloneParentDir>\<FullRepoName>).
@@ -31,10 +32,10 @@ Simulate remote operations (repo create, git push) and local file copies without
 Non-interactive mode. Assume 'yes' for the create confirmation and do not prompt. The editor will only be launched if -LaunchEditor is also provided.
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\plan_docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\docs\plans -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\plan_docs -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
 
 .OUTPUTS
 System.String. The absolute clone destination path of the created repository.
@@ -61,17 +62,17 @@ param(
 	[ValidateNotNullOrEmpty()]
 	[string]$CloneParentDir,
 
-	[Parameter(Mandatory, HelpMessage = 'Repository visibility: public or private')]
+	[Parameter(HelpMessage = 'Repository visibility: public or private')]
 	[ValidateSet('public', 'private')]
-	[string]$Visibility,
+	[string]$Visibility = 'private',
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Dry run, don''t make any changes.')]
 	[switch]$DryRun,
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Assume yes for all prompts')]
 	[switch]$Yes,
 
-	[Parameter()]
+	[Parameter(HelpMessage = 'Launch editor with workspace from new repo after creation')]
 	[switch]$LaunchEditor
 )
 
@@ -131,6 +132,43 @@ function Test-RepoExists
 	return ($res.ExitCode -eq 0)
 }
 
+function New-RepoSecret
+{
+	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+	param([Parameter(Mandatory)][string]$SecretName)	
+	$secretBody = [System.Environment]::GetEnvironmentVariable($SecretName)
+	if (-not $secretBody) { throw "Environment variable for secret '$SecretName' not found." }
+	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody, '--repo', "$Owner/$finalName")
+	Write-Verbose "Creating GitHub repo secret: $SecretName"
+	if ($PSCmdlet.ShouldProcess($SecretName, 'Create GitHub repo secret'))
+	{
+		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
+	}
+ else
+	{
+		Write-Verbose 'Creation skipped by ShouldProcess'
+	}
+}
+
+function New-RepoVariable
+{
+	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+	param(
+		[Parameter(Mandatory)][string]$VariableName,
+		[Parameter(Mandatory)][string]$VariableValue
+	)	
+	$ghArgs = @('variable', 'set', $VariableName, '--body', $VariableValue, '--repo', "$Owner/$finalName")
+	Write-Verbose "Creating GitHub repo variable: $VariableName"
+	if ($PSCmdlet.ShouldProcess($VariableName, 'Create GitHub repo variable'))
+	{
+		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
+	}
+ else
+	{
+		Write-Verbose 'Creation skipped by ShouldProcess'
+	}
+}
+
 $TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 function New-GitHubRepository
 {
@@ -178,14 +216,14 @@ function Invoke-GitClone
 		return
 	}
 	New-Item -ItemType Directory -Path $Dest | Out-Null
-	Invoke-External -FilePath 'git' -ArgumentList @('clone', "https://github.com/$Owner/$Name.git", $Dest) | Out-Null
+	Invoke-External -FilePath 'git' -ArgumentList @('clone', "git@github.com:$Owner/$Name.git", $Dest) | Out-Null
 }
 
 function Copy-PlanDocs
 {
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$SourceDir, [Parameter(Mandatory)][string]$RepoRoot)
-	$docs = Join-Path $RepoRoot 'docs'
+	$docs = Join-Path $RepoRoot $docsDir
 	if ($DryRun)
 	{
 		Write-Verbose "[dry-run] Would copy plan docs: $SourceDir -> $docs"
@@ -257,6 +295,8 @@ function Invoke-GitCommitAndPush
 	}
 }
 
+$docsDir = 'plan_docs'
+
 #
 # Main execution
 #
@@ -308,14 +348,21 @@ try
 	New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
 	Write-Verbose "Repository created: $Owner/$finalName"
 
-	# Clone locally
+	# Create repo secrets needed for agent auth
+	New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
+	New-RepoSecret 'GEMINI_API_KEY'
+	# need to add repository variables
+	#VERSION_PREFIX = '0.0.1'
+	New-RepoVariable 'VERSION_PREFIX' '0.0.1'
+	Write-Verbose 'Repository secrets and variables created'
+
 	$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
 	Invoke-GitClone -Owner $Owner -Name $finalName -Dest $clonePath
 	Write-Verbose "Repository cloned: $clonePath"
 
 	# Copy plan docs
 	Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
-	Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\docs"
+	Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\$docsDir"
 
 	# Commit and push
 	Invoke-GitCommitAndPush -RepoRoot $clonePath

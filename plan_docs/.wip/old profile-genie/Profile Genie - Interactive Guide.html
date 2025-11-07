@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Genie - Interactive Development Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sprint-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .sprint-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .tabs .tab-active {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content-active {
+            display: block;
+        }
+
+        /* Sequence Diagram styling */
+        .seq-diagram-container {
+            background-color: #f9fafb;
+            /* gray-50 */
+            padding: 2rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+        }
+
+        .seq-diagram {
+            display: flex;
+            justify-content: space-around;
+            min-width: 800px;
+        }
+
+        .participant {
+            text-align: center;
+            position: relative;
+            flex: 1;
+        }
+
+        .participant-box {
+            background-color: white;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            /* gray-300 */
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .lifeline {
+            border-left: 2px dashed #9ca3af;
+            /* gray-400 */
+            height: 350px;
+            margin: 0 auto;
+        }
+
+        .message {
+            position: absolute;
+            width: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0 10px;
+        }
+
+        .message-line {
+            display: flex;
+            align-items: center;
+            font-size: 0.875rem;
+            /* text-sm */
+        }
+
+        .message-line.response {
+            border-style: dashed;
+        }
+
+        .arrow {
+            border-top: 2px solid #1f2937;
+            /* gray-800 */
+            width: 100%;
+            position: relative;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: -1px;
+            top: -5px;
+            border: solid #1f2937;
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 4px;
+            transform: rotate(-45deg);
+        }
+
+        .message-label {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f9fafb;
+            /* gray-50 */
+            padding: 0 5px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800">
+
+    <div class="container mx-auto p-8">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-slate-900">Profile Genie</h1>
+            <p class="text-xl text-slate-600 mt-2">Interactive Development & Architecture Plan</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs mb-8 flex justify-center border-b border-gray-200">
+            <button data-tab="architecture" class="tab-button p-4 text-lg border-b-2 tab-active">Architecture</button>
+            <button data-tab="sprints" class="tab-button p-4 text-lg border-b-2">Sprint Plan</button>
+            <button data-tab="tech" class="tab-button p-4 text-lg border-b-2">Tech Stack</button>
+        </div>
+
+        <!-- Architecture Tab -->
+        <div id="architecture" class="tab-content tab-content-active">
+            <div class="bg-white p-8 rounded-xl shadow-lg">
+                <h2 class="text-3xl font-bold text-center mb-2">System Architecture Overview</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">Profile Genie uses a service-oriented
+                    architecture orchestrated by .NET Aspire. This design ensures a clean separation of concerns: the
+                    Blazor UI for user interaction, a central Backend API for business logic, and a dedicated Playwright
+                    Service for robust browser automation.</p>
+
+                <div class="seq-diagram-container">
+                    <div class="seq-diagram">
+                        <div class="participant">
+                            <div class="participant-box">👤<br>User</div>
+                            <div class="lifeline"></div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-box">💻<br>Blazor UI</div>
+                            <div class="lifeline"></div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-box">⚙️<br>Backend API</div>
+                            <div class="lifeline"></div>
+                        </div>
+                        <div class="participant">
+                            <div class="participant-box">🤖<br>Playwright Service</div>
+                            <div class="lifeline"></div>
+                        </div>
+                    </div>
+                    <!-- Messages -->
+                    <div class="message" style="top: 80px; width: 25%; left: 12.5%;">
+                        <div class="message-label">1. Initiate Scout Run</div>
+                        <div class="message-line">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 120px; width: 25%; left: 37.5%;">
+                        <div class="message-label">2. POST /api/applications/scout</div>
+                        <div class="message-line">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 160px; width: 25%; left: 62.5%;">
+                        <div class="message-label">3. POST /scrape (with credentials)</div>
+                        <div class="message-line">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 200px; width: 25%; left: 62.5%;">
+                        <div class="message-label">4. Returns [question_list]</div>
+                        <div class="message-line response">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 240px; width: 25%; left: 37.5%;">
+                        <div class="message-label">5. Returns unknown questions</div>
+                        <div class="message-line response">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 280px; width: 25%; left: 12.5%;">
+                        <div class="message-label">6. User fills answers & submits</div>
+                        <div class="message-line">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+                    <div class="message" style="top: 320px; width: 25%; left: 37.5%;">
+                        <div class="message-label">7. POST /api/applications/fill</div>
+                        <div class="message-line">
+                            <div class="arrow"></div>
+                        </div>
+                    </div>
+
+                </div>
+                <p class="text-center text-sm text-slate-500 mt-4">This diagram illustrates the "Scout Agent" protocol,
+                    the primary workflow for discovering survey questions.</p>
+            </div>
+        </div>
+
+        <!-- Sprints Tab -->
+        <div id="sprints" class="tab-content">
+            <h2 class="text-3xl font-bold text-center mb-8">Phased Development Plan</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Sprint 0 -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprint 0: Foundation</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Establish a runnable, orchestrated solution.</p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Initialize Git repository & CI pipeline.</li>
+                        <li>Create solution structure (.Web, .Api, .PlaywrightService).</li>
+                        <li>Configure .NET Aspire AppHost.</li>
+                        <li>Set up EF Core and initial database migration.</li>
+                    </ul>
+                </div>
+                <!-- Sprint 1 -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprint 1: Authentication</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Implement the complete user account lifecycle.</p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Configure ASP.NET Core Identity.</li>
+                        <li>Build Blazor UI for Login/Registration.</li>
+                        <li>Implement JWT issuance and validation.</li>
+                        <li>Add rate-limiting to login endpoint.</li>
+                    </ul>
+                </div>
+                <!-- Sprint 2 -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprint 2: Profile & Credentials</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Allow users to manage their data securely.</p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Finalize DB models for profile data.</li>
+                        <li>Build "My Profile" and "Settings" pages.</li>
+                        <li>Implement credential encryption/decryption logic.</li>
+                    </ul>
+                </div>
+                <!-- Sprint 3 -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprint 3: Basic Automation</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Prove the core scraping concept.</p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Create `/scrape` endpoint in Playwright Service.</li>
+                        <li>Implement basic Playwright logic for login and data extraction.</li>
+                        <li>Connect Backend API to the new service.</li>
+                    </ul>
+                </div>
+                <!-- Sprint 4 -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprint 4: Scout Agent Protocol</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Implement the multi-page survey reconnaissance
+                        workflow.</p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Enhance `/scrape` to handle navigation ("Next" buttons).</li>
+                        <li>Implement logic to compare discovered questions to user profile.</li>
+                        <li>Generate and display "unknown questions" list in the UI.</li>
+                    </ul>
+                </div>
+                <!-- Sprint 5+ -->
+                <div class="sprint-card bg-white p-6 rounded-lg border">
+                    <h3 class="font-bold text-xl text-slate-800">Sprints 5-8: Execution & Polish</h3>
+                    <p class="text-sm text-slate-500 mb-4">Goal: Build the final submission flow and harden the system.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-600 space-y-2 text-sm">
+                        <li>Implement the `/fill` endpoint for final submission.</li>
+                        <li>Build the "Application Assistant" UI.</li>
+                        <li>Add bot detection avoidance measures (timing, fingerprints).</li>
+                        <li>Implement CAPTCHA handling and beta test.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack Tab -->
+        <div id="tech" class="tab-content">
+            <div class="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-center mb-8">Core Technologies</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/E9D5FF/6D28D9?text=.NET" alt=".NET"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">.NET 9 & Aspire</h4>
+                        <p class="text-sm text-slate-600">The foundation for a modern, orchestrated, and cross-platform
+                            application.</p>
+                    </div>
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/DBEAFE/1E40AF?text=Blazor" alt="Blazor"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">Blazor Server</h4>
+                        <p class="text-sm text-slate-600">Enables a rich, interactive C#-based UI with a "desktop-like"
+                            feel.</p>
+                    </div>
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/CCFBF1/0F766E?text=Playwright" alt="Playwright"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">Playwright</h4>
+                        <p class="text-sm text-slate-600">Provides reliable, modern, and powerful browser automation
+                            capabilities.</p>
+                    </div>
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/D1FAE5/065F46?text=PostgreSQL" alt="PostgreSQL"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">PostgreSQL</h4>
+                        <p class="text-sm text-slate-600">A robust, open-source object-relational database for storing
+                            all application data.</p>
+                    </div>
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/FEE2E2/991B1B?text=EF+Core" alt="Entity Framework Core"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">Entity Framework Core</h4>
+                        <p class="text-sm text-slate-600">The object-relational mapper (ORM) for seamless data access
+                            from C#.</p>
+                    </div>
+                    <div class="p-4">
+                        <img src="https://placehold.co/100x100/FEF3C7/92400E?text=Security" alt="Security"
+                            class="mx-auto mb-2 rounded-full">
+                        <h4 class="font-semibold text-lg">ASP.NET Core Identity</h4>
+                        <p class="text-sm text-slate-600">Handles secure authentication, session management, and
+                            JWT-based API protection.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('tab-active');
+                });
+                button.classList.add('tab-active');
+
+                tabContents.forEach(content => {
+                    if (content.id === tabId) {
+                        content.classList.add('tab-content-active');
+                    } else {
+                        content.classList.remove('tab-content-active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

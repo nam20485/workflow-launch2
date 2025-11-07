@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Create GitHub milestones from a list of strings.
@@ -54,7 +55,7 @@ param(
     [string]$TitlesFile,
 
     [Parameter()]
-    [ValidateSet('open','closed')]
+    [ValidateSet('open', 'closed')]
     [string]$State = 'open',
 
     [Parameter()]
@@ -76,7 +77,8 @@ function Test-CommandExists {
 
 try {
     Test-CommandExists gh
-} catch {
+}
+catch {
     Write-Error $_.Exception.Message
     exit 1
 }
@@ -105,14 +107,15 @@ if ($TitlesFile) {
 $allTitles = $allTitles | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique
 
 if (-not $allTitles -or $allTitles.Count -eq 0) {
-    Write-Error "No milestone titles were provided. Use -Titles and/or -TitlesFile."
+    Write-Error 'No milestone titles were provided. Use -Titles and/or -TitlesFile.'
     exit 1
 }
 
 # Fetch existing milestones (all states, up to 100 per page; --paginate for more)
 try {
     $existing = gh api "repos/$Repo/milestones?state=all&per_page=100" --paginate | ConvertFrom-Json
-} catch {
+}
+catch {
     Write-Error "Failed to fetch existing milestones from repo '$Repo'. Ensure you have access and are authenticated."
     exit 1
 }
@@ -134,23 +137,23 @@ foreach ($t in $allTitles) {
     $key = $t.ToLowerInvariant()
     if ($existingByTitle.ContainsKey($key)) {
         if (-not $SkipExisting) {
-            $planned += @{ action='skip'; title=$t; reason='already exists' }
+            $planned += @{ action = 'skip'; title = $t; reason = 'already exists' }
         }
         continue
     }
-    $planned += @{ action='create'; title=$t }
+    $planned += @{ action = 'create'; title = $t }
 }
 
 if ($planned.Count -eq 0) {
-    Write-Host "No milestones to create." -ForegroundColor Green
+    Write-Host 'No milestones to create.' -ForegroundColor Green
     exit 0
 }
 
-Write-Host "Planned actions:" -ForegroundColor Cyan
-$planned | ForEach-Object { Write-Host (" - {0}: {1}{2}" -f $_.action, $_.title, $(if ($_.reason) { " ($($_.reason))" } else { '' })) }
+Write-Host 'Planned actions:' -ForegroundColor Cyan
+$planned | ForEach-Object { Write-Host (' - {0}: {1}{2}' -f $_.action, $_.title, $(if ($_.reason) { " ($($_.reason))" } else { '' })) }
 
 if ($DryRun) {
-    Write-Host "Dry run specified. No changes made." -ForegroundColor Yellow
+    Write-Host 'Dry run specified. No changes made.' -ForegroundColor Yellow
     exit 0
 }
 
@@ -170,4 +173,4 @@ foreach ($p in $planned) {
     & gh @ghArgs | Out-Null
 }
 
-Write-Host "Done." -ForegroundColor Green
+Write-Host 'Done.' -ForegroundColor Green

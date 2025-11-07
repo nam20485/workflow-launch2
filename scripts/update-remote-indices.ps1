@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 param(
   [string]$Owner = 'nam20485',
   [string]$Repo = 'agent-instructions',
@@ -9,7 +10,7 @@ $ErrorActionPreference = 'Stop'
 
 function Invoke-GitHubApiJson {
   param(
-    [Parameter(Mandatory=$true)][string]$Url
+    [Parameter(Mandatory = $true)][string]$Url
   )
   $headers = @{ 'User-Agent' = 'workflow-launch2-index-updater' }
   if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "Bearer $($env:GITHUB_TOKEN)" }
@@ -18,7 +19,7 @@ function Invoke-GitHubApiJson {
 
 function Get-DirectoryMarkdownFiles {
   param(
-    [Parameter(Mandatory=$true)][string]$Path
+    [Parameter(Mandatory = $true)][string]$Path
   )
   $api = "https://api.github.com/repos/$Owner/$Repo/contents/${Path}?ref=$Branch"
   $items = Invoke-GitHubApiJson -Url $api
@@ -30,8 +31,8 @@ function Get-DirectoryMarkdownFiles {
 
 function Build-AssignmentsIndexContent {
   param(
-    [Parameter(Mandatory=$true)][array]$AssignmentFiles,
-    [Parameter(Mandatory=$true)][string]$DirPath
+    [Parameter(Mandatory = $true)][array]$AssignmentFiles,
+    [Parameter(Mandatory = $true)][string]$DirPath
   )
   $lines = @()
   $dirWithSlash = ($DirPath.TrimEnd('/') + '/')
@@ -74,8 +75,8 @@ function Build-AssignmentsIndexContent {
 
 function Build-DynamicWorkflowsIndexContent {
   param(
-    [Parameter(Mandatory=$true)][array]$WorkflowFiles,
-    [Parameter(Mandatory=$true)][string]$DirPath
+    [Parameter(Mandatory = $true)][array]$WorkflowFiles,
+    [Parameter(Mandatory = $true)][string]$DirPath
   )
   $lines = @()
   $dirWithSlash = ($DirPath.TrimEnd('/') + '/')
@@ -119,31 +120,32 @@ function Build-DynamicWorkflowsIndexContent {
 # Resolve paths
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
 $assignmentsIndexPath = Join-Path $repoRoot 'local_ai_instruction_modules\ai-workflow-assignments.md'
-$workflowsIndexPath   = Join-Path $repoRoot 'local_ai_instruction_modules\ai-dynamic-workflows.md'
+$workflowsIndexPath = Join-Path $repoRoot 'local_ai_instruction_modules\ai-dynamic-workflows.md'
 
 # Fetch remote file lists
 $assignmentsDir = 'ai_instruction_modules/ai-workflow-assignments'
-$workflowsDir   = 'ai_instruction_modules/ai-workflow-assignments/dynamic-workflows'
+$workflowsDir = 'ai_instruction_modules/ai-workflow-assignments/dynamic-workflows'
 
 $assignmentFiles = Get-DirectoryMarkdownFiles -Path $assignmentsDir
 # Exclude files that are part of sub-directories, but API already scopes by dir; skip none.
-$workflowFiles   = Get-DirectoryMarkdownFiles -Path $workflowsDir
+$workflowFiles = Get-DirectoryMarkdownFiles -Path $workflowsDir
 
 # Build contents
 $assignmentsContent = Build-AssignmentsIndexContent -AssignmentFiles $assignmentFiles -DirPath $assignmentsDir
-$workflowsContent   = Build-DynamicWorkflowsIndexContent -WorkflowFiles $workflowFiles -DirPath $workflowsDir
+$workflowsContent = Build-DynamicWorkflowsIndexContent -WorkflowFiles $workflowFiles -DirPath $workflowsDir
 
 # Write only if changed
 function Write-IfChanged {
   param(
-    [Parameter(Mandatory=$true)][string]$Path,
-    [Parameter(Mandatory=$true)][string]$Content
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Content
   )
   $existing = if (Test-Path $Path) { Get-Content -Path $Path -Raw -ErrorAction Stop } else { '' }
   if ($existing -ne $Content) {
     $Content | Out-File -FilePath $Path -Encoding UTF8
     Write-Host "Updated: $Path" -ForegroundColor Green
-  } else {
+  }
+  else {
     Write-Host "No changes: $Path" -ForegroundColor Yellow
   }
 }
