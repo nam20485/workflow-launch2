@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(pwsh:*)",
-      "Task(pwsh:*)"
+      "Task(pwsh:*)",
+      "Bash(echo $env:NOTION_INTEGRATION_TOKEN)",
+      "Bash(echo $NOTION_INTEGRATION_TOKEN)"
     ],
     "deny": [],
     "ask": []

@@ -77,10 +77,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Test-ToolExists {
+function Test-ToolExists
+{
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$Name)
-	if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
+	if (-not (Get-Command $Name -ErrorAction SilentlyContinue))
+	{
 		throw "Required tool not found on PATH: $Name"
 	}
 }
@@ -88,7 +90,8 @@ function Test-ToolExists {
 # Dot-source common auth helper
 $commonAuth = Join-Path $PSScriptRoot 'common-auth.ps1'
 if (Test-Path -LiteralPath $commonAuth) { . $commonAuth } else { Write-Verbose 'common-auth.ps1 not found; proceeding without dot-sourcing' }
-function Get-RandomSuffix {
+function Get-RandomSuffix
+{
 	[CmdletBinding()]
 	param()
 	$words = @('alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima', 'mike', 'november', 'oscar', 'papa', 'quebec', 'romeo', 'sierra', 'tango', 'uniform', 'victor', 'whiskey', 'xray', 'yankee', 'zulu')
@@ -97,7 +100,8 @@ function Get-RandomSuffix {
 	return "$word$($num)"
 }
 
-function Invoke-External {
+function Invoke-External
+{
 	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory)][string]$FilePath,
@@ -109,7 +113,8 @@ function Invoke-External {
 	if ($DryRun) { return @{ ExitCode = 0; Output = @('<dry-run>') } }
 	$out = & $FilePath @ArgumentList 2>&1
 	$code = $LASTEXITCODE
-	if ($code -ne 0 -and -not $AllowFail) {
+	if ($code -ne 0 -and -not $AllowFail)
+	{
 		# Include arguments to make failures easier to diagnose
 		$full = "$FilePath $($ArgumentList -join ' ')"
 		throw ("Command failed ({0}): {1}`n{2}" -f $code, $full, ($out -join "`n"))
@@ -117,7 +122,8 @@ function Invoke-External {
 	return @{ ExitCode = $code; Output = $out }
 }
 
-function Test-RepoExists {
+function Test-RepoExists
+{
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$Owner, [Parameter(Mandatory)][string]$Name)
 	if ($DryRun) { return $false }
@@ -126,7 +132,8 @@ function Test-RepoExists {
 }
 
 $TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
-function New-GitHubRepository {
+function New-GitHubRepository
+{
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 	param(
 		[Parameter(Mandatory)][string]$Owner,
@@ -138,18 +145,22 @@ function New-GitHubRepository {
 	# Create from template repo explicitly
 	$ghArgs += @('--template', $TEMPLATE)
 	Write-Verbose "Creating GitHub repository: $Owner/$Name"
-	if ($PSCmdlet.ShouldProcess("$Owner/$Name", 'Create GitHub repository')) {
+	if ($PSCmdlet.ShouldProcess("$Owner/$Name", 'Create GitHub repository'))
+	{
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
 	}
- else {
+ else
+	{
 		Write-Verbose 'Creation skipped by ShouldProcess'
 	}
 }
 
-function Get-ClonePath {
+function Get-ClonePath
+{
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$Parent, [Parameter(Mandatory)][string]$Name)
-	if (-not (Test-Path -LiteralPath $Parent)) {
+	if (-not (Test-Path -LiteralPath $Parent))
+	{
 		New-Item -ItemType Directory -Path $Parent | Out-Null
 	}
 	$parentResolved = (Resolve-Path -LiteralPath $Parent).Path
@@ -157,10 +168,12 @@ function Get-ClonePath {
 	return $dest
 }
 
-function Invoke-GitClone {
+function Invoke-GitClone
+{
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$Owner, [Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Dest)
-	if (Test-Path -LiteralPath $Dest) {
+	if (Test-Path -LiteralPath $Dest)
+	{
 		Write-Verbose "Clone destination exists: $Dest (skipping clone)"
 		return
 	}
@@ -168,11 +181,13 @@ function Invoke-GitClone {
 	Invoke-External -FilePath 'git' -ArgumentList @('clone', "https://github.com/$Owner/$Name.git", $Dest) | Out-Null
 }
 
-function Copy-PlanDocs {
+function Copy-PlanDocs
+{
 	[CmdletBinding()]
 	param([Parameter(Mandatory)][string]$SourceDir, [Parameter(Mandatory)][string]$RepoRoot)
 	$docs = Join-Path $RepoRoot 'docs'
-	if ($DryRun) {
+	if ($DryRun)
+	{
 		Write-Verbose "[dry-run] Would copy plan docs: $SourceDir -> $docs"
 		return
 	}
@@ -183,15 +198,18 @@ function Copy-PlanDocs {
 	Copy-Item "$srcResolved\*" -Destination $docs -Recurse -Force
 }
 
-function Invoke-GitCommitAndPush {
+function Invoke-GitCommitAndPush
+{
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
 	param([Parameter(Mandatory)][string]$RepoRoot)
 	# Ensure we're on a valid branch (handle unborn HEAD in freshly created repos)
 	$hasHead = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'rev-parse', '--verify', 'HEAD') -AllowFail
-	if ($hasHead.ExitCode -ne 0) {
+	if ($hasHead.ExitCode -ne 0)
+	{
 		# No commits yet; create/switch to main branch explicitly
 		$sw = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'switch', '-c', 'main') -AllowFail
-		if ($sw.ExitCode -ne 0) {
+		if ($sw.ExitCode -ne 0)
+		{
 			# Fallback for older Git
 			Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'checkout', '-b', 'main') | Out-Null
 		}
@@ -199,12 +217,15 @@ function Invoke-GitCommitAndPush {
 
 	Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'add', '.') | Out-Null
 	$commit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit', '-m', 'Add plan docs') -AllowFail
-	if ($commit.ExitCode -ne 0) {
+	if ($commit.ExitCode -ne 0)
+	{
 		$msg = ($commit.Output -join ' ')
-		if ($msg -match 'nothing to commit') {
+		if ($msg -match 'nothing to commit')
+		{
 			Write-Verbose 'Nothing to commit (working tree clean)'
 		}
-		else {
+		else
+		{
 			throw "git commit failed: $msg"
 		}
 	}
@@ -212,20 +233,24 @@ function Invoke-GitCommitAndPush {
 	$branch = (Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'branch', '--show-current')).Output | Select-Object -First 1
 	$branch = $branch.Trim()
 	if (-not $branch) { $branch = 'main' }
-	if ($PSCmdlet.ShouldProcess($RepoRoot, "Push changes to origin/$branch")) {
+	if ($PSCmdlet.ShouldProcess($RepoRoot, "Push changes to origin/$branch"))
+	{
 		# Use -u to set upstream on first push
 		$push = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push', '-u', 'origin', $branch) -AllowFail
-		if ($push.ExitCode -ne 0) {
+		if ($push.ExitCode -ne 0)
+		{
 			# Handle non-fast-forward race when GitHub finishes templating after our clone
 			$pushMsg = ($push.Output -join ' ')
-			if ($pushMsg -match 'fetch first' -or $pushMsg -match 'non-fast-forward' -or $pushMsg -match 'failed to push some refs') {
+			if ($pushMsg -match 'fetch first' -or $pushMsg -match 'non-fast-forward' -or $pushMsg -match 'failed to push some refs')
+			{
 				Write-Verbose "Push rejected (likely template race). Rebasing onto origin/$branch and retrying..."
 				# Pull with rebase to integrate remote commits without a merge commit
 				Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'pull', '--rebase', 'origin', $branch) | Out-Null
 				# Retry push
 				Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push', '-u', 'origin', $branch) | Out-Null
 			}
-			else {
+			else
+			{
 				throw ('git push failed: {0}' -f $pushMsg)
 			}
 		}
@@ -235,15 +260,18 @@ function Invoke-GitCommitAndPush {
 #
 # Main execution
 #
-try {
+try
+{
 
 	# Preconditions
 	Test-ToolExists 'git'
 	Test-ToolExists 'gh'
-	if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else {
+	if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else
+	{
 		# Fallback local check if helper not available
 		$st = Invoke-External -FilePath 'gh' -ArgumentList @('auth', 'status') -AllowFail
-		if ($st.ExitCode -ne 0) {
+		if ($st.ExitCode -ne 0)
+		{
 			Write-Verbose 'GitHub CLI not authenticated. Initiating gh auth login...'
 			if ($DryRun) { Write-Warning '[dry-run] Would run: gh auth login' } else { Invoke-External -FilePath 'gh' -ArgumentList @('auth', 'login') | Out-Null }
 		}
@@ -251,22 +279,26 @@ try {
 
 	# Determine final repo name (ensure not colliding; try up to 5 suffixes)
 	$finalName = $null
-	for ($i = 0; $i -lt 5 -and -not $finalName; $i++) {
+	for ($i = 0; $i -lt 5 -and -not $finalName; $i++)
+	{
 		$suffix = Get-RandomSuffix
 		$candidate = "$RepoName-$suffix"
-		if (-not (Test-RepoExists -Owner $Owner -Name $candidate)) {
+		if (-not (Test-RepoExists -Owner $Owner -Name $candidate))
+		{
 			$finalName = $candidate
 		}
 	}
 	if (-not $finalName) { throw "Unable to find an available repo name after multiple attempts for base '$RepoName'" }
 
 	Write-Output ''
-	if (-not $Yes) {
+	if (-not $Yes)
+	{
 		$continue = Read-Host "Ready. Create repo with name: '$Owner/$finalName' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
 		$continueNorm = ($continue ?? '').Trim().ToLower()
 		if ($continueNorm -ne 'y') { throw 'User aborted' }
 	}
- else {
+ else
+	{
 		Write-Verbose '-Yes specified: proceeding without confirmation'
 	}
 
@@ -292,22 +324,32 @@ try {
 	# Output clone destination path
 	Write-Output "SUCCESS: '$clonePath' created and checked in"
 
-	if (-not $Yes) {
+	if (-not $Yes)
+	{
 		$launch = Read-Host 'Launch editor? (y/N)'
 		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
 		{
 			code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace')
 		}
 	}
-	else {
+	else
+	{
 		if ($LaunchEditor) { code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace') }
 	}
 
 } 
-catch {
+catch
+{
 	"FAILED: Exception! $($_.Exception.Message)"	
 	exit 1
 }
+
+# function Start-VsCode {
+# 	param (
+# 		$StartLocation
+# 	)
+	
+# }
 
 #
 #	Original Plan
