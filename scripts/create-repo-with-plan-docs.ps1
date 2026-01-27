@@ -144,7 +144,7 @@ function New-RepoSecret
 	{
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
 	}
- else
+ 	else
 	{
 		Write-Verbose 'Creation skipped by ShouldProcess'
 	}
@@ -337,7 +337,7 @@ try
 		$continueNorm = ($continue ?? '').Trim().ToLower()
 		if ($continueNorm -ne 'y') { throw 'User aborted' }
 	}
- else
+ 	else
 	{
 		Write-Verbose '-Yes specified: proceeding without confirmation'
 	}
@@ -349,7 +349,7 @@ try
 	Write-Verbose "Repository created: $Owner/$finalName"
 
 	# Create repo secrets needed for agent auth
-	New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
+	#New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
 	New-RepoSecret 'GEMINI_API_KEY'
 	# need to add repository variables
 	#VERSION_PREFIX = '0.0.1'
