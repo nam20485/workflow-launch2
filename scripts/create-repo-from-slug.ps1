@@ -16,14 +16,18 @@ param(
     [switch]$Yes,
 
     [Parameter()]
-    [switch]$LaunchAgent
+    [switch]$LaunchAgent,
+
+    [Parameter(HelpMessage = 'Number of repositories to create from this slug.')]
+    [ValidateScript({ $_ -ge 1 })]
+    [int]$Count = 1
 )
 
 if ($Yes) {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Yes -LaunchEditor
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Count $Count -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Count $Count
 }
 
 

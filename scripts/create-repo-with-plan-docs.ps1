@@ -5,10 +5,11 @@
 Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into plan_docs/, commit, and push.
 
 .DESCRIPTION
-This script creates a new repository named <RepoName>-<randomWord><twoDigits> under the specified owner, clones it
-to the given destination directory, copies the contents of a plan docs directory into a docs folder inside the repo,
-then commits and pushes the changes. It follows PowerShell best practices: approved verbs, proper parameter validation,
-non-interactive design, and optional DryRun with ShouldProcess confirmation gating for remote mutations.
+This script creates one or more repositories named <RepoName>-<randomSuffix> (with letter suffixes when requested)
+under the specified owner, clones each to the given destination directory, copies the contents of a plan docs directory
+into a docs folder inside each repo, then commits and pushes the changes. It follows PowerShell best practices: approved
+verbs, proper parameter validation, non-interactive design, and optional DryRun with ShouldProcess confirmation gating for
+remote mutations.
 
 .PARAMETER RepoName
 Base repository name (prefix). A random suffix is appended to form the final repo name.
@@ -30,6 +31,12 @@ Simulate remote operations (repo create, git push) and local file copies without
 
 .PARAMETER Yes
 Non-interactive mode. Assume 'yes' for the create confirmation and do not prompt. The editor will only be launched if -LaunchEditor is also provided.
+
+.PARAMETER LaunchEditor
+Launch editor with workspace from new repo after creation
+
+.PARAMETER Count
+Number of repositories to create from the specified slug and plan docs. Letter suffixes are appended to the repo names when more than one repo is requested.
 
 .EXAMPLE
 ./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\plan_docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
@@ -73,7 +80,11 @@ param(
 	[switch]$Yes,
 
 	[Parameter(HelpMessage = 'Launch editor with workspace from new repo after creation')]
-	[switch]$LaunchEditor
+	[switch]$LaunchEditor,
+
+	[Parameter(HelpMessage = 'How many repositories to create from the slug and plan docs.')]
+	[ValidateScript({ $_ -ge 1 })]
+	[int]$Count = 1
 )
 
 $ErrorActionPreference = 'Stop'
@@ -99,6 +110,45 @@ function Get-RandomSuffix
 	$word = Get-Random -InputObject $words
 	$num = Get-Random -Minimum 10 -Maximum 100 # two digits 10-99
 	return "$word$($num)"
+}
+
+function Get-LetterSuffix
+{
+	[CmdletBinding()]
+	param([Parameter(Mandatory)][int]$Index)
+	if ($Index -lt 1) { throw 'Index must be a positive integer.' }
+	$letters = ''
+	$remaining = $Index
+	$alphabetStart = [int][char]'a'
+	while ($remaining -gt 0)
+	{
+		$remaining--
+		$charCode = $alphabetStart + ($remaining % 26)
+		$letters = [char]$charCode + $letters
+		$remaining = [math]::Floor($remaining / 26)
+	}
+	return $letters
+}
+
+function Get-RepoNamesForSuffix
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory)][string]$RepoName,
+		[Parameter(Mandatory)][string]$Suffix,
+		[Parameter(Mandatory)][int]$Count
+	)
+	if ($Count -eq 1)
+	{
+		return @("$RepoName-$Suffix")
+	}
+	$names = New-Object System.Collections.Generic.List[string]
+	for ($i = 1; $i -le $Count; $i++)
+	{
+		$letterSuffix = Get-LetterSuffix -Index $i
+		$names.Add("$RepoName-$Suffix-$letterSuffix")
+	}
+	return $names.ToArray()
 }
 
 function Invoke-External
@@ -135,16 +185,20 @@ function Test-RepoExists
 function New-RepoSecret
 {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
-	param([Parameter(Mandatory)][string]$SecretName)	
+	param(
+		[Parameter(Mandatory)][string]$Owner,
+		[Parameter(Mandatory)][string]$RepoName,
+		[Parameter(Mandatory)][string]$SecretName
+	)
 	$secretBody = [System.Environment]::GetEnvironmentVariable($SecretName)
 	if (-not $secretBody) { throw "Environment variable for secret '$SecretName' not found." }
-	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody, '--repo', "$Owner/$finalName")
-	Write-Verbose "Creating GitHub repo secret: $SecretName"
+	$ghArgs = @('secret', 'set', $SecretName, '--body', $secretBody, '--repo', "$Owner/$RepoName")
+	Write-Verbose "Creating GitHub repo secret: $SecretName for $Owner/$RepoName"
 	if ($PSCmdlet.ShouldProcess($SecretName, 'Create GitHub repo secret'))
 	{
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
 	}
- 	else
+	else
 	{
 		Write-Verbose 'Creation skipped by ShouldProcess'
 	}
@@ -154,16 +208,18 @@ function New-RepoVariable
 {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 	param(
+		[Parameter(Mandatory)][string]$Owner,
+		[Parameter(Mandatory)][string]$RepoName,
 		[Parameter(Mandatory)][string]$VariableName,
 		[Parameter(Mandatory)][string]$VariableValue
 	)	
-	$ghArgs = @('variable', 'set', $VariableName, '--body', $VariableValue, '--repo', "$Owner/$finalName")
-	Write-Verbose "Creating GitHub repo variable: $VariableName"
+	$ghArgs = @('variable', 'set', $VariableName, '--body', $VariableValue, '--repo', "$Owner/$RepoName")
+	Write-Verbose "Creating GitHub repo variable: $VariableName for $Owner/$RepoName"
 	if ($PSCmdlet.ShouldProcess($VariableName, 'Create GitHub repo variable'))
 	{
 		Invoke-External -FilePath 'gh' -ArgumentList $ghArgs | Out-Null
 	}
- else
+	else
 	{
 		Write-Verbose 'Creation skipped by ShouldProcess'
 	}
@@ -300,6 +356,7 @@ $docsDir = 'plan_docs'
 #
 # Main execution
 #
+
 try
 {
 
@@ -317,74 +374,98 @@ try
 		}
 	}
 
-	# Determine final repo name (ensure not colliding; try up to 5 suffixes)
-	$finalName = $null
-	for ($i = 0; $i -lt 5 -and -not $finalName; $i++)
+	# Determine final repo names (ensure not colliding; try up to 5 suffixes)
+	$repoNames = @()
+	for ($i = 0; $i -lt 5 -and -not $repoNames; $i++)
 	{
 		$suffix = Get-RandomSuffix
-		$candidate = "$RepoName-$suffix"
-		if (-not (Test-RepoExists -Owner $Owner -Name $candidate))
+		$candidates = Get-RepoNamesForSuffix -RepoName $RepoName -Suffix $suffix -Count $Count
+		$collision = $false
+		foreach ($candidate in $candidates)
 		{
-			$finalName = $candidate
+			if (Test-RepoExists -Owner $Owner -Name $candidate)
+			{
+				$collision = $true
+				break
+			}
+		}
+		if (-not $collision)
+		{
+			$repoNames = $candidates
 		}
 	}
-	if (-not $finalName) { throw "Unable to find an available repo name after multiple attempts for base '$RepoName'" }
+	if (-not $repoNames) { throw "Unable to find an available set of repo names after multiple attempts for base '$RepoName'" }
 
 	Write-Output ''
 	if (-not $Yes)
 	{
-		$continue = Read-Host "Ready. Create repo with name: '$Owner/$finalName' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
-		$continueNorm = ($continue ?? '').Trim().ToLower()
-		if ($continueNorm -ne 'y') { throw 'User aborted' }
+		if ($Count -gt 1)
+		{
+			$confirm = Read-Host "You have specified to create $Count repos from the $RepoName plans. Are you sure? (y/N):"
+			if (($confirm ?? '').Trim().ToLower() -ne 'y') { throw 'User aborted' }
+		}
+		else
+		{
+			$continue = Read-Host "Ready. Create repo with name: '$Owner/$($repoNames[0])' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
+			$continueNorm = ($continue ?? '').Trim().ToLower()
+			if ($continueNorm -ne 'y') { throw 'User aborted' }
+		}
 	}
- 	else
+	else
 	{
 		Write-Verbose '-Yes specified: proceeding without confirmation'
 	}
 
-	Write-Verbose "Chosen repository name: $Owner/$finalName"
+	Write-Verbose "Chosen repository names: $($repoNames -join ', ')"
 
-	# Create repository
-	New-GitHubRepository -Owner $Owner -Name $finalName -Visibility $Visibility
-	Write-Verbose "Repository created: $Owner/$finalName"
+	$lastClonePath = $null
+	foreach ($repoName in $repoNames)
+	{
+		Write-Verbose "Creating repository: $Owner/$repoName"
 
-	# Create repo secrets needed for agent auth
-	#New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
-	New-RepoSecret 'GEMINI_API_KEY'
-	# need to add repository variables
-	#VERSION_PREFIX = '0.0.1'
-	New-RepoVariable 'VERSION_PREFIX' '0.0.1'
-	Write-Verbose 'Repository secrets and variables created'
+		# Create repository
+		New-GitHubRepository -Owner $Owner -Name $repoName -Visibility $Visibility
+		Write-Verbose "Repository created: $Owner/$repoName"
 
-	$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $finalName
-	Invoke-GitClone -Owner $Owner -Name $finalName -Dest $clonePath
-	Write-Verbose "Repository cloned: $clonePath"
+		# Create repo secrets needed for agent auth
+		#New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
+		New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'GEMINI_API_KEY'
+		# need to add repository variables
+		#VERSION_PREFIX = '0.0.1'
+		New-RepoVariable -Owner $Owner -RepoName $repoName -VariableName 'VERSION_PREFIX' -VariableValue '0.0.1'
+		Write-Verbose "Repository secrets and variables created for $Owner/$repoName"
 
-	# Copy plan docs
-	Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
-	Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\$docsDir"
+		$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $repoName
+		$lastClonePath = $clonePath
+		Invoke-GitClone -Owner $Owner -Name $repoName -Dest $clonePath
+		Write-Verbose "Repository cloned: $clonePath"
 
-	# Commit and push
-	Invoke-GitCommitAndPush -RepoRoot $clonePath
-	Write-Verbose 'Changes committed and pushed'
+		# Copy plan docs
+		Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
+		Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\$docsDir"
 
-	# Output clone destination path
-	Write-Output "SUCCESS: '$clonePath' created and checked in"
+		# Commit and push
+		Invoke-GitCommitAndPush -RepoRoot $clonePath
+		Write-Verbose 'Changes committed and pushed'
+
+		# Output clone destination path
+		Write-Output "SUCCESS: '$clonePath' created and checked in"
+	}
 
 	if (-not $Yes)
 	{
 		$launch = Read-Host 'Launch editor? (y/N)'
 		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
 		{
-			code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace')
+			code-insiders (Join-Path $lastClonePath 'ai-new-app-template.code-workspace')
 		}
 	}
 	else
 	{
-		if ($LaunchEditor) { code-insiders (Join-Path $clonePath 'ai-new-app-template.code-workspace') }
+		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath 'ai-new-app-template.code-workspace') }
 	}
 
-} 
+}
 catch
 {
 	"FAILED: Exception! $($_.Exception.Message)"	
