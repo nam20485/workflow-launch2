@@ -21,7 +21,7 @@
    * Ensure the rendering engine handles coordinate systems (Microns vs. Millimeters) seamlessly.  
 3. **Architecture:**  
    * Adopts a **Client-Server model** to decouple heavy processing from the presentation layer.  
-   * **Backend:** ASP.NET Core 8.0 Web API. Responsibilities include File I/O, parsing logic, geometric validation, unit normalization, and **Caching** of processed models to optimize performance for repeated access.  
+   * **Backend:** ASP.NET Core 10.0 Web API. Responsibilities include File I/O, parsing logic, geometric validation, unit normalization, and **Caching** of processed models to optimize performance for repeated access.  
    * **Frontend:** Avalonia UI. A cross-platform Desktop Client responsible for hardware-accelerated rendering and user interaction (Zoom/Pan/Toggle).  
 4. **Export:**  
    * Generate high-fidelity, vector-based SVG and PDF exports that maintain the visual quality of the on-screen render.  
@@ -33,7 +33,7 @@
    * **Frontend:** Headless UI testing via Avalonia.Headless to verify view models and rendering logic without a physical display.  
    * **Assertions:** Use FluentAssertions for readable test code.  
 6. **DevOps:**  
-   * Containerization via Docker for the Backend API to ensure consistent deployment environments.  
+   * Containerization via Docker for the Backend API to ensure consistent deployment environments using .NET 10 images.  
    * Continuous Integration/Continuous Deployment (CI/CD) pipelines using GitHub Actions to automate builds, testing, and artifact generation.
 
 ## **2\. User Stories**
@@ -75,14 +75,16 @@
 
 1. **Create Solution (EcadRenderView.sln):** Establish the root solution file.  
 2. **Create EcadRender.Shared (Class Library):**  
+   * Target **.NET 10**.  
    * **DTOs:** Define robust data transfer objects (BoardDto, ComponentDto, TraceDto) that represent the normalized board data.  
    * **Enums:** Define UnitType (Micron/Millimeter) and LayerType (Top/Bottom/Inner/Plane).  
    * **Results:** Create a ParsingResult\<T\> wrapper to handle success/failure states uniformly.  
-3. **Create EcadRender.Api (ASP.NET Core Web API):**  
+3. **Create EcadRender.Api (ASP.NET Core 10.0 Web API):**  
    * Add project reference to Shared.  
    * Configure Dependency Injection (DI) containers.  
    * Setup IMemoryCache for storing parsed board models.  
 4. **Create EcadRender.Desktop (Avalonia UI):**  
+   * Target **.NET 10**.  
    * Add project reference to Shared.  
    * Install NuGet packages: Avalonia.Diagnostics, SkiaSharp, SkiaSharp.NativeAssets.\*.
 
@@ -102,7 +104,7 @@
    * **Endpoint 1 (POST /load):** Orchestrates the Parse \-\> Validate \-\> Normalize flow. Stores the valid BoardDto in IMemoryCache keyed by a new Guid. Returns the Guid to the client.  
    * **Endpoint 2 (GET /{id}):** specific retrieval endpoint. Checks cache for the Guid. If found, returns the DTO; otherwise, 404\.  
 4. **Dockerization:**  
-   * Create a multi-stage Dockerfile for the API (Build vs Runtime images).  
+   * Create a multi-stage Dockerfile for the API using **.NET 10** SDK and Runtime images.  
    * Create docker-compose.yml to orchestrate the service, exposing port 8080\.
 
 ### **Phase 2: Testing Infrastructure**
@@ -154,9 +156,9 @@
 
 1. **GitHub Actions Workflow (.github/workflows/dotnet.yml):**  
    * **Trigger:** Push to main or Pull Request.  
-   * **Build:** Execute dotnet restore and dotnet build for all projects.  
+   * **Build:** Execute dotnet restore and dotnet build for all projects using the **.NET 10** SDK.  
    * **Test:** Run dotnet test with code coverage collection. This encompasses both Backend logic tests and Frontend Headless UI tests.  
-   * **Docker:** Build the ecad-render-api Docker image. (Optional: Push to GHCR).  
+   * **Docker:** Build the ecad-render-api Docker image based on .NET 10\.  
    * **Artifacts:** Publish the Desktop App (dotnet publish) as a self-contained executable for Windows/Linux/macOS and store it as a build artifact.
 
 ### **Phase 6: Nice to Have (Future Enhancements)**
@@ -165,4 +167,4 @@
   * As board designs grow in complexity, JSON payload sizes increase.  
   * **Plan:** Convert the GET /{id} endpoint to a gRPC service using Protobuf.  
   * **Benefit:** Binary serialization is significantly faster and smaller than JSON, making the "Fetch" step nearly instantaneous for massive boards with high via/trace counts.  
-  * **Strategy:** Define .proto files mirroring BoardDto and generate C\# clients/servers automatically.
+  * **Strategy:** Define .proto files mirroring BoardDto and generate C\# clients/servers automatically for **.NET 10**.

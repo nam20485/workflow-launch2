@@ -2,7 +2,7 @@
 
 ## **1\. Architectural Overview**
 
-**EcadRenderView** follows a **Thin Client, Smart Server** architecture leveraging the .NET ecosystem.
+**EcadRenderView** follows a **Thin Client, Smart Server** architecture leveraging the **.NET 10** ecosystem.
 
 * **Backend (Brain):** Centralizes complexity. It handles file parsing, geometric normalization, validation rules, caching, and data structuring.  
 * **Frontend (Face):** Focused purely on high-performance rendering and user interaction.  
@@ -16,7 +16,7 @@
    v  
 \[ Desktop Client (Avalonia UI) \]  
    |  
-   \+--- (2) POST /api/board/load (Upload) \---------\> \[ ASP.NET Core Web API \]  
+   \+--- (2) POST /api/board/load (Upload) \---------\> \[ ASP.NET Core 10.0 Web API \]  
    |                                                        |  
    |                                          (Parses, Validates, Normalizes)  
    |                                                        |  
@@ -33,10 +33,11 @@
 ### **A. EcadRender.Shared**
 
 * **Role:** Data Contract.  
+* **Framework:** .NET 10\.  
 * **Key Components:** BoardDto, ComponentDto, ParsingResult.  
 * **Standardization:** Coordinates are always **Microns**.
 
-### **B. EcadRender.Api (ASP.NET Core 8.0)**
+### **B. EcadRender.Api (ASP.NET Core 10.0)**
 
 * **Role:** Parsing, Validation, Caching.  
 * **Endpoints:**  
@@ -46,11 +47,12 @@
   * IBoardParser: Deserialization logic.  
   * IValidationEngine: Runs the 14 integrity checks.  
   * ICacheService: Wraps IMemoryCache for storage.  
-* **Infrastructure:** Dockerized (Linux container).
+* **Infrastructure:** Dockerized (Linux container using .NET 10 runtime).
 
 ### **C. EcadRender.Desktop (Avalonia UI)**
 
 * **Role:** Visualization.  
+* **Framework:** .NET 10\.  
 * **Key Components:** BoardCanvas (Skia Control), BoardRenderer (Drawing Logic).
 
 ## **3\. Testing Strategy**
@@ -61,7 +63,7 @@ We employ a robust testing stack to ensure the "14 failures" are always caught a
 
 | Layer | Type | Libraries | Purpose |
 | :---- | :---- | :---- | :---- |
-| **Backend** | Unit | **xUnit**, **FluentAssertions** | Verify parser logic and validation rules against sample files. |
+| **Backend** | Unit | **xUnit**, **FluentAssertions** | Verify parser logic and validation rules against sample files on .NET 10\. |
 | **Backend** | Integration | **Microsoft.AspNetCore.Mvc.Testing** | Verify HTTP endpoints and Cache interaction. |
 | **Frontend** | Unit/UI | **xUnit**, **Avalonia.Headless** | Test ViewModels and UI rendering logic without a physical display. |
 | **Shared** | Mocks | **Moq** | Mocking file systems or API responses. |
@@ -72,8 +74,8 @@ We employ a robust testing stack to ensure the "14 failures" are always caught a
 
 The backend is containerized to ensure consistent execution across dev and production.
 
-* **Base Image:** mcr.microsoft.com/dotnet/aspnet:8.0  
-* **Build Image:** mcr.microsoft.com/dotnet/sdk:8.0  
+* **Base Image:** mcr.microsoft.com/dotnet/aspnet:10.0  
+* **Build Image:** mcr.microsoft.com/dotnet/sdk:10.0  
 * **Exposed Port:** 8080
 
 ### **CI/CD (GitHub Actions)**
@@ -81,7 +83,7 @@ The backend is containerized to ensure consistent execution across dev and produ
 The workflow triggers on push to main.
 
 1. **Checkout Code.**  
-2. **Setup .NET 8\.**  
+2. **Setup .NET 10 SDK.**  
 3. **Restore & Build.**  
 4. **Test:** Runs dotnet test (includes Backend Unit/Integration and Frontend Headless tests).  
 5. **Docker Build & Push:** (Optional) Pushes the API image to a container registry (GHCR/DockerHub).  
@@ -96,7 +98,7 @@ While the current architecture uses REST (JSON), large PCB boards can result in 
 * **Goal:** Reduce payload size and serialization time.  
 * **Implementation:**  
   1. Define .proto files mirroring BoardDto.  
-  2. Add a GrpcBoardService in the Backend.  
+  2. Add a GrpcBoardService in the Backend (built on .NET 10).  
   3. Add Grpc.Net.Client to the Desktop App.  
 * **Benefit:** Binary serialization is significantly faster and smaller than JSON, making the "Fetch" step (GET /{id}) nearly instantaneous for complex boards.  
-* **Why not now?** JSON is easier to debug and fulfills the initial requirements. gRPC is a clear optimization path.
+* **Why not now?** JSON is easier to debug and fulfills the initial requirements. gRPC is a clear optimization path for the .NET 10 ecosystem.
