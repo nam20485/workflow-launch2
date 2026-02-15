@@ -1,0 +1,542 @@
+#!/usr/bin/env python3
+"""
+# Agno "Mimic" Agent: Architecture & Prototype
+
+This archive contains the complete design package for the Agno Workflow Agent 
+capable of imitation learning via Chrome DevTools Protocol (CDP).
+
+## Included Artifacts
+
+### 📚 Documentation (`/docs`)
+* **Architecture Guide:** Detailed breakdown of the 4-Engine design (Watcher, Compiler, Refiner, Executor).
+* **Development Plan:** Phased roadmap from MVP to Production.
+* **Research Notes:** Analysis of "Semantic Shadowing" vs "Visual Snapshotting".
+
+### 🛠️ Source Code (`/src`)
+* **`cdp_watcher.py`:** A working prototype that connects to a running Chrome instance to record semantic events.
+* **`agno_brain.py`:** The Pydantic models and Agno Agent definitions for translating logs into execution modes.
+
+### 📄 Root
+* **README.md:** Setup instructions and environment configuration.
+
+Run this file to extract the project skeleton.
+"""
+import os
+import base64
+import sys
+import re
+
+# --- PAYLOAD SECTION ---
+PAYLOAD = {
+    "README.md": r'''# Agno "Mimic" Workflow Agent
+
+## Overview
+This project implements an agentic workflow that learns browser automation tasks by watching the user. It utilizes **Agno (Phidata)** for orchestration, **PostgreSQL (pgvector)** for semantic memory, and is designed to work with **NanoBrowser** for robust execution.
+
+## Phases
+1.  **Learning Mode:** User browses manually. System records semantic events.
+2.  **Compilation:** System converts logs into a `WorkflowMode` object.
+3.  **Refinement:** Agent interviews the user to clarify logic.
+4.  **Execution:** Agent executes the task, asking for help if stuck.
+
+## Setup
+
+1.  **Environment Variables**
+    Create a `.env` file:
+    ```bash
+    OPENAI_API_KEY=sk-...
+    DATABASE_URL=postgresql://user:pass@localhost:5432/agno_db
+    NANOBROWSER_API_KEY=...
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    pip install agno openai playwright pydantic fastapi uvicorn psycopg2-binary pgvector
+    ```
+
+3.  **Run Database**
+    ```bash
+    docker run -d -e POSTGRES_USER=ai -e POSTGRES_PASSWORD=ai -e POSTGRES_DB=agno_db -p 5432:5432 pgvector/pgvector:pg16
+    ```
+
+4.  **Start the Recorder (Learning Mode)**
+    * Launch Chrome with remote debugging:
+        `google-chrome --remote-debugging-port=9222`
+    * Run the watcher script:
+        `python src/cdp_watcher.py`
+
+## Key Concepts
+* **The Mode:** A JSON representation of a job (e.g., "Apply to LinkedIn").
+* **The Shadow:** The mechanism of attaching to the user's browser via CDP.
+* **Refinement Loop:** The chat interface where the user edits the Mode.
+''',
+
+    "docs/comprehensive_architecture.md": r'''# Agno "Mimic" Agent: Comprehensive Architecture Guide
+
+## 1. High-Level System Topology
+
+The system operates as a closed feedback loop consisting of four distinct "Engines."
+
+```mermaid
+graph TD
+    User[User (Chrome)] -->|CDP Stream (WebSocket)| Watcher[1. The Watcher (Local Listener)]
+    Watcher -->|Raw Events| Ingestion[Event Pipeline]
+    Ingestion -->|Semantic Facts| DB[(Postgres + pgvector)]
+    DB -->|Session Logs| Compiler[2. The Compiler (Agno Agent)]
+    Compiler -->|Draft Mode| Refiner[3. The Refiner (Chat UI)]
+    User -->|Feedback| Refiner
+    Refiner -->|Approved Mode| DB
+    DB -->|Production Mode| Executor[4. The Executor (Agno + NanoBrowser)]
+    Executor -->|Actions| Target[Websites (LinkedIn/UserInterviews)]
+```
+
+---
+
+## 2. Component Deep Dive
+
+### Engine 1: The Watcher (Data Ingestion)
+**Responsibility:** Passively observe the user without interfering.
+* **Connection Method:** Connects to the user's running Chrome instance via **Chrome DevTools Protocol (CDP)** on port `9222`.
+* **The "Snapshot" Strategy:**
+    * We do *not* record video (too heavy/slow).
+    * We do *not* record raw DOM (too noisy).
+    * **We record the Accessibility Tree (AXTree):** This simplifies the DOM into "Button: Submit", "Link: Jobs". It removes `<div>` soup and styling noise.
+* **Event Filter Logic:**
+    * *Ignored:* `mousemove`, `scroll` (unless large delta), `hover`.
+    * *Captured:* `click`, `keypress` (aggregated into strings), `navigation`, `submit`.
+
+### Engine 2: The Compiler (Mode Synthesis)
+**Responsibility:** Translate chronological events into a logical workflow.
+* **Core Logic (Agno Agent):**
+    1.  **Segmentation:** Identifies boundaries. "User went to linkedin.com" = Start. "User clicked 'Submit'" = End.
+    2.  **Variable Identification:** Scans inputs for PII (Personally Identifiable Information).
+        * *Pattern:* Input value "John Doe" matches `User.Profile.Name`.
+        * *Action:* Replace literal "John Doe" with variable `{{user.name}}`.
+    3.  **Deduplication:** Merges rapid-fire clicks or corrections into single Intent blocks.
+
+### Engine 3: The Refiner (Human-in-the-Loop)
+**Responsibility:** Alignment and Error Correction.
+* **Interface:** A Chat UI (Streamlit or Chainlit).
+* **The "Interrogation" Protocol:**
+    * The Agent presents the *Draft Mode* as a natural language summary.
+    * *Agent:* "I noticed you uploaded 'resume_v2.pdf'. Should I always use this file, or should I ask you for a file every time?"
+    * *User:* "Always use the file in `/docs/current_resume.pdf`."
+    * *System Update:* The Mode JSON is updated with a hardcoded file path constraint.
+
+### Engine 4: The Executor (NanoBrowser Orchestrator)
+**Responsibility:** Reliable execution of the Mode.
+* **Tool:** **NanoBrowser** (AI-managed browser instance).
+* **Execution Strategy:** "Semantic Targeting" vs "Selector Targeting".
+    * *Traditional RPA:* Click `#ember123`. (Brittle)
+    * *Agno Executor:* "Find the 'Easy Apply' button."
+        1.  Agent takes AXTree snapshot of NanoBrowser.
+        2.  Agent queries Vector DB: "What did the 'Easy Apply' button look like in the recording?"
+        3.  Agent finds the closest semantic match on the *current* page.
+        4.  Agent executes click.
+
+---
+
+## 3. Data Schemas
+
+### A. The "Fact" (Atomic Recording)
+Stored in Postgres `events_log`.
+```json
+{
+  "timestamp": 170800123.45,
+  "session_id": "session_001",
+  "url": "[https://linkedin.com/jobs/view/](https://linkedin.com/jobs/view/)...",
+  "event_type": "click",
+  "target_element": {
+    "tag": "button",
+    "text": "Easy Apply",
+    "aria_label": "Apply to Google",
+    "xpath": "/html/.../button[2]"
+  },
+  "context_snapshot": "...summary of surrounding 5 elements..."
+}
+```
+
+### B. The "Mode" (Compiled Workflow)
+Stored in Postgres `modes` table. This is the "Code" the agent runs.
+```json
+{
+  "mode_id": "linkedin_apply_v1",
+  "variables": [
+    {"name": "job_title", "source": "user_prompt"},
+    {"name": "resume_path", "source": "config"}
+  ],
+  "steps": [
+    {
+      "id": 1,
+      "description": "Navigate to Job",
+      "action": "goto",
+      "params": {"url": "{{job_url}}"}
+    },
+    {
+      "id": 2,
+      "description": "Click Apply Button",
+      "action": "click",
+      "semantic_target": "Easy Apply Button",
+      "verification": "Check for modal popup 'Contact Info'"
+    }
+  ]
+}
+```
+''',
+
+    "docs/detailed_dev_plan.md": r'''# Detailed Development Plan: Agno Mimic Agent
+
+## Phase 1: The Eye (CDP Listener & Data Ingestion)
+**Objective:** Create a Python service that connects to a running Chrome instance and logs "meaningful" user actions to a database.
+
+### 1.1. Local Browser Configuration
+* **Task:** Create a `start_chrome.sh` script.
+* **Details:** Must launch Chrome with `--remote-debugging-port=9222`.
+* **Why:** This opens the WebSocket gate for our Python script to listen in.
+
+### 1.2. The "Watcher" Service (Python)
+* **Task:** Implement `Watcher` class using `playwright` (connecting over CDP).
+* **Key Components:**
+    * `CDPClient`: Connects to `ws://127.0.0.1:9222`.
+    * `DOMSnapshotter`: A function that runs `page.accessibility.snapshot()` every time a click is detected.
+    * `InputAggregator`: Buffers keystrokes. Only flushes the string to DB when the user presses `Enter` or clicks away (blur event).
+* **Output:** A `.jsonl` file or direct DB insert of raw events.
+
+### 1.3. Database Setup (PgVector)
+* **Task:** Docker Compose file for Postgres 16 + pgvector.
+* **Schema:**
+    * `sessions`: (id, user_id, start_time, end_time)
+    * `raw_events`: (id, session_id, event_type, payload (JSONB), embedding (VECTOR))
+* **Milestone:** You browse LinkedIn for 5 minutes, and the DB has ~50 clean, readable rows of actions (not 5000 rows of noise).
+
+---
+
+## Phase 2: The Brain (Agno Compiler Agent)
+**Objective:** Use an LLM to read the DB logs and generate a structured JSON "Mode".
+
+### 2.1. The "Analyst" Agent
+* **Task:** Create an Agno Agent (`AnalystAgent`).
+* **Prompt Engineering:**
+    * *Input:* A list of 50 raw events.
+    * *Instructions:* "Identify the goal of this session. Group steps into logical blocks. Replace 'Software Engineer' with variable `{{SEARCH_TERM}}`."
+* **Tooling:** Give the agent a tool to `read_session_logs(session_id)`.
+
+### 2.2. The Mode Validator
+* **Task:** Implement Pydantic models for the `Mode` (see `agno_brain.py`).
+* **Details:** The Agent **must** output data that adheres to this schema. If it fails validation, Agno should auto-retry.
+
+---
+
+## Phase 3: The Refiner (Chat Interface)
+**Objective:** A UI for the user to review and edit the robot's plan.
+
+### 3.1. Chat App (Streamlit)
+* **Task:** Simple split-screen UI.
+    * *Left:* Chat bot.
+    * *Right:* JSON/YAML viewer of the current "Mode".
+* **Interaction Flow:**
+    1.  User: "Analyze my last session."
+    2.  Agent: (Reads DB, compiles Mode) "Here is what I saw. I detected you logged into LinkedIn. Should I save these credentials?"
+    3.  User: "No, assume I am already logged in."
+    4.  Agent: (Removes Login Step from Mode object).
+
+### 3.2. Semantic Search Tooling
+* **Task:** Enable the agent to search the Vector DB.
+* **Why:** User might say "How did I handle the 'Upload Cover Letter' part?" The agent needs to query the `raw_events` embeddings to find that specific moment and explain it.
+
+---
+
+## Phase 4: The Hand (NanoBrowser Execution)
+**Objective:** Execute the Mode autonomously.
+
+### 4.1. NanoBrowser Client
+* **Task:** Initialize `NanoBrowser` instance via API.
+* **Integration:** Write a wrapper `NanoClient` that accepts our semantic commands.
+
+### 4.2. The "Executor" Agent
+* **Task:** A State Machine loop.
+    ```python
+    mode = load_mode("linkedin_apply")
+    for step in mode.steps:
+        current_state = nanobrowser.get_state()
+        action = match_action(step, current_state)
+        execute(action)
+        verify_result()
+    ```
+* **Error Handling:** If the "Apply" button isn't found (e.g., LinkedIn changed layout), the Agent pauses and alerts the user via the Chat UI.
+''',
+
+    "docs/research_notes.md": r'''# Research & Analysis: Agentic Workflow Techniques
+
+## 1. Competitive Landscape & Techniques
+
+### A. Large Action Models (LAMs)
+* **Concept:** Similar to how LLMs predict the next word, LAMs predict the next interface action (click, scroll, type) based on a UI screenshot or DOM dump.
+* **Key Players:** Adept (ACT-1), Rabbit R1, MultiOn.
+* **Relevance:** We are building a "micro-LAM" using "In-Context Learning" by feeding past actions into Agno.
+
+### B. DOM-Based Heuristics (RPA 2.0)
+* **Concept:** Using strict selectors (XPath/CSS) but adding AI to "heal" them when they break.
+* **Relevance:** We need semantic DOM (e.g., "The button labeled 'Next'") rather than brittle XPaths.
+
+## 2. Implementation Complexity Analysis
+
+### Complexity Area 1: The "Watcher" (High)
+* **Problem:** Browsers are noisy. 
+* **Solution:** We filter for "Commit" events: Clicks, 'Enter' keys, Form Submissions. We ignore pure mouse movement.
+* **Tech:** Chrome DevTools Protocol (CDP) is the only reliable way.
+
+### Complexity Area 2: Context Window Limits (Medium)
+* **Problem:** A 10-minute session generates massive HTML logs.
+* **Solution:** **Distillation.** Record the "Accessibility Tree" instead of raw HTML.
+
+### Complexity Area 3: Auth & Anti-Bot (High)
+* **Problem:** LinkedIn/UserInterviews have strict anti-bot measures.
+* **Solution:**
+    * **Learning:** Local Chrome (safe).
+    * **Execution:** **NanoBrowser** (Stealth) is critical here.
+''',
+
+    "src/cdp_watcher.py": r'''import asyncio
+import json
+import time
+from playwright.async_api import async_playwright, Page
+from datetime import datetime
+
+# ==========================================
+# PHASE 1: THE WATCHER
+# Connecting to YOUR existing Chrome instance
+# ==========================================
+
+CDP_URL = "http://127.0.0.1:9222"  # Requires Chrome started with --remote-debugging-port=9222
+
+class SemanticWatcher:
+    def __init__(self):
+        self.session_data = []
+        self.is_recording = False
+
+    async def start_watching(self):
+        async with async_playwright() as p:
+            # Connect to the existing browser session
+            try:
+                browser = await p.chromium.connect_over_cdp(CDP_URL)
+                context = browser.contexts[0]
+                page = context.pages[0]  # Attach to active tab
+                print(f"✅ Attached to {page.url}")
+            except Exception as e:
+                print(f"❌ Could not connect to Chrome. Make sure it's running with --remote-debugging-port=9222. Error: {e}")
+                return
+
+            self.is_recording = True
+            
+            # 1. Setup Event Listeners
+            # We inject a script into the browser to listen for meaningful interactions
+            await page.expose_function("log_interaction", self.handle_interaction)
+            
+            await page.add_init_script("""
+                document.addEventListener('click', (e) => {
+                    const target = e.target;
+                    // Simple heuristic to get meaningful text
+                    const text = target.innerText || target.value || target.getAttribute('aria-label') || '';
+                    
+                    window.log_interaction({
+                        type: 'click',
+                        tag: target.tagName,
+                        text: text.substring(0, 50), // Truncate
+                        id: target.id,
+                        className: target.className,
+                        path: getXPath(target),
+                        timestamp: Date.now()
+                    });
+                });
+
+                document.addEventListener('change', (e) => {
+                     window.log_interaction({
+                        type: 'input',
+                        tag: e.target.tagName,
+                        value: e.target.value,
+                        id: e.target.id,
+                        timestamp: Date.now()
+                    });
+                });
+
+                // Helper to generate simple XPath (Crucial for replay)
+                function getXPath(element) {
+                    if (element.id !== '') return 'id("'+element.id+'")';
+                    if (element === document.body) return element.tagName;
+                    var ix = 0;
+                    var siblings = element.parentNode.childNodes;
+                    for (var i=0; i<siblings.length; i++) {
+                        var sibling = siblings[i];
+                        if (sibling === element) return getXPath(element.parentNode)+'/'+element.tagName+'['+(ix+1)+']';
+                        if (sibling.nodeType === 1 && sibling.tagName === element.tagName) ix++;
+                    }
+                }
+            """)
+            
+            print("👀 Watching... (Press Ctrl+C to stop)")
+            
+            # Keep the script running to listen for events
+            try:
+                while True:
+                    await asyncio.sleep(1)
+            except KeyboardInterrupt:
+                print("\n🛑 Stopping Watcher...")
+                self.save_session()
+
+    async def handle_interaction(self, data):
+        """Callback triggered from the Browser Context"""
+        print(f"Captured: {data['type']} on <{data['tag']}> '{data.get('text', '')}'")
+        
+        # In a real app, here we would grab the AXTree snapshot for context
+        # snapshot = await page.accessibility.snapshot()
+        
+        self.session_data.append(data)
+
+    def save_session(self):
+        filename = f"session_{int(time.time())}.json"
+        with open(filename, "w") as f:
+            json.dump(self.session_data, f, indent=2)
+        print(f"💾 Session saved to {filename}")
+
+if __name__ == "__main__":
+    watcher = SemanticWatcher()
+    asyncio.run(watcher.start_watching())
+''',
+
+    "src/agno_brain.py": r'''from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
+from agno.agent import Agent
+from agno.models.openai import OpenAIChat
+
+# ==========================================
+# PHASE 2: THE BRAIN (Agno Models)
+# Defining the structure of what we are building
+# ==========================================
+
+class ActionStep(BaseModel):
+    """A single atomic action in the workflow"""
+    step_id: int
+    action_type: str = Field(..., description="click, type, navigate, wait")
+    
+    # The Semantic Selector is Key. It's not just "#btn", it's description based.
+    semantic_target: str = Field(..., description="Description of element, e.g., 'The Submit Application button'")
+    selector_xpath: Optional[str] = Field(None, description="Recorded XPath, used as fallback")
+    
+    value: Optional[str] = Field(None, description="Value to type, or variable placeholder like {{email}}")
+    reasoning: str = Field(..., description="Why is this step happening?")
+
+class WorkflowMode(BaseModel):
+    """The compiled executable mode"""
+    name: str = Field(..., description="Name of the workflow, e.g., 'LinkedIn Easy Apply'")
+    description: str
+    detected_variables: List[str] = Field(..., description="Variables requiring user input, e.g., ['username', 'cv_path']")
+    steps: List[ActionStep]
+
+# ==========================================
+# THE COMPILER AGENT
+# ==========================================
+
+compiler_instructions = """
+You are the Architect. You receive raw browser event logs.
+Your goal is to abstract these logs into a robust 'WorkflowMode'.
+
+RULES:
+1. Ignore noise. If a user clicks a field 3 times, it's just one 'focus' action.
+2. Identify PII. If user types 'john@gmail.com', replace it with '{{user_email}}' and add 'user_email' to detected_variables.
+3. Generate 'semantic_target' descriptions. Do not just rely on IDs. Describe the button's purpose (e.g., 'The primary call to action button').
+"""
+
+compiler_agent = Agent(
+    model=OpenAIChat(id="gpt-4-turbo"),
+    description="Converts raw CDP logs into Agno Workflow Modes.",
+    instructions=compiler_instructions,
+    response_model=WorkflowMode,
+)
+
+# Example Usage Mock
+raw_log_sample = [
+    {"type": "click", "tag": "BUTTON", "text": "Easy Apply", "path": "/html/body/div[3]/button"},
+    {"type": "input", "tag": "INPUT", "value": "MyName", "id": "name-field"},
+]
+
+def compile_session(logs: List[Dict]):
+    print("🧠 Agno is analyzing session logs...")
+    # Mocking the AI response for demonstration
+    mode = WorkflowMode(
+        name="Job Application Flow",
+        description="Applies to a job using Easy Apply",
+        detected_variables=["candidate_name"],
+        steps=[
+            ActionStep(step_id=1, action_type="click", semantic_target="Easy Apply Button", selector_xpath="/html/body/div[3]/button", reasoning="Start application"),
+            ActionStep(step_id=2, action_type="type", semantic_target="Name Input Field", value="{{candidate_name}}", reasoning="Fill personal info")
+        ]
+    )
+    return mode.model_dump_json(indent=2)
+
+if __name__ == "__main__":
+    print(compile_session(raw_log_sample))
+''',
+}
+
+# --- EXTRACTOR LOGIC ---
+def extract_payload():
+    import sys
+    
+    # Safely determine filename
+    try:
+        filename = os.path.basename(__file__)
+    except (NameError, AttributeError):
+        filename = "streamed_archive.seda"
+        
+    print(f"📦 Unpacking SEDA-Commit Archive: {filename}...")
+    
+    # 1. Extract Commit Message (Robust method using __doc__)
+    # This works even if the script is piped to stdin
+    try:
+        doc_content = globals().get('__doc__', "")
+        if doc_content:
+            msg = doc_content.strip()
+            # Clean up shebang if accidentally captured
+            lines = [l for l in msg.splitlines() if not l.startswith("#!")]
+            clean_msg = "\n".join(lines).strip()
+            
+            with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
+                msg_file.write(clean_msg)
+            print("   📝 Extracted 'commit_msg.txt'")
+    except Exception as e:
+        print(f"   ⚠️ Could not extract commit message: {e}")
+
+    # 2. Extract Files
+    for filepath, content in PAYLOAD.items():
+        dest_path = os.path.join(os.getcwd(), filepath)
+        directory = os.path.dirname(dest_path)
+        
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        try:
+            # Handle text vs binary
+            if isinstance(content, bytes):
+                with open(dest_path, 'wb') as f:
+                    f.write(content)
+            elif isinstance(content, str):
+                 try:
+                     # Heuristic: standard binary extensions
+                     if filepath.endswith(('.png', '.jpg', '.ico', '.pdf', '.zip', '.exe')):
+                         with open(dest_path, 'wb') as f:
+                            f.write(base64.b64decode(content))
+                     else:
+                         with open(dest_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                 except Exception:
+                     with open(dest_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+            print(f"   ✅ Extracted: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Error extracting {filepath}: {e}")
+
+    print("\n✨ Extraction complete! ✨")
+
+if __name__ == "__main__":
+    extract_payload()

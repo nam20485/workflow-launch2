@@ -1,0 +1,20 @@
+# Agno "Mimic" Agent: Architecture & Prototype
+
+This archive contains the complete design package for the Agno Workflow Agent 
+capable of imitation learning via Chrome DevTools Protocol (CDP).
+
+## Included Artifacts
+
+### 📚 Documentation (`/docs`)
+* **Architecture Guide:** Detailed breakdown of the 4-Engine design (Watcher, Compiler, Refiner, Executor).
+* **Development Plan:** Phased roadmap from MVP to Production.
+* **Research Notes:** Analysis of "Semantic Shadowing" vs "Visual Snapshotting".
+
+### 🛠️ Source Code (`/src`)
+* **`cdp_watcher.py`:** A working prototype that connects to a running Chrome instance to record semantic events.
+* **`agno_brain.py`:** The Pydantic models and Agno Agent definitions for translating logs into execution modes.
+
+### 📄 Root
+* **README.md:** Setup instructions and environment configuration.
+
+Run this file to extract the project skeleton.
