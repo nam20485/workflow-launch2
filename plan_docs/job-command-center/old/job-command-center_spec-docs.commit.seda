@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""
+feat: initial implementation blueprint for Job Command Center
+
+This SmartPatch encapsulates the complete, expanded implementation specification
+for the Job Command Center (job-command-center).
+
+Key Deliverables:
+1. Requirement & Option Analysis: Detailed justification for the "God Mode" CDP architecture.
+2. App Implementation Spec: Granular technical requirements for the .NET 9 / Aspire stack.
+3. Development Plan: Multi-phase roadmap from infrastructure to visual pipeline.
+4. Project Strategy Report: Interactive dashboard component for project tracking.
+
+Instructions:
+Run this file with Python to unpack the documentation and prepare your
+git commit message.
+"""
+import os
+import sys
+import base64
+import subprocess
+
+# --- SYSTEM CONFIGURATION ---
+POST_INSTALL = {"universal": "python3 -c \"print('--- Job Command Center Workspace Initialized ---\\nFiles extracted. Commit message prepared in commit_msg.txt.\\nReady for Phase 1: Foundation.')\""}
+
+# --- PAYLOAD SECTION ---
+project_files = {
+    "docs/analysis.md": r'''# Requirement and Option Analysis: Job Command Center
+
+## 1. Project Overview
+The **Job Command Center** is a high-performance, local-first automation suite designed to aggregate and manage LinkedIn job listings. In a market where volume is critical but account safety is paramount, this tool automates the "Discovery" phase while maintaining the stealth of a human operator.
+
+The core objective is to maximize application throughput by automating the search and filtering process. By "piggybacking" on an existing, human-authenticated browser session, the system ensures the user remains in control of their professional reputation while leveraging the power of a modern .NET 9 backend.
+
+## 2. Analyzed Options for Automation
+
+### Option 1: Cloud-Based Scraper (Rejected)
+* **Mechanism**: Headless Chrome instances running in Docker on cloud providers.
+* **Pros**: Scalable, runs 24/7 without local machine power.
+* **Cons**: **Extremely High Risk.** Data center IP ranges and headless fingerprints are trivial for LinkedIn to detect, leading to immediate account flagging or "Security Verification" loops.
+
+### Option 2: Browser Extension (Rejected)
+* **Mechanism**: JavaScript extension injecting content scripts into the LinkedIn DOM.
+* **Pros**: Easy setup; naturally shares the user's session.
+* **Cons**: **Limited Data Sovereignty.** Extensions are constrained by browser sandboxes and storage quotas. Implementing complex scoring engines and high-volume local databases is difficult and leads to performance degradation.
+
+### Option 3: "God Mode" CDP via .NET Aspire (Selected)
+* **Mechanism**: A .NET Worker service connecting to local Chrome via Chrome DevTools Protocol (CDP) on port 9222.
+* **Pros**:
+    * **Maximum Stealth**: Inherits the user's real browser fingerprint, cookies, and history.
+    * **Performance**: .NET 9 provides high-speed processing and robust concurrency.
+    * **Ownership**: Uses a full local PostgreSQL instance for permanent data tracking.
+* **Cons**: Requires the user to launch Chrome with a debug flag (`--remote-debugging-port=9222`).
+
+## 3. Requirement Summary
+| Requirement | Priority | Implementation Strategy |
+| :--- | :--- | :--- |
+| **Account Safety** | Critical | Connect to real Chrome via CDP; no independent logins. |
+| **Data Persistence** | High | PostgreSQL via EF Core for long-term tracking. |
+| **Human Mimicry** | High | Randomized delays and jittery scrolling distributions. |
+| **Scoring Engine** | High | User-defined weight matrix (e.g., Remote = +50pts). |''',
+
+    "docs/implementation_spec.md": r'''# App Implementation Spec: Job Command Center
+
+## 1. Description
+### Overview
+Job Command Center is a local-first platform for aggressive job searching. It utilizes a "God Mode" worker to attach to an existing Chrome session, bypassing advanced bot detection by acting as a co-pilot rather than a standalone agent.
+
+## 2. Requirements
+### Features
+* **God Mode Harvester**: Worker connecting to `localhost:9222` to assumptions control of the LinkedIn tab.
+* **Human-Mimicry Engine**: Uses Gaussian-distributed delays and micro-interactions (mouse jitter) to mask automated patterns.
+* **Relational Pipeline**: PostgreSQL tracking job stages: `Found`, `Scored`, `Pending`, `Applied`, `Interviewing`.
+* **Dynamic Scoring**: Local C# library calculating relevance based on user weights.
+* **Kanban Dashboard**: High-density MudBlazor UI for pipeline management.
+
+### Containerization
+* **PostgreSQL**: Containerized via .NET Aspire (`AddPostgres`).
+* **Harvester**: **NATIVE PROCESS ONLY.** Running in Docker prevents connection to host CDP ports.
+
+## 3. Technology Stack
+* **Language**: C# 12 / .NET 9.0
+* **Orchestration**: .NET Aspire
+* **Automation**: Playwright for .NET
+* **Database**: PostgreSQL with EF Core
+* **UI**: Blazor Server with MudBlazor
+
+## 4. Project Structure
+```text
+/JobCommandCenter
+├── JobCommandCenter.AppHost          # Orchestrator
+├── JobCommandCenter.Data             # EF Core Models & Context
+├── JobCommandCenter.Harvester        # Playwright CDP Worker
+├── JobCommandCenter.Shared           # Scoring & DTOs
+└── JobCommandCenter.Web              # Blazor Management UI
+```''',
+
+    "docs/dev_plan.md": r'''# Job Command Center: Development Plan
+
+## 1. Guiding Principles
+* **Stealth First**: Prioritize account safety over raw scraping speed.
+* **Native Integration**: Use .NET Aspire for a seamless "F5 to develop" experience.
+* **Data Ownership**: The user owns the database and their search history.
+
+## 2. Implementation Phases
+
+### Phase 1: Foundation
+* Scaffold Aspire solution.
+* Implement PostgreSQL schema via EF Core.
+* Build the shared Scoring logic library.
+
+### Phase 2: The Harvester
+* Implement `ConnectOverCDPAsync` logic.
+* Develop "Human Mimicry" algorithms.
+* Implement LinkedIn DOM extraction with robust ARIA locators.
+
+### Phase 3: Command Center UI
+* Build MudBlazor Kanban board.
+* Implement real-time "Live Feed" from Harvester.
+* Create the Scoring Weight editor.
+
+## 3. Risks and Mitigations
+| Risk | Mitigation |
+| :--- | :--- |
+| **Port 9222 Closed** | Implement "Pre-flight Check" with instructions for user. |
+| **LinkedIn DOM Update** | Use text-based locators and centralize selectors in `Shared`. |
+| **Docker Isolation** | Force Harvester to run as a native process in AppHost. |''',
+
+    "web/report.jsx": r'''import React, { useState } from 'react';
+import { Shield, Cpu, Database, Activity, CheckCircle2 } from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('arch');
+  const components = [
+    { name: "Harvester", tech: "Playwright", desc: "Native worker using CDP." },
+    { name: "Web UI", tech: "Blazor Server", desc: "Pipeline dashboard." },
+    { name: "Data", tech: "Postgres", desc: "Local job storage." }
+  ];
+
+  return (
+    <div className="p-8 bg-slate-50 min-h-screen font-sans text-slate-900">
+      <div className="flex items-center gap-3 mb-8">
+        <Shield className="text-blue-600 w-8 h-8" />
+        <h1 className="text-2xl font-bold">Job Command Center Strategy</h1>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {components.map((c, i) => (
+          <div key={i} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-[10px] uppercase font-bold text-blue-500">{c.tech}</span>
+            <h2 className="text-lg font-bold mt-1">{c.name}</h2>
+            <p className="text-sm text-slate-500 mt-2">{c.desc}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default App;'''
+}
+
+def extract_payload():
+    current_file = os.path.basename(__file__)
+    print(f"📦 Unpacking SmartPatch: {current_file}...")
+
+    # --- TYPE 5: Commit Message Extraction ---
+    try:
+        with open(__file__, 'r', encoding='utf-8') as f:
+            content = f.read()
+            import re
+            match = re.search(r'"""(.*?)"""', content, re.DOTALL)
+            if match:
+                msg = match.group(1).strip()
+                # Remove Python headers
+                lines = [l for l in msg.splitlines() if not l.startswith("#!")]
+                clean_msg = "\n".join(lines).strip()
+                with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
+                    msg_file.write(clean_msg)
+                print("   📝 commit_msg.txt extracted.")
+    except Exception as e:
+        print(f"   ⚠️ Could not extract commit message: {e}")
+
+    # --- CORE EXTRACTION ---
+    for filepath, content in project_files.items():
+        dest_path = os.path.join(os.getcwd(), filepath)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        try:
+            with open(dest_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"   ✅ Extracted: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Error extracting {filepath}: {e}")
+
+    # --- TYPE 1: Post-Install Execution ---
+    if 'POST_INSTALL' in globals():
+        print("\n⚙️  Running Workspace Initialization...")
+        cmd = POST_INSTALL.get('nt', POST_INSTALL.get('universal')) if os.name == 'nt' else POST_INSTALL.get('posix', POST_INSTALL.get('universal'))
+        if cmd:
+            try:
+                subprocess.run(cmd, shell=True, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"   ❌ Post-install failed (Code {e.returncode})")
+                sys.exit(e.returncode)
+
+    print("\n✨ Workspace ready! Check commit_msg.txt before your first commit. ✨")
+
+if __name__ == "__main__":
+    extract_payload()
