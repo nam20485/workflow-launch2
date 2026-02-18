@@ -4,5 +4,12 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"python.analysis.typeCheckingMode": "off",
+		"piny.project_settings": {
+			"open-pages": [
+				"pinyfakepage.html"
+			]
+		}
+	}
 }
