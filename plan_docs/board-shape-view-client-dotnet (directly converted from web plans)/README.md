@@ -243,4 +243,4 @@ TBD (same as parent project)
 
 **Last Updated:** January 2025  
 **Document Version:** 1.0  
-**Target .NET Version:** .NET 8.0 LTS or .NET 9.0
+**Target .NET Version:** .NET 8.0 LTS or .NET 10.0

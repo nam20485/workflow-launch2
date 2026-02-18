@@ -10,7 +10,7 @@ The plan is to create a new class of developer tooling designed to provide **obs
 
 The platform will be a modular, multi-process system composed of three main components that work in concert:
 
-1. **Desktop Client (The Hub):** The primary user-facing application built with .NET 9/Avalonia UI. This is the central command center where users will review session data, explore visualizations, and access analytical reports. Its cross-platform nature ensures a consistent experience for all developers, regardless of their operating system.  
+1. **Desktop Client (The Hub):** The primary user-facing application built with .NET 10/Avalonia UI. This is the central command center where users will review session data, explore visualizations, and access analytical reports. Its cross-platform nature ensures a consistent experience for all developers, regardless of their operating system.  
 2. **Local Proxy Service (The Collector):** A background ASP.NET Core service using YARP to intercept and capture API traffic. This service acts as a silent, local network monitor, capturing the raw, unaltered payloads sent to and from the AI assistant's backend. This provides the ground truth for what the AI was given and what it returned, which is essential for deep diagnostics.  
 3. **VS Code Extension (The Instrument):** A lightweight TypeScript extension for deep IDE integration. This component provides the rich, real-time context that logs and network traffic alone cannot, such as the user's current code selection, active file, and other IDE-specific events, streaming this information directly to the Hub.
 
@@ -82,7 +82,7 @@ C\# and TypeScript
 
 ## **Language Version**
 
-.NET 9+
+.NET 10+
 
 ## **Frameworks, Tools, Packages**
 

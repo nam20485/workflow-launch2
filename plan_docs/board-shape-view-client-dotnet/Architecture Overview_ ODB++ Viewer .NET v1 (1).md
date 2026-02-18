@@ -7,13 +7,13 @@ Date: 2025-10-21
 
 This document details the software architecture for the ODB++ Desktop Viewer. The system is designed as a client-server application.
 
-* **Client:** A cross-platform desktop application built with .NET 9 and Avalonia UI. It is responsible for the user interface, interaction, and 3D rendering.  
+* **Client:** A cross-platform desktop application built with .NET 10 and Avalonia UI. It is responsible for the user interface, interaction, and 3D rendering.  
 * **Server:** The existing OdbDesignServer, which parses ODB++ design files and exposes the data through a **gRPC API**.  
 * **Communication:** The client and server communicate over HTTP/2 using **gRPC**, with data payloads serialized as **Protocol Buffers (Protobuf)**. This approach is significantly more performant than REST/JSON as it bypasses an expensive JSON serialization step on the server and a JSON deserialization step on the client. This architecture was specifically chosen to replace a previous REST/JSON implementation, directly targeting and eliminating known performance bottlenecks related to large-scale JSON text processing on both the client and server.
 
 ## **2\. Technology Stack**
 
-* **Core Framework:** .NET 9  
+* **Core Framework:** .NET 10  
 * **UI Framework:** Avalonia UI  
 * **MVVM Framework:** CommunityToolkit.Mvvm  
 * **3D Graphics:** Helix Toolkit for Avalonia  

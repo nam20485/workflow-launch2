@@ -46,7 +46,7 @@ C\#
 
 ## **Language Version**
 
-.NET 9.0 (or latest stable)
+.NET 10.0 (or latest stable)
 
 ## **Frameworks, Tools, Packages**
 

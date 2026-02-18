@@ -15,7 +15,7 @@ This document serves as the master implementation directive for ConvoContentBudd
 ### **Agent Implementation Tasks**
 
 * \[ \] **Task 1.1: Project Initialization**  
-  * Create a .NET 9 solution with Aspire.AppHost and Aspire.ServiceDefaults.  
+  * Create a .NET 10 solution with Aspire.AppHost and Aspire.ServiceDefaults.  
   * Configure AppHost to orchestrate UI.Web (Blazor), API.Brain (ASP.NET Core), Vector.Store (Qdrant), Graph.Store (PostgreSQL), and Redis (SignalR Backplane).  
 * \[ \] **Task 1.2: Resilience Policy Implementation**  
   * In ServiceDefaults, implement a standard HttpResiliencePipeline.  

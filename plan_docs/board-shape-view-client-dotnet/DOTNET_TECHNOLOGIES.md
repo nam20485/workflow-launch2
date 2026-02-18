@@ -7,7 +7,7 @@ This document provides a comprehensive list of .NET technologies, libraries, and
 ## Core Framework
 
 ### .NET Runtime & SDK
-- **.NET 8.0 LTS** (recommended) or **.NET 9.0**
+- **.NET 8.0 LTS** (recommended) or **.NET 10.0**
   - C# 12+ language features
   - Improved performance (PGO, native AOT support)
   - Cross-platform runtime (Windows, Linux, macOS)

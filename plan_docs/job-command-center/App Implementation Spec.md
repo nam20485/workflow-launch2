@@ -6,7 +6,7 @@
 
 The **Job Command Center** is a high-performance, local-first automation platform engineered for aggressive yet stealthy job searching on LinkedIn. In an era where LinkedIn employs sophisticated behavioral analysis and fingerprinting to block automated agents, this application adopts a "God Mode" architecture. Instead of launching a fresh, suspicious browser instance, it attaches to an existing, human-authenticated user session via the **Chrome DevTools Protocol (CDP)**.
 
-By leveraging a browser that is already logged in, has a consistent history, and possesses a legitimate hardware fingerprint, the application effectively "co-pilots" the user's search. This approach prioritizes **Account Safety** above all else, ensuring that the automation is virtually indistinguishable from manual browsing while providing the data-processing power of a modern .NET 9 backend.
+By leveraging a browser that is already logged in, has a consistent history, and possesses a legitimate hardware fingerprint, the application effectively "co-pilots" the user's search. This approach prioritizes **Account Safety** above all else, ensuring that the automation is virtually indistinguishable from manual browsing while providing the data-processing power of a modern .NET 10 backend.
 
 ### **Document Links**
 
@@ -59,7 +59,7 @@ By leveraging a browser that is already logged in, has a consistent history, and
 
 ## **3\. Technology Stack**
 
-* **Language**: C\# 12 / .NET 9.0 (Utilizing performance-oriented LINQ features).  
+* **Language**: C\# 12 / .NET 10.0 (Utilizing performance-oriented LINQ features).  
 * **Orchestration**: **.NET Aspire** (The "glue" that connects the DB, UI, and Worker).  
 * **Automation**: **Playwright for .NET** (The industry standard for reliable browser automation).  
 * **Frontend**: **Blazor Server** (Chosen to allow direct DB access via EF Core without the overhead of a REST API for local usage).  

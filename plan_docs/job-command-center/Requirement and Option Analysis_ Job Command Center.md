@@ -32,7 +32,7 @@ To determine the most effective path forward, we evaluated three distinct archit
 * **Mechanism**: A native .NET Worker service that connects to a running instance of Chrome via the **Chrome DevTools Protocol (CDP)** on port 9222\.  
 * **Pros**:  
   * **Maximum Stealth**: This is the "God Mode" approach. Because the automation attaches to a browser window the user is already using, it inherits all existing cookies, session headers, and the legitimate hardware fingerprint of the host machine. To LinkedIn, the automation is indistinguishable from the user's manual actions.  
-  * **Developer Velocity & Performance**: Leveraging **.NET 9** allows for high-speed data processing, advanced scoring logic, and robust error handling. Using **.NET Aspire** simplifies the orchestration of the database and the harvester.  
+  * **Developer Velocity & Performance**: Leveraging **.NET 10** allows for high-speed data processing, advanced scoring logic, and robust error handling. Using **.NET Aspire** simplifies the orchestration of the database and the harvester.  
   * **Local Data Ownership**: By using a full **PostgreSQL** instance managed locally, the user has total control over their data. This allows for complex SQL queries to identify trends, salary ranges, and historical patterns that are impossible with ephemeral tools.  
 * **Cons**: Requires a minor amount of user setup (launching Chrome with the \--remote-debugging-port=9222 flag), which introduces a slight friction point during initial installation.
 
