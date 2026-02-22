@@ -90,10 +90,17 @@ The architecture spans four distinct layers:
 
 ## **Document Links**
 
-* Architecture & Roadmap Guidelines (Internal)  
-* [Semantic Kernel .NET Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)  
-* [.NET 10 Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)  
-* [Qdrant gRPC C\# Client Documentation](https://qdrant.tech/documentation/concepts/vectors/)
+### Project Documents
+
+* [ConvoContentBuddy: Comprehensive Agent Development Roadmap](./ConvoContentBuddy_%20Comprehensive%20Agent%20Development%20Roadmap.md)
+* [ConvoContentBuddy: Implementation TODO List](./ConvoContentBuddy_%20Implementation%20TODO%20List.md)
+* [ConvoContentBuddy: Technical Design Document](./ConvoContentBuddy_%20Technical%20Design%20Document.md)
+
+### External Documentation
+
+* [Semantic Kernel .NET Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
+* [.NET 10 Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
+* [Qdrant gRPC C# Client Documentation](https://qdrant.tech/documentation/concepts/vectors/)
 
 ## **Requirements**
 
