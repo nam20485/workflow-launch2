@@ -26,8 +26,8 @@ We evaluated several options before arriving at our chosen architecture:
 
 * **Language:** \[e.g., C\#, Python, TypeScript\]  
   * **Rationale:** \[Justify the choice. e.g., "C\# was chosen for its strong typing, performance, and mature ecosystem, making it ideal for building reliable and maintainable desktop applications."\]  
-* **Framework:** \[e.g., .NET 9, ASP.NET Core, React\]  
-  * **Rationale:** \[Justify the choice. e.g., ".NET 9 provides the modern, high-performance, and cross-platform foundation for the entire application."\]  
+* **Framework:** \[e.g., .NET 10, ASP.NET Core, React\]  
+  * **Rationale:** \[Justify the choice. e.g., ".NET 10 provides the modern, high-performance, and cross-platform foundation for the entire application."\]  
 * **UI Framework:** \[e.g., Avalonia, MAUI, React\]  
   * **Rationale:** \[Justify the choice. e.g., "Avalonia was selected for its true cross-platform capabilities, allowing a single C\# codebase to produce native applications for Windows, macOS, and Linux."\]  
 * **Default Theme:** \[e.g., Fluent UI, Material Design\]  

@@ -25,7 +25,7 @@ We evaluated three primary options:
 ## **3\. Core Technologies**
 
 * **Language:** C\# \- Chosen for its strong typing, performance, and mature ecosystem, making it ideal for building reliable and maintainable desktop applications.  
-* **Framework:** .NET (latest stable version, e.g., .NET 9\) \- Provides the modern, cross-platform foundation for the entire application.  
+* **Framework:** .NET (latest stable version, e.g., .NET 10\) \- Provides the modern, cross-platform foundation for the entire application.  
 * **UI Framework:** Avalonia \- Selected for its true cross-platform capabilities, allowing a single C\# codebase to produce native applications for Windows, macOS, and Linux. Its adherence to modern UI patterns and the MVVM paradigm makes it a powerful choice.  
 * **Default Theme:** Fluent UI for Avalonia \- This will be used to ensure a modern, clean, and professional aesthetic that feels native on Windows and looks great on other platforms.  
 * **Architectural Pattern:** Model-View-ViewModel (MVVM) \- Enforces a strict separation of concerns between the UI (View) and the application logic and state (ViewModel), which is critical for testability and maintainability.  

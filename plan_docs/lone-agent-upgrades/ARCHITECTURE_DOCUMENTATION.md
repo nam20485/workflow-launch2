@@ -19,14 +19,14 @@
 **Project Name:** DotnetAgents  
 **Repository:** https://github.com/intel-agency/DotnetAgents  
 **Branch:** lone-agent  
-**Target Framework:** .NET 9  
+**Target Framework:** .NET 10  
 **Architecture:** Aspire-based microservices with Blazor frontend  
 
 ### Purpose
 A distributed AI agent system that executes long-running tasks using a Think→Act loop pattern. The system queues tasks, processes them asynchronously via background workers, and provides real-time monitoring capabilities.
 
 ### Key Technologies
-- **.NET 9** - Latest framework features
+- **.NET 10** - Latest framework features
 - **ASP.NET Core Minimal APIs** - Lightweight API endpoints
 - **Blazor Server** - Interactive web UI
 - **Entity Framework Core** - ORM for PostgreSQL
@@ -835,7 +835,7 @@ Response: 200 OK
 ## 📚 References & Resources
 
 ### Official Documentation
-- [.NET 9 Documentation](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-9)
+- [.NET 10 Documentation](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10)
 - [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/)
 - [ASP.NET Core Minimal APIs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis)
 - [Blazor Server](https://learn.microsoft.com/en-us/aspnet/core/blazor/)
@@ -854,7 +854,7 @@ Response: 200 OK
 ## 🎯 Quick Start Guide
 
 ### Prerequisites
-- .NET 9 SDK
+- .NET 10 SDK
 - Docker Desktop (for PostgreSQL & Redis)
 - Visual Studio 2022 or VS Code
 - Git

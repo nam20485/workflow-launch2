@@ -24,7 +24,7 @@ Component the epic lives in.
 
 *(Technology specific to this epic and its component.)*
 
-- Language: [e.g., C# .NET 9.0]
+- Language: [e.g., C# .NET 10.0]
 - UI Framework: [e.g., Avalonia/Blazor/etc.]
 - AI/Runtime: [e.g., ONNX Runtime / Azure OpenAI / etc.]
 - Architecture: [e.g., RAG / MCP / Microservices]

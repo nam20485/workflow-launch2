@@ -17,7 +17,7 @@ This architecture allows the application to "fly under the radar" by leveraging 
 1. **Maximum Stealth ("God Mode"):** The primary driver is account safety. The automation must operate within an existing, human-used browser context, not a fresh, clean-slate bot instance.  
 2. **Local Sovereignty:** All data (job listings, notes, status tracking) must reside in a local database (or user-controlled cloud DB), ensuring the user owns their pipeline data.  
 3. **Unified Orchestration:** The system must run as a cohesive unit. The database, background harvesters, and frontend UI should launch together and share configuration seamlessly.  
-4. **Type Safety & Ecosystem:** The entire stack (Orchestration, UI, Automation, Database Access) must leverage .NET 9 and C\# to maximize code sharing and developer velocity.
+4. **Type Safety & Ecosystem:** The entire stack (Orchestration, UI, Automation, Database Access) must leverage .NET 10 and C\# to maximize code sharing and developer velocity.
 
 ## **3\. System Architecture**
 
@@ -59,7 +59,7 @@ graph TD
 
 #### **C. The Command Center (ProfileGenie.Web)**
 
-* **Technology:** Blazor Server (.NET 9\)  
+* **Technology:** Blazor Server (.NET 10\)  
 * **Responsibility:**  
   * **Dashboard:** Kanban-style view of the job pipeline.  
   * **Scoring Engine:** Calculates job scores based on a user-defined matrix (e.g., Remote \+15pts, Pay \> $100 \+20pts).  

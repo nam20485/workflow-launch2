@@ -7,7 +7,7 @@
 Description  
 A cross-platform native desktop application for Windows, macOS, and Linux. It is designed to provide high-performance, interactive 2D/3D visualization of ODB++ (Open Database++) design data for printed circuit boards (PCBs).  
 Overview  
-The application is a .NET 9.0 client built using the Avalonia UI framework. It functions as a modern, high-performance front-end for the existing OdbDesignServer backend, replacing a previous REST/JSON web client.  
+The application is a .NET 10.0 client built using the Avalonia UI framework. It functions as a modern, high-performance front-end for the existing OdbDesignServer backend, replacing a previous REST/JSON web client.  
 The primary business driver is to provide a superior user experience with significant performance gains in rendering and, crucially, the ability to work with "extremely large design files that are infeasible for a browser environment".
 
 Communication with the backend is handled exclusively via a high-performance gRPC API over HTTP/2, with data payloads serialized using Protocol Buffers (Protobuf). This approach avoids the performance bottlenecks of JSON serialization/deserialization on large datasets.
@@ -102,11 +102,11 @@ The project is broken into three main delivery milestones:
 
 **Include global.json? sdk: "9.0.0" rollwForward: "latestFeature"**
 
-* Yes (Based on template structure and the explicit .NET 9.0 requirement).
+* Yes (Based on template structure and the explicit .NET 10.0 requirement).
 
 ### **Frameworks, Tools, Packages**
 
-* **Core Framework:** .NET 9  
+* **Core Framework:** .NET 10  
 * **UI Framework:** Avalonia UI  
 * **MVVM Framework:** CommunityToolkit.Mvvm  
 * **3D Graphics:** Helix Toolkit for Avalonia (HelixToolkit.Avalonia)  
@@ -119,7 +119,7 @@ The project is broken into three main delivery milestones:
 
 ### **Project Structure/Package System**
 
-* **Solution:** A single .NET 9.0 solution.  
+* **Solution:** A single .NET 10.0 solution.  
 * **Package Management:** A shared Directory.Build.props file will be used to manage common NuGet package versions and project properties across the solution.  
 * **Core Projects:**  
   * .Desktop: The main Avalonia project (UI layer).  
@@ -140,7 +140,7 @@ Branch
 (Not specified in the provided documents.)  
 **Deliverables**
 
-* All source code for the .NET 9 Avalonia application, structured in the MVVM pattern as described.  
+* All source code for the .NET 10 Avalonia application, structured in the MVVM pattern as described.  
 * A configured GitHub Actions CI/CD workflow that automatically builds, runs unit tests, and packages the application for Windows, macOS, and Linux.  
 * Signed, native, production-ready installers:  
   * **Windows:** MSIX package  

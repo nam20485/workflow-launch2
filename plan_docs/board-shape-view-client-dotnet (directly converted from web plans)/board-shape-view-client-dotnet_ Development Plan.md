@@ -258,7 +258,7 @@ The goal of this phase is to build the absolute core of the application: project
 ## **7. Development Environment & Tooling**
 
 ### **Required Software**
-* **.NET 8 SDK** (or .NET 9 for latest features)
+* **.NET 8 SDK** (or .NET 10 for latest features)
 * **Visual Studio 2022** (Windows) with .NET desktop workload
 * **JetBrrains Rider** (cross-platform, excellent Avalonia support)
 * **VS Code** with C# Dev Kit (lightweight alternative)

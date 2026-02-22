@@ -11,7 +11,7 @@
 **Guiding Principles:**
 
 1. **Stealth First:** The automation must never behave in a way that flags the account. This means prioritizing "Human" delays and utilizing the user's real browser session (CDP) over headless browsers.  
-2. **Native Integration:** The system leverages the .NET ecosystem (.NET 9, Aspire, Blazor) to provide a robust, type-safe, and high-performance experience that runs locally on the user's machine.  
+2. **Native Integration:** The system leverages the .NET ecosystem (.NET 10, Aspire, Blazor) to provide a robust, type-safe, and high-performance experience that runs locally on the user's machine.  
 3. **Data Ownership:** Users own their pipeline. All data is stored in a structured SQL database (PostgreSQL), allowing for complex querying and long-term history tracking, unlike ephemeral browser extensions.
 
 ## **2\. Architectural Decisions**
@@ -25,7 +25,7 @@ We have selected the following architecture to meet our Stealth and Performance 
 ## **3\. Core Technologies**
 
 * **Language:** C\# 12  
-* **Framework:** .NET 9 (Aspire)  
+* **Framework:** .NET 10 (Aspire)  
 * **UI Framework:** Blazor Server (Bootstrap/Tailwind styling)  
 * **Automation:** Microsoft.Playwright (via CDP)  
 * **Database:** PostgreSQL (via Entity Framework Core)  

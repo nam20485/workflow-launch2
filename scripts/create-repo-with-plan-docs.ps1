@@ -430,6 +430,7 @@ try
 		# Create repo secrets needed for agent auth
 		#New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
 		New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'GEMINI_API_KEY'
+		# New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'ZHIPU_API_KEY'
 		# need to add repository variables
 		#VERSION_PREFIX = '0.0.1'
 		New-RepoVariable -Owner $Owner -RepoName $repoName -VariableName 'VERSION_PREFIX' -VariableValue '0.0.1'

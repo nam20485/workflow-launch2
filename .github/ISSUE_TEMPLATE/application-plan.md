@@ -15,7 +15,7 @@ Provide a concise summary of the application, the problem it solves, the desired
 - [Goal 2]
 
 ## Technology Stack
-- Language: [e.g., C# .NET 9.0]
+- Language: [e.g., C# .NET 10.0]
 - UI Framework: [e.g., Avalonia/Blazor/etc.]
 - AI/Runtime: [e.g., ONNX Runtime / Azure OpenAI / etc.]
 - Architecture: [e.g., RAG / MCP / Microservices]

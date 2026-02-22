@@ -6,7 +6,7 @@ Project Lead: \[Lead Name\]
 
 ## **1\. Project Summary**
 
-This document outlines the development plan for the ODB++ Desktop Viewer, a cross-platform application for Windows, macOS, and Linux built with Avalonia and .NET 9.0. This plan details the features, architecture, and development phases required to deliver a native desktop client that interfaces with the existing OdbDesignServer backend via a high-performance gRPC API. The primary business driver for this project is to provide a superior user experience over the existing web client, offering significant performance gains in rendering, native OS integrations (like file associations), and the ability to work with extremely large design files that are infeasible for a browser environment.
+This document outlines the development plan for the ODB++ Desktop Viewer, a cross-platform application for Windows, macOS, and Linux built with Avalonia and .NET 10.0. This plan details the features, architecture, and development phases required to deliver a native desktop client that interfaces with the existing OdbDesignServer backend via a high-performance gRPC API. The primary business driver for this project is to provide a superior user experience over the existing web client, offering significant performance gains in rendering, native OS integrations (like file associations), and the ability to work with extremely large design files that are infeasible for a browser environment.
 
 **Primary Goal:** To develop a high-performance, cross-platform desktop application providing interactive 2D/3D visualization of ODB++ design data, focusing on delivering features in distinct, value-driven phases. This application will serve as the premier tool for engineers requiring detailed, fluid, and reliable inspection of complex PCB layouts.
 
@@ -26,7 +26,7 @@ This plan should be read in conjunction with the **Architecture Overview: ODB++ 
 
 * **Goal:** Establish a solid, scalable, and maintainable foundation for the .NET project with the correct gRPC toolchain and CI/CD pipeline.  
 * **Tasks:**  
-  * **Solution Setup:** Create a new .NET 9.0 solution with a shared Directory.Build.props file to manage common package versions and project properties.  
+  * **Solution Setup:** Create a new .NET 10.0 solution with a shared Directory.Build.props file to manage common package versions and project properties.  
   * **Project Scaffolding:** Add a main Avalonia project (.Desktop), a core project for business logic (.Core), and a unit test project (.Tests).  
   * **Dependency Management:** Add NuGet packages: CommunityToolkit.Mvvm, HelixToolkit.Avalonia, NetTopologySuite, MathNet.Numerics, Serilog, **Grpc.Net.Client**, **Google.Protobuf**, and **Grpc.Tools**.  
   * **Protobuf Setup:** Integrate the shared .proto file into the .Core project. Configure Grpc.Tools to auto-generate the C\# client stub and message classes, ensuring generated files are correctly namespaced.  
