@@ -225,7 +225,9 @@ function New-RepoVariable
 	}
 }
 
-$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
+#$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
+$TEMPLATE = 'intel-agency/ai-new-workflow-app-template' # Template repository for new repos
+$TEMPLATE_REPO_NAME = 'ai-new-workflow-app-template' # Template repository name for new repos
 function New-GitHubRepository
 {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
@@ -458,12 +460,12 @@ try
 		$launch = Read-Host 'Launch editor? (y/N)'
 		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
 		{
-			code-insiders (Join-Path $lastClonePath 'ai-new-app-template.code-workspace')
+			code-insiders (Join-Path $lastClonePath "$TEMPLATE_REPO_NAME.code-workspace")
 		}
 	}
 	else
 	{
-		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath 'ai-new-app-template.code-workspace') }
+		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath "$TEMPLATE_REPO_NAME.code-workspace") }
 	}
 
 }
