@@ -53,36 +53,42 @@ Requires GitHub CLI (`gh`) and Git. Authenticate with `gh auth login` before run
 
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
-	[Parameter(Mandatory, HelpMessage = 'Base repository name (prefix).')]
+	[Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Base repository name (prefix).')]
+	[Parameter(Mandatory, ParameterSetName = 'ReplaceOnly', HelpMessage = 'Final repository name to substitute for the template placeholder.')]
 	[ValidatePattern('^[A-Za-z0-9_.-]+$')]
 	[string]$RepoName,
 
-	[Parameter()]
+	[Parameter(ParameterSetName = 'Create')]
 	[ValidateNotNullOrEmpty()]
 	[string]$Owner = 'nam20485',
 
-	[Parameter(Mandatory, HelpMessage = 'Directory containing plan docs to copy.')]
+	[Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Directory containing plan docs to copy.')]
 	[ValidateNotNullOrEmpty()]
 	[string]$PlanDocsDir,
 
-	[Parameter(Mandatory, HelpMessage = 'Parent directory to clone into.')]
+	[Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Parent directory to clone into.')]
 	[ValidateNotNullOrEmpty()]
 	[string]$CloneParentDir,
 
-	[Parameter(HelpMessage = 'Repository visibility: public or private')]
+	[Parameter(Mandatory, ParameterSetName = 'ReplaceOnly', HelpMessage = 'Existing repository root to update and validate locally.')]
+	[ValidateNotNullOrEmpty()]
+	[string]$ExistingRepoRoot,
+
+	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Repository visibility: public or private')]
 	[ValidateSet('public', 'private')]
 	[string]$Visibility = 'private',
 
-	[Parameter(HelpMessage = 'Dry run, don''t make any changes.')]
+	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Dry run, don''t make any changes.')]
+	[Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Dry run, don''t make any changes.')]
 	[switch]$DryRun,
 
-	[Parameter(HelpMessage = 'Assume yes for all prompts')]
+	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Assume yes for all prompts')]
 	[switch]$Yes,
 
-	[Parameter(HelpMessage = 'Launch editor with workspace from new repo after creation')]
+	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Launch editor with workspace from new repo after creation')]
 	[switch]$LaunchEditor,
 
-	[Parameter(HelpMessage = 'How many repositories to create from the slug and plan docs.')]
+	[Parameter(ParameterSetName = 'Create', HelpMessage = 'How many repositories to create from the slug and plan docs.')]
 	[ValidateScript({ $_ -ge 1 })]
 	[int]$Count = 1
 )
@@ -228,6 +234,137 @@ function New-RepoVariable
 #$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 $TEMPLATE = 'intel-agency/ai-new-workflow-app-template' # Template repository for new repos
 $TEMPLATE_REPO_NAME = 'ai-new-workflow-app-template' # Template repository name for new repos
+
+function Get-TemplatePlaceholderMatches
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory)][string]$RepoRoot,
+		[Parameter(Mandatory)][string]$TemplateText
+	)
+
+	$templatePattern = [regex]::Escape($TemplateText)
+	$placeholderMatches = New-Object System.Collections.Generic.List[object]
+
+	foreach ($path in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
+		$_.FullName -notmatch '[/\\]\.git([/\\]|$)' -and $_.Name -match $templatePattern
+	}))
+	{
+		$placeholderMatches.Add([PSCustomObject]@{
+			MatchType = 'Path'
+			Path = $path.FullName
+		})
+	}
+
+	foreach ($file in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
+		$_.FullName -notmatch '[/\\]\.git([/\\]|$)'
+	}))
+	{
+		try
+		{
+			$content = [System.IO.File]::ReadAllText($file.FullName)
+		}
+		catch
+		{
+			Write-Verbose "Skipping unreadable file during placeholder scan: $($file.FullName)"
+			continue
+		}
+
+		if ($content -match $templatePattern)
+		{
+			$placeholderMatches.Add([PSCustomObject]@{
+				MatchType = 'Content'
+				Path = $file.FullName
+			})
+		}
+	}
+
+	return $placeholderMatches.ToArray()
+}
+
+function Update-TemplatePlaceholders
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory)][string]$RepoRoot,
+		[Parameter(Mandatory)][string]$TemplateText,
+		[Parameter(Mandatory)][string]$ReplacementText
+	)
+
+	$templatePattern = [regex]::Escape($TemplateText)
+	$templatePaths = Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
+		$_.FullName -notmatch '[/\\]\.git([/\\]|$)' -and $_.Name -match $templatePattern
+	}
+
+	foreach ($file in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
+		$_.FullName -notmatch '[/\\]\.git([/\\]|$)'
+	}))
+	{
+		try
+		{
+			$content = [System.IO.File]::ReadAllText($file.FullName)
+		}
+		catch
+		{
+			Write-Verbose "Skipping unreadable file during placeholder replacement: $($file.FullName)"
+			continue
+		}
+
+		if ($content -notmatch $templatePattern)
+		{
+			continue
+		}
+
+		$newContent = $content -replace $templatePattern, $ReplacementText
+		Write-Verbose "Updating template text in file: $($file.FullName)"
+		if ($DryRun)
+		{
+			Write-Verbose "[dry-run] Would replace template text in: $($file.FullName)"
+		}
+		else
+		{
+			[System.IO.File]::WriteAllText($file.FullName, $newContent)
+		}
+	}
+
+	foreach ($path in ($templatePaths | Sort-Object { $_.FullName.Length } -Descending))
+	{
+		$newName = $path.Name -replace $templatePattern, $ReplacementText
+		$newPath = Join-Path $path.DirectoryName $newName
+		Write-Verbose "Renaming template path: $($path.FullName) -> $newPath"
+		if ($DryRun)
+		{
+			Write-Verbose "[dry-run] Would rename: $($path.FullName) -> $newPath"
+		}
+		else
+		{
+			Rename-Item -LiteralPath $path.FullName -NewName $newName | Out-Null
+		}
+	}
+}
+
+function Assert-NoTemplatePlaceholdersRemaining
+{
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory)][string]$RepoRoot,
+		[Parameter(Mandatory)][string]$TemplateText
+	)
+
+	$remainingMatches = @(Get-TemplatePlaceholderMatches -RepoRoot $RepoRoot -TemplateText $TemplateText)
+	if ($remainingMatches.Count -eq 0)
+	{
+		Write-Verbose "Verified no remaining template placeholders under: $RepoRoot"
+		return
+	}
+
+	$matchSummary = $remainingMatches |
+		Select-Object -First 20 |
+		ForEach-Object { "- [$($_.MatchType)] $($_.Path)" }
+
+	throw "Template placeholder replacement incomplete. Remaining matches:`n$($matchSummary -join "`n")"
+}
+
 function New-GitHubRepository
 {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
@@ -297,7 +434,10 @@ function Copy-PlanDocs
 function Invoke-GitCommitAndPush
 {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
-	param([Parameter(Mandatory)][string]$RepoRoot)
+	param(
+		[Parameter(Mandatory)][string]$RepoRoot,
+		[Parameter(Mandatory)][string]$CommitMessage
+	)
 	# Ensure we're on a valid branch (handle unborn HEAD in freshly created repos)
 	$hasHead = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'rev-parse', '--verify', 'HEAD') -AllowFail
 	if ($hasHead.ExitCode -ne 0)
@@ -312,7 +452,7 @@ function Invoke-GitCommitAndPush
 	}
 
 	Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'add', '.') | Out-Null
-	$commit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit', '-m', 'Add plan docs') -AllowFail
+	$commit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'commit', '-m', $CommitMessage) -AllowFail
 	if ($commit.ExitCode -ne 0)
 	{
 		$msg = ($commit.Output -join ' ')
@@ -361,6 +501,14 @@ $docsDir = 'plan_docs'
 
 try
 {
+	if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly')
+	{
+		$resolvedRepoRoot = (Resolve-Path -LiteralPath $ExistingRepoRoot).Path
+		Update-TemplatePlaceholders -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $RepoName
+		Assert-NoTemplatePlaceholdersRemaining -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME
+		Write-Output "SUCCESS: template placeholders replaced and validated in '$resolvedRepoRoot'"
+		return
+	}
 
 	# Preconditions
 	Test-ToolExists 'git'
@@ -447,8 +595,13 @@ try
 		Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
 		Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath\$docsDir"
 
+		# Replace template placeholders in file contents and path names
+		Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
+		Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+
 		# Commit and push
-		Invoke-GitCommitAndPush -RepoRoot $clonePath
+		$seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
+		Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
 		Write-Verbose 'Changes committed and pushed'
 
 		# Output clone destination path
@@ -460,12 +613,12 @@ try
 		$launch = Read-Host 'Launch editor? (y/N)'
 		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
 		{
-			code-insiders (Join-Path $lastClonePath "$TEMPLATE_REPO_NAME.code-workspace")
+			code-insiders (Join-Path $lastClonePath "$($repoNames[-1]).code-workspace")
 		}
 	}
 	else
 	{
-		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath "$TEMPLATE_REPO_NAME.code-workspace") }
+		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath "$($repoNames[-1]).code-workspace") }
 	}
 
 }
