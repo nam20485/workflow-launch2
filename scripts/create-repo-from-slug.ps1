@@ -6,7 +6,7 @@ param(
     
     [Parameter(HelpMessage = 'Repository visibility: public or private')]
     [ValidateSet('public', 'private')]
-    [string]$Visibility = 'private',
+    [string]$Visibility = 'public',
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]

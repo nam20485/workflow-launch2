@@ -15,7 +15,7 @@ remote mutations.
 Base repository name (prefix). A random suffix is appended to form the final repo name.
 
 .PARAMETER Owner
-GitHub organization or user that will own the repository. Default: nam20485
+GitHub organization or user that will own the repository. Default: intel-agency
 
 .PARAMETER PlanDocsDir
 Path to the directory containing plan docs to copy into the new repo's plan_docs/ folder.
@@ -51,6 +51,9 @@ System.String. The absolute clone destination path of the created repository.
 Requires GitHub CLI (`gh`) and Git. Authenticate with `gh auth login` before running.
 #>
 
+$DEFAULT_REPO_OWNER = 'intel-agency'
+$DEFAULT_VISIBILITY = 'public'
+
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
 	[Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Base repository name (prefix).')]
@@ -60,7 +63,7 @@ param(
 
 	[Parameter(ParameterSetName = 'Create')]
 	[ValidateNotNullOrEmpty()]
-	[string]$Owner = 'nam20485',
+	[string]$Owner = $DEFAULT_REPO_OWNER,
 
 	[Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Directory containing plan docs to copy.')]
 	[ValidateNotNullOrEmpty()]
@@ -76,7 +79,7 @@ param(
 
 	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Repository visibility: public or private')]
 	[ValidateSet('public', 'private')]
-	[string]$Visibility = 'private',
+	[string]$Visibility = $DEFAULT_VISIBILITY,
 
 	[Parameter(ParameterSetName = 'Create', HelpMessage = 'Dry run, don''t make any changes.')]
 	[Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Dry run, don''t make any changes.')]
