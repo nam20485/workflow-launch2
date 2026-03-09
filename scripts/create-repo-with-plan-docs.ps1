@@ -234,6 +234,7 @@ function New-RepoVariable
 #$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 $TEMPLATE = 'intel-agency/ai-new-workflow-app-template' # Template repository for new repos
 $TEMPLATE_REPO_NAME = 'ai-new-workflow-app-template' # Template repository name for new repos
+$TEMPLATE_OWNER = $TEMPLATE.Split('/')[0] # Template repository owner (extracted from $TEMPLATE)
 
 function Get-TemplatePlaceholderMatches
 {
@@ -510,6 +511,9 @@ try
         return
     }
 
+    # Derive the owner to use for image/registry references
+    $TEMPLATE_OWNER_LOWER = $TEMPLATE_OWNER.ToLower()
+
     # Preconditions
     Test-ToolExists 'git'
     Test-ToolExists 'gh'
@@ -597,6 +601,14 @@ try
         # Replace template placeholders in file contents and path names
         Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+
+        # Replace template owner in image/registry references (e.g. ghcr.io/intel-agency/... -> ghcr.io/nam20485/...)
+        $ownerLower = $Owner.ToLower()
+        if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
+        {
+            Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
+            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
+        }
 
         $workspacePath = Join-Path $clonePath "$repoName.code-workspace"
         if (Test-Path -LiteralPath $workspacePath -PathType Leaf)
