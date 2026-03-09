@@ -5,9 +5,26 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "PowerShell: Launch Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "args": [],
+      "cwd": "${fileDirname}"
+    },
+    {
+      "name": "PowerShell: Launch create-repo-from-slug.ps1 with some args to validate",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${workspaceFolder}/scripts/create-repo-from-slug.ps1",
+      "args": ["-Slug convo-content-buddy -Visibility public -Yes -Debug"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "PowerShell: Interactive Session",
       "type": "PowerShell",
-      "request": "launch"
+      "request": "launch",
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

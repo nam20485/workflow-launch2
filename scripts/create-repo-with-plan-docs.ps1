@@ -568,7 +568,7 @@ try
 
 	Write-Verbose "Chosen repository names: $($repoNames -join ', ')"
 
-	$lastClonePath = $null
+	$lastEditorTarget = $null
 	foreach ($repoName in $repoNames)
 	{
 		Write-Verbose "Creating repository: $Owner/$repoName"
@@ -587,7 +587,6 @@ try
 		Write-Verbose "Repository secrets and variables created for $Owner/$repoName"
 
 		$clonePath = Get-ClonePath -Parent $CloneParentDir -Name $repoName
-		$lastClonePath = $clonePath
 		Invoke-GitClone -Owner $Owner -Name $repoName -Dest $clonePath
 		Write-Verbose "Repository cloned: $clonePath"
 
@@ -598,6 +597,17 @@ try
 		# Replace template placeholders in file contents and path names
 		Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
 		Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+
+		$workspacePath = Join-Path $clonePath "$repoName.code-workspace"
+		if (Test-Path -LiteralPath $workspacePath -PathType Leaf)
+		{
+			$lastEditorTarget = $workspacePath
+		}
+		else
+		{
+			Write-Verbose "Expected workspace file not found, opening repo folder instead: $workspacePath"
+			$lastEditorTarget = $clonePath
+		}
 
 		# Commit and push
 		$seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
@@ -613,12 +623,12 @@ try
 		$launch = Read-Host 'Launch editor? (y/N)'
 		if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
 		{
-			code-insiders (Join-Path $lastClonePath "$($repoNames[-1]).code-workspace")
+			code-insiders $lastEditorTarget
 		}
 	}
 	else
 	{
-		if ($LaunchEditor -and $lastClonePath) { code-insiders (Join-Path $lastClonePath "$($repoNames[-1]).code-workspace") }
+		if ($LaunchEditor -and $lastEditorTarget) { code-insiders $lastEditorTarget }
 	}
 
 }
