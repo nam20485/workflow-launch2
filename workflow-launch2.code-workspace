@@ -10,6 +10,7 @@
 			"open-pages": [
 				"pinyfakepage.html"
 			]
-		}
+		},
+		"opencodegraph.enable": true
 	}
 }

@@ -1,0 +1,380 @@
+Research Document: The 'Polyglot' Agent
+This document outlines the design and implementation of 'Polyglot', an autonomous agent system engineered to connect to, integrate, and operate on disparate datasets, including those with unknown or partially known formats.
+
+Research plan
+Gemini replied
+1. Introduction
+In the modern data landscape, organizations are frequently faced with the challenge of integrating data from a multitude of sources. These sources, ranging from structured databases and REST APIs to semi-structured files like CSVs and real-time data streams, often lack clear documentation, standardized formats, or unified access methods. The manual process of inspecting, understanding, and writing custom code to integrate each new data source is time-consuming, error-prone, and a significant barrier to data-driven decision-making.
+
+The 'Polyglot' agent is proposed as a solution to this challenge. It is an intelligent, autonomous system designed to navigate this complexity. Given access to one or more separate datasets, Polyglot's primary directive is to autonomously inspect the data and its interface, deduce the format and access methods, and subsequently enable unified operations such as combined queries and searching. This capability transforms fragmented, opaque data silos into a cohesive, queryable resource, allowing users to interact with them as if they were a single, unified database.
+
+Key Capabilities:
+
+Autonomous Connection: Establishes connections to data sources via various protocols, including HTTP/S, JDBC/ODBC, and real-time streams like WebSockets or Apache Kafka.
+
+Intelligent Discovery & Inspection: Probes interfaces and analyzes data content to infer structure, data types, and formats without prior knowledge, even for undocumented REST APIs and unstructured tabular files.
+
+Automated Schema Inference & Refinement: Generates a representative schema for each data source and iteratively refines it by learning from data validation errors, using frameworks like Pydantic.
+
+Semantic Data Mapping & Normalization: Identifies relationships between datasets and automatically normalizes heterogeneous data like varying date formats, units of measurement, and categorical values.
+
+Federated Querying: Allows users to execute a single, SQL-like query that retrieves and combines data from multiple, heterogeneous sources, including both static and streaming data.
+
+2. Core Design Principles
+The architecture of Polyglot is founded on a set of core principles that ensure its effectiveness and robustness.
+
+Autonomy: Polyglot is designed to operate with minimal human intervention. Once provided with initial entry points, it should independently manage the entire process of inspection, schema generation, and query preparation.
+
+Adaptability: The agent must be inherently flexible. Its design anticipates a wide variety of data formats (JSON, XML, CSV, Parquet), data types, and interface patterns (REST APIs, SQL databases, streaming platforms). It should not be hardcoded to specific, known structures.
+
+Extensibility: The architecture is modular, allowing for future expansion. New modules for supporting additional data formats, communication protocols, or more advanced analytical techniques can be integrated without redesigning the core system.
+
+Semantic Understanding: Polyglot aims to move beyond simple syntactic analysis. The goal is not just to identify a column of dates, but to understand the format of those dates (e.g., ISO 8601 vs. MM/DD/YYYY) and to identify semantically similar fields across datasets (e.g., cust_id and user_id) for effective integration.
+
+3. System Architecture
+Polyglot's architecture is best realized as a distributed network of specialized microservices, where each agent or module runs in its own container (e.g., using Docker). This service-oriented approach promotes modularity, scalability, and true polyglot development, allowing different services to be written in the most suitable language. Communication between agents is handled via well-defined APIs, typically REST or gRPC.
+
+At the center of this system is the Orchestrator, the "brain" of the system that manages the workflow and coordinates the other modules. It operates on a "Think -> Act" loop, where it uses a Large Language Model (LLM) to analyze its current state and goal, decide on the next action (or "tool" to use), and then execute it.
+
+3.1. Orchestrator Implementation with Open-Source Frameworks
+The internal reasoning core of the Orchestrator and other agents can be powerfully implemented using open-source agent frameworks.
+
+LangChain: A mature framework ideal for building complex, stateful data processing pipelines. Its LangChain Expression Language (LCEL) and LangGraph extension are perfect for creating cyclical, multi-agent workflows where the Orchestrator can manage parallel tool execution and error handling. Its extensive integrations are a major advantage for connecting to diverse data sources.
+
+AutoGen: Developed by Microsoft, this framework excels at creating teams of AI agents that collaborate through conversation. The Orchestrator can be implemented as a GroupChatManager that directs a conversation between specialized worker agents (e.g., an APIScout and a SchemaMapper). Its event-driven, asynchronous architecture is well-suited for parallel tasks.
+
+CrewAI: This framework simplifies multi-agent design using a role-based approach. You would define a Crew of agents with specific roles (API_Discovery_Agent), goals, and tools. The Orchestrator's logic is embedded in the Crew's process, which manages how agents collaborate to achieve a goal.
+
+Framework	Core Orchestration Concept	Best For
+LangChain	Composable Chains & Graphs (LangGraph)	Production systems requiring fine-grained control over complex, stateful workflows and extensive integrations.
+AutoGen	Multi-Agent Conversations (GroupChatManager)	Research and applications where emergent, conversational problem-solving between agents is beneficial.
+CrewAI	Role-Based Teams (Crew and Agent roles)	Rapid prototyping and workflows that map cleanly to a team of specialists with defined roles.
+
+3.2. Resilience and State Management for Distributed Tasks
+Long-running, multi-step tasks, such as discovering and integrating a new data source, are prone to failure in a distributed environment. Ensuring fault tolerance and resilience is critical.
+
+Durable Orchestration Patterns:
+
+Saga Pattern: This pattern is ideal for managing distributed transactions across microservices. A saga coordinates a sequence of local transactions; if any step fails, it executes compensating transactions to revert the system to a consistent state, ensuring data integrity without locking.
+
+Circuit Breaker: This pattern prevents the system from repeatedly attempting an operation that is likely to fail (e.g., calling a temporarily unavailable API). After a number of failures, the circuit "trips," and subsequent calls fail immediately, preventing cascading failures across the system.
+
+Leader Election: For critical components that must run as a single instance (like the mitmproxy controller), a leader election pattern ensures that if the active instance fails, a new leader is automatically elected from a cluster of replicas to take over, guaranteeing high availability.
+
+Technologies for State Management:
+
+Durable Execution Platforms: Platforms like Temporal or AWS Step Functions are designed to manage stateful, long-running workflows. You define your multi-step process as code, and the platform guarantees its completion by managing state, retries, and timers, even if the worker agents executing the logic crash and restart.
+
+Multi-Layered Persistence: For high performance, state can be managed using a multi-layered approach.
+
+Durable Store (Source of Truth): A robust database like PostgreSQL is used to permanently store the state of all tasks.
+
+In-Memory Cache (High-Speed Access): A cache like Redis holds the active state of tasks currently being processed for fast access. State updates are written to both the cache and the database (a "write-through" pattern).
+
+State Recovery: When a containerized agent restarts (e.g., due to a crash), it queries the durable store for any tasks it was processing, loads the state back into memory, and seamlessly resumes its work, preventing data loss.
+
+4. Detailed Module Implementation
+4.1. Connection & Data Integration Module (Connectors)
+This module serves as the gateway to external data, handling both static datasets and real-time streams. These components are often called Connectors or Data Source Adapters.
+
+Protocol Handlers & Authentication: It includes handlers for HTTP/S, JDBC/ODBC, and file transfer protocols. It securely manages authentication via API keys, OAuth 2.0, and database credentials, ideally using a secure vault.
+
+Processing Static Datasets: This is a foundational capability. The agent is equipped with tools to read and parse common file formats (CSV, JSON, XML, Parquet) using standard libraries like Pandas.
+
+Processing Real-Time Streaming Sources: Handling real-time data requires an architecture that avoids blocking the agent's main reasoning loop.
+
+WebSockets: Ideal for bidirectional, real-time communication. A dedicated agent or tool can establish a WebSocket connection and handle incoming messages asynchronously, often placing them in a queue (asyncio.Queue) for the Orchestrator to process.
+
+Server-Sent Events (SSE): A simpler, efficient choice for unidirectional streams where the agent is only a consumer.
+
+Message Brokers (Apache Kafka, AWS Kinesis): The most robust pattern is to use a dedicated Consumer Microservice. This separate service consumes messages from the Kafka/Kinesis stream, preprocesses them, and then integrates with the agent system in one of two ways:
+
+Push-Based: The consumer service calls an API endpoint on the Orchestrator to trigger a new task with the event data.
+
+Pull-Based: The consumer writes processed events to a high-speed cache (like Redis), and the agent is given a tool to query this cache for new events as part of its workflow. This decouples the high-throughput stream ingestion from the agent's cognitive cycle, enhancing scalability and resilience.
+
+4.2. Inspection & Discovery Module
+This is the primary data-discovery engine, tasked with understanding unknown data sources, especially undocumented APIs and unstructured tabular files.
+
+Interface Discovery (for APIs):
+
+Documented/Semi-Documented: If an OpenAPI (Swagger) specification is available, it is parsed directly to generate callable tools for the agent, dynamically giving it new capabilities. The agent should also check for common documentation paths like /swagger.json or /api-docs.
+
+Undocumented API Discovery via Proxy Instrumentation (mitmproxy): For truly unknown APIs, the agent can programmatically instrument a proxy server like mitmproxy to passively observe and learn from network traffic.
+
+Programmatic Control: The agent controls mitmproxy by importing its libraries (Options, DumpMaster) and running it in a separate thread. This allows the agent to load a custom addon and manage the proxy's lifecycle without blocking its own process.
+
+Non-Blocking Traffic Capture: To handle high traffic volumes, the system uses a producer-consumer pattern. The mitmproxy addon, running on an asyncio event loop, acts as a lightweight producer. Its only job is to perform initial filtering and place relevant HTTP flow data onto a shared asyncio.Queue or an external message queue (like RabbitMQ). A separate pool of "consumer" workers then processes this data, decoupling high-speed capture from intensive analysis.
+
+API Call Identification Algorithm: The addon uses a set of heuristics in its response(flow) hook to distinguish API calls from other web traffic. It prioritizes flows based on:
+
+Content-Type Headers: Checking for application/json or similar data formats.
+
+URL Structure: Using regex to find patterns like /api/v1/.
+
+Exclusion of Static Assets: Ignoring common web assets like .css, .js, and .jpg.
+
+Request Method: Prioritizing POST, PUT, DELETE methods.
+
+Authentication: Looking for headers like Authorization or X-API-Key.
+
+Logging and Schema Inference: When an API call is identified, its details are logged in a structured, machine-readable format (e.g., JSON) to a persistent database. This log includes a generalized path template (e.g., /users/{userId}), HTTP method, and inferred schemas for request/response bodies and parameters. Pydantic models are excellent for defining this structure.
+
+Dynamic Tool Generation: This is where the agent achieves autonomy.
+
+The agent periodically processes the logged API data, aggregating multiple calls to refine schemas and generalize endpoints.
+
+From this aggregated data, it generates a standard OpenAPI 3.0 (Swagger) specification file, creating a formal definition of the discovered API.
+
+Using a tool like OpenAPI Generator, the agent dynamically creates a Python client library from the specification.
+
+This new library is "hot-loaded" into the agent's runtime, and its functions are registered as new tools in the agent's tool registry, making them immediately available for use without a restart.
+
+Content Inspection & Structural Profiling (for Files):
+For any data source, the agent must infer its structure. For tabular files like CSVs, this involves a multi-phase profiling process before parsing can even begin.
+
+a. Character Encoding Detection: The agent must first correctly interpret the file's raw bytes into characters.
+
+Algorithm: It reads a sample of the file in binary mode and uses a library like Python's chardet to analyze byte patterns.
+
+Heuristics: The detection relies on statistical analysis, including checking for a Byte-Order Mark (BOM), identifying invalid byte sequences which are common in incorrect UTF-8 decodings, and performing n-gram frequency analysis to match the character distribution to known languages and encodings. Advanced methods can even use ML models like Naïve Bayes trained on byte value frequencies.
+
+b. Delimiter Detection: The agent must identify the character separating columns.
+
+Algorithm: It samples the first N lines of the file and tests a set of potential delimiters (e.g., comma, tab, semicolon).
+
+Heuristics: The most reliable heuristic is column count consistency; the correct delimiter will produce a consistent number of columns for most rows. The agent scores candidates based on the standard deviation of column counts, preferring the one that creates the most uniform table. Python's built-in csv.Sniffer class is an excellent tool that encapsulates these heuristics.
+
+c. Header Row Detection: The agent must distinguish the header row from data rows.
+
+Algorithm: It profiles the first few parsed rows of the data.
+
+Heuristics: The primary heuristic is data type dissimilarity. A header row is typically all strings, while subsequent data rows contain a mix of types (numbers, dates). Other indicators include the uniqueness of values in the first row and stylistic features like capitalization. ML models can also be trained to classify rows as 'header' or 'data' based on these features.
+
+d. Statistical Data Profiling: Once the structure is understood, the agent computes a statistical profile for each field, including cardinality, frequency distribution, numeric stats (min, max, mean), and fill rate. This data is crucial for semantic mapping and later query optimization.
+
+4.3. Schema Inference, Normalization & Mapping Module
+This module transforms raw inspection data into an actionable, integrated model stored within the Knowledge Base. It follows a sophisticated workflow to refine the schema and normalize data values.
+
+a. Iterative Schema Refinement with Pydantic: The agent builds a precise schema by starting with an optimistic guess and refining it based on validation errors.
+
+Initial Schema Generation: After structural profiling, the agent samples the first N data rows (e.g., 100). For each column, it infers the most specific data type (int, float, datetime, etc.), with str as a fallback. It then dynamically generates an initial Pydantic model using pydantic.create_model().
+
+Iterative Validation Loop: The agent processes the data in batches or streams. For each row, it attempts to validate the data against the current Pydantic model inside a try...except block.
+
+Handling ValidationError: If validation fails, Pydantic raises a ValidationError, which triggers the refinement logic. The agent catches the exception and inspects its errors() method to get the failing field (loc) and the problematic input value (input).
+
+Automatic Type Relaxation: Based on the error, the agent updates the schema. For example, if a field typed as int fails on the input "N/A", the agent relaxes the type annotation to Union[int, str].
+
+Model Regeneration & Re-validation: The agent dynamically rebuilds the Pydantic model with the updated Union type using create_model() or model_rebuild(). It then re-attempts to validate the row that initially failed. This validate -> error -> refine -> rebuild loop continues until the entire dataset is processed, resulting in a schema that accurately reflects the data's true complexity.
+
+b. Automated Data Normalization: Once a stable schema is derived (including Union types that indicate heterogeneity), the agent generates and applies transformation logic to standardize values.
+
+Semantic Type Detection: Before normalizing, the agent must understand the meaning of a column. It can use pre-trained ML models like Sherlock, which uses deep learning to classify columns into semantic types (e.g., 'date', 'URL', 'city') based on a rich set of features like character distributions and word embeddings. This is crucial for deciding which normalization strategy to apply autonomously.
+
+Normalizing Date/Time Formats: For columns identified as dates, the agent uses the parser.parse() function from the python-dateutil library. This function intelligently handles a vast array of formats ("25 Dec 2023", "12/25/2023") and converts them to standard datetime objects. The agent then reformats them into a consistent standard like ISO 8601 ("YYYY-MM-DDTHH:MM:SS").
+
+Normalizing Units of Measurement: For columns containing measurements ("10kg", "22 lbs"), the agent uses regular expressions to extract the numeric value and the unit string. It then uses a knowledge base of conversion factors to transform all values to a single canonical unit for that dimension (e.g., converting all weights to kilograms).
+
+Normalizing Inconsistent Categorical Data: For categorical columns with variations like "USA", "U.S.A.", and "United States", the agent uses fuzzy string matching algorithms (e.g., Levenshtein distance from a library like thefuzz) to cluster similar values. For each cluster, it selects a canonical representation (e.g., the most frequent one) and generates a mapping rule to replace all variations with the standard form.
+
+c. Schema Matching and Mapping: This is the final integration step, using the now-clean and well-defined schemas to populate the Semantic Mapping Graph.
+
+Lexical (Linguistic) Matching: Compares field names and descriptions using string similarity (Levenshtein) and semantic similarity via embedding models (sentence-transformers) to match concepts like cust_id and user_identifier.
+
+Constraint-Based Analysis: Compares the data profiles (data types, value ranges, cardinality) of fields to find matches.
+
+4.4. Query Processing & Federation Module
+This user-facing component accepts a single, unified query and executes it across the integrated data sources. It functions as a complete federated query engine.
+
+Unified Query Interface & Parser: The module exposes a simplified SQL-like language. The first step is to parse the query string into a structured representation called an Abstract Syntax Tree (AST). This is done via lexical and syntactic analysis, often using tools like ANTLR. The AST provides a language-agnostic representation of the user's intent.
+
+Query Decomposition & Optimization:
+
+Logical Planning: A Logical Query Planner traverses the AST and consults the Knowledge Base (Semantic Mapping Graph) to decompose the query. It maps entities and relationships in the query to the graph to determine which data sources are needed. This produces a source-agnostic logical plan, typically a Directed Acyclic Graph (DAG) of operators like Scan, Filter, and Join.
+
+Physical Planning & Optimization: A Query Optimizer then transforms the logical plan into an optimized physical execution plan. This plan is source-aware and specifies the exact algorithms to use. The optimizer uses a cost-based model, considering factors like network latency, data source load, and data cardinality (statistics gathered during inspection) to select the most efficient join strategies and operation order. A key strategy is pushdown optimization, which moves as much processing (like filtering) as possible to the source systems to minimize network data transfer.
+
+Distributed Execution with gRPC and Protocol Buffers: The Execution Engine dispatches fragments of the physical plan to the appropriate remote worker agents (Connectors) using a high-performance RPC framework.
+
+Serialization with Protocol Buffers (Protobuf): Query plan fragments are defined as Protobuf messages in a .proto file and serialized into a compact binary format. This is significantly faster and produces smaller payloads than JSON, reducing network latency.
+
+Dispatch and Streaming with gRPC: The engine uses gRPC, which leverages HTTP/2, to dispatch these serialized fragments to worker agents. For tasks that produce large result sets, server-side or bidirectional streaming is used. This allows a worker agent to stream intermediate results back to a central aggregator as they are generated, rather than buffering the entire result set in memory. This pattern dramatically reduces memory pressure and improves end-to-end latency.
+
+Result Aggregation: A central Result Aggregator receives the parallel streams of intermediate results from multiple workers. It processes these partial results in real-time, performing final joins or aggregations to assemble the final query response.
+
+Join Strategy Selection: The optimizer's choice of join strategy is critical in a distributed environment.
+
+Nested Loop Join: Often used when one dataset is small or when joining with a REST API, where the agent iterates through results from one source to make parameterized calls to the other.
+
+Hash Join: Efficient for joining two large datasets in the federation layer's memory by building a hash table from one set and probing it with the other.
+
+Broadcast Join: If one result set is small enough, it can be retrieved and "broadcast" to the other data source to perform the join locally, reducing data transfer.
+
+Adaptive Joins: Advanced engines can adapt their strategy mid-execution based on observed data rates and network conditions, switching from one algorithm to another for optimal performance.
+
+4.5. Knowledge Base (Semantic Mapping Graph)
+This is the persistence layer and the "connective tissue" of the entire system, storing all learned insights. It is best implemented as a property graph in a database like Neo4j or Memgraph. This graph provides the context needed for query decomposition and optimization.
+
+Nodes: Represent core business entities ("User," "Product") and their attributes.
+
+Edges: Represent relationships between entities (HAS_ORDER, PURCHASED_BY). Edges can be weighted to indicate relationship strength or cardinality, which is vital for the query optimizer.
+
+Properties/Metadata: Both nodes and edges are annotated with rich metadata, including:
+
+Source Location: The data source, table name, or API endpoint where the data resides.
+
+Schema Details: Data types, formats, and validation rules.
+
+Join Keys: The specific fields used to link entities across different data sources.
+
+Statistical Information: Data profiles like cardinality and value distributions, used by the cost-based optimizer.
+
+This centralized knowledge allows Polyglot to improve its performance on subsequent interactions and enables all specialized agents to access a consistent, up-to-date view of the integrated data landscape.
+
+5. Executive Summary
+The 'Polyglot' agent represents an advanced, autonomous system designed to address the pervasive and costly problem of data integration. By adopting a resilient, distributed microservices architecture and leveraging modern agent frameworks, Polyglot offers a powerful solution for unlocking value from siloed data. Its architecture is designed for fault tolerance using patterns like Saga and Circuit Breaker, with state managed by durable platforms like Temporal or a multi-layered persistence cache.
+
+A key innovation is its ability to handle data sources with completely unknown formats, such as undocumented REST APIs and unstructured tabular files. For APIs, the agent programmatically instruments a proxy like mitmproxy to passively capture and analyze network traffic. A custom addon identifies API calls using heuristics, logs their structure, and infers their schemas. The agent then autonomously processes these logs to generate standard OpenAPI specifications and uses them to create and hot-load new client libraries, dynamically expanding its own toolkit without requiring a restart.
+
+For file-based sources, the agent employs a multi-stage workflow to first profile the file's structure by heuristically detecting its character encoding, delimiter, and header row. It then enters an iterative schema refinement loop powered by Pydantic, where it intelligently relaxes type constraints (int -> Union[int, str]) by catching and analyzing ValidationErrors to create a schema that precisely mirrors the real-world data.
+
+These clean, normalized schemas are mapped into a central Knowledge Base, which powers the system's federated query engine. This engine can parse a single SQL-like query, decompose it into an optimized plan, and execute it across heterogeneous sources. Communication between the central engine and distributed worker agents is handled with extreme efficiency using gRPC for dispatch and Protocol Buffers for serialization, with results streamed back in real-time to minimize latency and memory usage. This design moves far beyond manual integration, reducing development time and empowering organizations to be more agile and data-informed.
+
+High-Level Architecture Guide: The 'Polyglot' Agent
+1. Overview & Data Source Capabilities
+The 'Polyglot' agent system is not a single program but a distributed network of specialized microservices. This design allows for scalability, resilience, and the flexibility to use the best technology for each task. At its heart is a central Orchestrator that acts as the "brain," delegating tasks to various specialized modules.
+
+The system is designed to connect to and integrate four primary categories of data sources:
+
+Static Files: This includes structured and semi-structured files.
+
+Examples: CSV, JSON, XML, Parquet, Avro.
+
+How it works: The agent uses a suite of tools that wrap standard data processing libraries (like Pandas for CSVs or specific libraries for Parquet/Avro) to parse these files. The structural profiling module is heavily used here to detect delimiters, headers, and encoding for unknown tabular files.
+
+Databases: This covers traditional relational databases and can be extended to NoSQL databases.
+
+Examples: PostgreSQL, MySQL, SQL Server, Oracle. (Extensible to MongoDB, Cassandra).
+
+How it works: A dedicated Connector for each database type uses standard protocols like JDBC/ODBC to execute queries. The federated query engine would translate its sub-queries into the appropriate SQL dialect for that database.
+
+Web APIs: This is a major focus, covering both well-documented and completely undocumented APIs.
+
+Examples: Public REST APIs, internal company APIs, GraphQL endpoints.
+
+How it works:
+
+For documented APIs with an OpenAPI (Swagger) spec, the agent can directly parse the spec to generate and load tools.
+
+For undocumented APIs, it uses the mitmproxy discovery module to passively learn the API's structure from network traffic.
+
+Real-Time Data Streams: This allows the agent to work with data that is constantly being updated.
+
+Examples: Apache Kafka topics, AWS Kinesis streams, WebSocket feeds.
+
+How it works: Direct integration can block the agent. The architecture uses a Consumer Microservice pattern. A dedicated, separate service consumes the stream and pushes relevant events to the agent system (e.g., via an API call to the Orchestrator) or writes them to a cache that the agent can poll. This decouples the agent from the high-throughput stream.
+
+2. Architectural Diagram: System Overview
+mermaid
+graph TD
+    subgraph User Interaction
+        User -- "1. Issues Goal (e.g., 'Integrate these two sources')" --> Orchestrator;
+        Orchestrator -- "7. Returns Result/Confirmation" --> User;
+    end
+
+    subgraph Polyglot Agent System
+        Orchestrator(🧠 Orchestrator Agent) -- "2. Decomposes Goal & Delegates Tasks" --> ModuleBus(Internal Task Bus);
+
+        ModuleBus --> Discovery(🔍 Inspection & Discovery Module);
+        ModuleBus --> Schema(📝 Schema & Normalization Module);
+        ModuleBus --> Connectors(🔌 Connectors / Adapters);
+        ModuleBus --> QueryEngine(⚙️ Federated Query Engine);
+
+        Discovery -- "3. Profiles Sources" --> KnowledgeBase;
+        Schema -- "4. Refines Schema & Normalizes Data" --> KnowledgeBase;
+        QueryEngine -- "5. Consults for Query Planning" --> KnowledgeBase;
+
+        subgraph Knowledge & Memory
+            KnowledgeBase[(📚 Knowledge Base<br>/Semantic Mapping Graph/)];
+        end
+
+        Connectors -- "6. Executes Sub-Queries/Actions" --> DataSources;
+    end
+
+    subgraph External World
+        DataSources(🌐 External Data Sources<br>- Databases<br>- REST APIs<br>- Files<br>- Streams);
+    end
+
+    style Orchestrator fill:#e6f2ff,stroke:#333,stroke-width:2px
+    style KnowledgeBase fill:#fff2cc,stroke:#333,stroke-width:2px
+Overview of Components:
+
+User: Interacts with the system by providing high-level goals.
+
+Orchestrator Agent: The central coordinator. It interprets the user's goal, breaks it down into a sequence of tasks, and dispatches them to the appropriate modules. It uses an LLM for reasoning and planning.
+
+Specialized Modules: These are the "worker" microservices that perform specific functions:
+
+Inspection & Discovery: Profiles unknown files and APIs.
+
+Schema & Normalization: Cleans data and refines schemas (e.g., using the Pydantic iterative loop).
+
+Connectors: Manages the actual communication with external data sources.
+
+Federated Query Engine: Handles the parsing, optimization, and execution of unified queries.
+
+Knowledge Base: A graph database (like Neo4j) that acts as the system's long-term memory. It stores everything the agent learns: schemas, data profiles, API endpoint definitions, and the semantic links between them.
+
+External Data Sources: The databases, APIs, files, and streams that the agent interacts with.
+
+3. Workflow Diagram: Federated Query Execution
+mermaid
+sequenceDiagram
+    participant User
+    participant QueryEngine as ⚙️ Federated Query Engine
+    participant KnowledgeBase as 📚 Knowledge Base
+    participant ConnectorSQL as 🔌 SQL Connector
+    participant ConnectorAPI as 🔌 REST API Connector
+    participant ResultAggregator as 📦 Result Aggregator
+
+    User->>QueryEngine: 1. Submit Unified Query<br>(e.g., SELECT c.name, o.date FROM customers c JOIN orders o ON c.id = o.customer_id)
+
+    QueryEngine->>QueryEngine: 2. Parse Query into AST
+
+    QueryEngine->>KnowledgeBase: 3. Decompose & Create Logical Plan<br>(Consults graph to find that 'customers' is in SQL DB and 'orders' is via REST API)
+
+    QueryEngine->>QueryEngine: 4. Optimize into Physical Plan<br>(Decides join strategy, e.g., get customer IDs first, then call API)
+
+    QueryEngine->>ConnectorSQL: 5a. Dispatch Sub-Query<br>(SELECT id, name FROM customers)
+    QueryEngine->>ConnectorAPI: 5b. Dispatch Sub-Query Template<br>(GET /orders?customerId={id})
+
+    activate ConnectorSQL
+    ConnectorSQL-->>ResultAggregator: 6a. Stream SQL Results
+    deactivate ConnectorSQL
+
+    activate ConnectorAPI
+    ResultAggregator->>ConnectorAPI: (For each customer ID) Execute API call
+    ConnectorAPI-->>ResultAggregator: 6b. Stream API Results
+    deactivate ConnectorAPI
+
+    ResultAggregator->>ResultAggregator: 7. Combine & Join Results<br>(Stitches customer names and order dates together)
+
+    ResultAggregator->>User: 8. Return Final, Unified Result Set
+Workflow Explanation:
+
+Submit Query: The user submits a single, SQL-like query that references concepts from different data sources.
+
+Parse: The Query Engine parses the string into an Abstract Syntax Tree (AST).
+
+Decompose: The engine consults the Knowledge Base. The graph reveals that customers lives in a SQL database, while orders is accessed via a REST API, and they are linked by id. A logical plan is formed.
+
+Optimize: The engine creates a physical plan. It decides the most efficient order: first, get the customer data from the fast SQL database, then use those customer IDs to make specific, targeted calls to the REST API.
+
+Dispatch: The engine sends the specific sub-queries to the appropriate connectors.
+
+Execute & Stream: The connectors execute their tasks and stream the results back to the Result Aggregator. This happens in parallel.
+
+Combine: The aggregator receives the streams of data and performs the final JOIN in memory, stitching the results together.
+
+Return: A single, unified table of results is returned to the user, abstracting away all the complexity of the underlying sources.

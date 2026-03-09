@@ -1,0 +1,13 @@
+I will describe an idea for an agent and you will help me add to and complete its design and then provide insight on the best way to design and perform its implementation:
+
+This agent is called "Polyglot" because its purpose is to help its user talk to, convert, integrate, and work with in other ways, two separate data sets* where the format of each data set is different and is unknown, or the type of the data format may be known, but the actual format details are not.
+
+*data sets can inlclude any set of data i vairous froms, e.g. DBs, files, applicaion or other APIs, streams, etc.
+
+So the main use case of agent is for the scenaerio when you want to query or read two didferent data sets but you don't know how to integrate or decode their format.
+
+The agent inspects the data and its interface to try to determine itself what type of data is in the set and what its format is. Once it does, it determines how to access the data using the data's format. Once it ha done these steps it can be said to be "Connected" to the one of the datasets. It will do the same for the other dataset, and once both are connected, it will allow the user to perform different operations on the two datasets, such as:
+
+1. queries combing the datasets
+
+2. search either data set
