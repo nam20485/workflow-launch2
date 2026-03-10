@@ -10,7 +10,7 @@ param(
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Owner = 'nam20485',
+    [string]$Owner = 'intel-agency',
 
     [Parameter()]
     [switch]$Yes,
