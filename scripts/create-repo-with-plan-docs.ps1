@@ -245,21 +245,28 @@ function Get-TemplatePlaceholderMatches
     )
 
     $templatePattern = [regex]::Escape($TemplateText)
+    Write-Verbose "[TRACE:Scan] Scanning for placeholder matches under: $RepoRoot"
+    Write-Verbose "[TRACE:Scan] Template text: '$TemplateText' | Regex pattern: '$templatePattern'"
     $placeholderMatches = New-Object System.Collections.Generic.List[object]
 
-    foreach ($path in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
+    $allItems = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
         $_.FullName -notmatch '[/\\]\.git([/\\]|$)' -and $_.Name -match $templatePattern
-    }))
+    })
+    Write-Verbose "[TRACE:Scan] Found $($allItems.Count) path(s) matching template pattern in name"
+    foreach ($path in $allItems)
     {
+        Write-Verbose "[TRACE:Scan]   Path match: $($path.FullName)"
         $placeholderMatches.Add([PSCustomObject]@{
             MatchType = 'Path'
             Path = $path.FullName
         })
     }
 
-    foreach ($file in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
+    $allFiles = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
         $_.FullName -notmatch '[/\\]\.git([/\\]|$)'
-    }))
+    })
+    Write-Verbose "[TRACE:Scan] Scanning $($allFiles.Count) file(s) for content matches"
+    foreach ($file in $allFiles)
     {
         try
         {
@@ -267,12 +274,13 @@ function Get-TemplatePlaceholderMatches
         }
         catch
         {
-            Write-Verbose "Skipping unreadable file during placeholder scan: $($file.FullName)"
+            Write-Verbose "[TRACE:Scan] Skipping unreadable file: $($file.FullName) — $($_.Exception.Message)"
             continue
         }
 
         if ($content -match $templatePattern)
         {
+            Write-Verbose "[TRACE:Scan]   Content match: $($file.FullName)"
             $placeholderMatches.Add([PSCustomObject]@{
                 MatchType = 'Content'
                 Path = $file.FullName
@@ -280,6 +288,7 @@ function Get-TemplatePlaceholderMatches
         }
     }
 
+    Write-Verbose "[TRACE:Scan] Total matches found: $($placeholderMatches.Count)"
     return $placeholderMatches.ToArray()
 }
 
@@ -293,13 +302,27 @@ function Update-TemplatePlaceholders
     )
 
     $templatePattern = [regex]::Escape($TemplateText)
-    $templatePaths = Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
-        $_.FullName -notmatch '[/\\]\.git([/\\]|$)' -and $_.Name -match $templatePattern
-    }
+    Write-Verbose "[TRACE:Replace] === Update-TemplatePlaceholders ==="
+    Write-Verbose "[TRACE:Replace] RepoRoot: $RepoRoot"
+    Write-Verbose "[TRACE:Replace] TemplateText: '$TemplateText' | ReplacementText: '$ReplacementText'"
+    Write-Verbose "[TRACE:Replace] Regex pattern: '$templatePattern'"
+    Write-Verbose "[TRACE:Replace] RepoRoot exists: $(Test-Path -LiteralPath $RepoRoot)"
+    Write-Verbose "[TRACE:Replace] RepoRoot resolved: $(Resolve-Path -LiteralPath $RepoRoot -ErrorAction SilentlyContinue)"
 
-    foreach ($file in (Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
+    $templatePaths = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force | Where-Object {
+        $_.FullName -notmatch '[/\\]\.git([/\\]|$)' -and $_.Name -match $templatePattern
+    })
+    Write-Verbose "[TRACE:Replace] Path matches (name contains template text): $($templatePaths.Count)"
+
+    $allFiles = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File | Where-Object {
         $_.FullName -notmatch '[/\\]\.git([/\\]|$)'
-    }))
+    })
+    Write-Verbose "[TRACE:Replace] Total files to scan for content: $($allFiles.Count)"
+
+    $replacedCount = 0
+    $skippedCount = 0
+    $noMatchCount = 0
+    foreach ($file in $allFiles)
     {
         try
         {
@@ -307,41 +330,59 @@ function Update-TemplatePlaceholders
         }
         catch
         {
-            Write-Verbose "Skipping unreadable file during placeholder replacement: $($file.FullName)"
+            Write-Verbose "[TRACE:Replace] SKIP (unreadable): $($file.FullName) — $($_.Exception.Message)"
+            $skippedCount++
             continue
         }
 
         if ($content -notmatch $templatePattern)
         {
+            $noMatchCount++
             continue
         }
 
         $newContent = $content -replace $templatePattern, $ReplacementText
-        Write-Verbose "Updating template text in file: $($file.FullName)"
+        $replacedCount++
+        Write-Verbose "[TRACE:Replace] MATCH [$replacedCount]: $($file.FullName) (size: $($content.Length) bytes)"
         if ($DryRun)
         {
-            Write-Verbose "[dry-run] Would replace template text in: $($file.FullName)"
+            Write-Verbose "[TRACE:Replace]   [dry-run] Would replace template text"
         }
         else
         {
             [System.IO.File]::WriteAllText($file.FullName, $newContent)
+            # Verify the write persisted
+            $verifyContent = [System.IO.File]::ReadAllText($file.FullName)
+            if ($verifyContent -match $templatePattern)
+            {
+                Write-Verbose "[TRACE:Replace]   WARNING: File still contains template text after write! $($file.FullName)"
+            }
+            else
+            {
+                Write-Verbose "[TRACE:Replace]   Verified: template text removed after write"
+            }
         }
     }
 
+    Write-Verbose "[TRACE:Replace] Content replacement summary: $replacedCount replaced, $noMatchCount no-match, $skippedCount skipped (of $($allFiles.Count) total)"
+
+    Write-Verbose "[TRACE:Replace] Renaming $($templatePaths.Count) path(s) matching template pattern"
     foreach ($path in ($templatePaths | Sort-Object { $_.FullName.Length } -Descending))
     {
         $newName = $path.Name -replace $templatePattern, $ReplacementText
         $newPath = Join-Path $path.DirectoryName $newName
-        Write-Verbose "Renaming template path: $($path.FullName) -> $newPath"
+        Write-Verbose "[TRACE:Replace] RENAME: $($path.FullName) -> $newPath"
         if ($DryRun)
         {
-            Write-Verbose "[dry-run] Would rename: $($path.FullName) -> $newPath"
+            Write-Verbose "[TRACE:Replace]   [dry-run] Would rename"
         }
         else
         {
             Rename-Item -LiteralPath $path.FullName -NewName $newName | Out-Null
         }
     }
+
+    Write-Verbose "[TRACE:Replace] === Update-TemplatePlaceholders complete ==="
 }
 
 function Assert-NoTemplatePlaceholdersRemaining
@@ -352,10 +393,12 @@ function Assert-NoTemplatePlaceholdersRemaining
         [Parameter(Mandatory)][string]$TemplateText
     )
 
+    Write-Verbose "[TRACE:Assert] Checking for remaining placeholders: '$TemplateText' under $RepoRoot"
     $remainingMatches = @(Get-TemplatePlaceholderMatches -RepoRoot $RepoRoot -TemplateText $TemplateText)
+    Write-Verbose "[TRACE:Assert] Remaining matches: $($remainingMatches.Count)"
     if ($remainingMatches.Count -eq 0)
     {
-        Write-Verbose "Verified no remaining template placeholders under: $RepoRoot"
+        Write-Verbose "[TRACE:Assert] PASS: No remaining template placeholders"
         return
     }
 
@@ -363,6 +406,7 @@ function Assert-NoTemplatePlaceholdersRemaining
         Select-Object -First 20 |
         ForEach-Object { "- [$($_.MatchType)] $($_.Path)" }
 
+    Write-Verbose "[TRACE:Assert] FAIL: $($remainingMatches.Count) remaining match(es)"
     throw "Template placeholder replacement incomplete. Remaining matches:`n$($matchSummary -join "`n")"
 }
 
@@ -408,7 +452,18 @@ function Invoke-GitClone
     param([Parameter(Mandatory)][string]$Owner, [Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Dest)
     if (Test-Path -LiteralPath $Dest)
     {
-        Write-Verbose "Clone destination exists: $Dest (skipping clone)"
+        # Validate the existing clone has a .git directory and a valid HEAD
+        $gitDir = Join-Path $Dest '.git'
+        if (-not (Test-Path -LiteralPath $gitDir -PathType Container))
+        {
+            throw "Clone destination exists but is not a git repo (no .git/): $Dest"
+        }
+        $headCheck = Invoke-External -FilePath 'git' -ArgumentList @('-C', $Dest, 'rev-parse', '--verify', 'HEAD') -AllowFail
+        if ($headCheck.ExitCode -ne 0)
+        {
+            throw "Clone destination exists but has no valid HEAD: $Dest"
+        }
+        Write-Verbose "Clone destination exists and is valid: $Dest (skipping clone)"
         return
     }
     New-Item -ItemType Directory -Path $Dest | Out-Null
@@ -459,7 +514,7 @@ function Invoke-GitCommitAndPush
         $msg = ($commit.Output -join ' ')
         if ($msg -match 'nothing to commit')
         {
-            Write-Verbose 'Nothing to commit (working tree clean)'
+            Write-Warning "Nothing to commit — expected replacement changes but working tree is clean. Possible template race."
         }
         else
         {
@@ -470,6 +525,7 @@ function Invoke-GitCommitAndPush
     $branch = (Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'branch', '--show-current')).Output | Select-Object -First 1
     $branch = $branch.Trim()
     if (-not $branch) { $branch = 'main' }
+    $rebased = $false
     if ($PSCmdlet.ShouldProcess($RepoRoot, "Push changes to origin/$branch"))
     {
         # Use -u to set upstream on first push
@@ -480,11 +536,10 @@ function Invoke-GitCommitAndPush
             $pushMsg = ($push.Output -join ' ')
             if ($pushMsg -match 'fetch first' -or $pushMsg -match 'non-fast-forward' -or $pushMsg -match 'failed to push some refs')
             {
-                Write-Verbose "Push rejected (likely template race). Rebasing onto origin/$branch and retrying..."
+                Write-Warning "Push rejected (template race detected). Rebasing onto origin/$branch and retrying..."
                 # Pull with rebase to integrate remote commits without a merge commit
                 Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'pull', '--rebase', 'origin', $branch) | Out-Null
-                # Retry push
-                Invoke-External -FilePath 'git' -ArgumentList @('-C', $RepoRoot, 'push', '-u', 'origin', $branch) | Out-Null
+                $rebased = $true
             }
             else
             {
@@ -492,6 +547,8 @@ function Invoke-GitCommitAndPush
             }
         }
     }
+    # Return whether a rebase occurred so callers can re-run replacements
+    return $rebased
 }
 
 $docsDir = 'plan_docs'
@@ -598,7 +655,17 @@ try
         Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
         Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath/$docsDir"
 
+        # Snapshot file list before replacement
+        $preFiles = @(Get-ChildItem -LiteralPath $clonePath -Recurse -Force -File | Where-Object { $_.FullName -notmatch '[/\\]\.git([/\\]|$)' })
+        Write-Verbose "[TRACE:Main] Pre-replacement file count: $($preFiles.Count)"
+        Write-Verbose "[TRACE:Main] Clone path: $clonePath"
+        Write-Verbose "[TRACE:Main] Clone path exists: $(Test-Path -LiteralPath $clonePath)"
+        Write-Verbose "[TRACE:Main] TEMPLATE_REPO_NAME: '$TEMPLATE_REPO_NAME'"
+        Write-Verbose "[TRACE:Main] repoName: '$repoName'"
+        Write-Verbose "[TRACE:Main] TEMPLATE_OWNER: '$TEMPLATE_OWNER' | Owner: '$Owner'"
+
         # Replace template placeholders in file contents and path names
+        Write-Verbose "[TRACE:Main] --- Step 1: Replace repo name ---"
         Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
 
@@ -606,8 +673,14 @@ try
         $ownerLower = $Owner.ToLower()
         if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
         {
+            Write-Verbose "[TRACE:Main] --- Step 2: Replace owner ---"
             Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
+            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+        }
+        else
+        {
+            Write-Verbose "[TRACE:Main] --- Step 2: SKIPPED (owner unchanged: '$Owner' == '$TEMPLATE_OWNER_LOWER') ---"
         }
 
         $workspacePath = Join-Path $clonePath "$repoName.code-workspace"
@@ -623,8 +696,41 @@ try
 
         # Commit and push
         $seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
-        Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
-        Write-Verbose 'Changes committed and pushed'
+        $rebased = Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
+
+        if ($rebased)
+        {
+            # Template race: rebase pulled in un-replaced template files.
+            # Re-run all replacements on the rebased tree.
+            Write-Warning "Template race detected — re-running placeholder replacements after rebase..."
+
+            Write-Verbose "[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---"
+            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
+            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+
+            $ownerLower = $Owner.ToLower()
+            if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
+            {
+                Write-Verbose "[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---"
+                Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
+                Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+            }
+
+            # Amend the seed commit with the post-rebase replacements and force push
+            Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'add', '.') | Out-Null
+            $amendCommit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'commit', '--amend', '--no-edit') -AllowFail
+            if ($amendCommit.ExitCode -ne 0)
+            {
+                $amendMsg = ($amendCommit.Output -join ' ')
+                if ($amendMsg -notmatch 'nothing to commit') { throw "git commit --amend failed: $amendMsg" }
+            }
+            Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'push', '--force-with-lease', 'origin', 'main') | Out-Null
+            Write-Verbose 'Post-rebase replacements committed and pushed'
+        }
+        else
+        {
+            Write-Verbose 'Changes committed and pushed (no rebase needed)'
+        }
 
         # Output clone destination path
         Write-Output "SUCCESS: '$clonePath' created and checked in"
