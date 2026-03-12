@@ -1,0 +1,73 @@
+name: Test PowerShell Scripts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/test-scripts.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/test-scripts.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  test:
+    name: Pester Tests & Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -RequiredVersion 5.5.0 -Force -Scope CurrentUser
+
+      - name: Run Pester tests with coverage
+        shell: pwsh
+        run: |
+          $config = & ./tests/pester.config.ps1
+          $result = Invoke-Pester -Configuration $config
+          if ($result.FailedCount -gt 0) {
+            Write-Error "Pester: $($result.FailedCount) test(s) failed."
+            exit 1
+          }
+
+      - name: Generate coverage report
+        if: always()
+        uses: danielpalme/ReportGenerator-GitHub-Action@5
+        with:
+          reports: TestResults/coverage.xml
+          targetdir: TestResults/CoverageReport
+          reporttypes: 'HtmlInline_AzurePipelines;TextSummary;MarkdownSummaryGithub'
+
+      - name: Publish coverage summary to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: TestResults/CoverageReport/SummaryGithub.md
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Pester Results
+          path: TestResults/test-results.xml
+          reporter: java-junit
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: TestResults/CoverageReport/
+          retention-days: 30
