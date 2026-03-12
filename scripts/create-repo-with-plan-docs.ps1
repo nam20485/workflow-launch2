@@ -635,25 +635,57 @@ try
         Write-Verbose "Creating repository: $Owner/$repoName"
 
         # Create repository
+        Write-Host "Creating repository '$Owner/$repoName'..." -NoNewline
         New-GitHubRepository -Owner $Owner -Name $repoName -Visibility $Visibility
-        Write-Verbose "Repository created: $Owner/$repoName"
+        Write-Host " done"
+
+        # Poll GitHub API until the template's initial commit exists on the default branch.
+        # This is the definitive signal that GitHub has finished generating from the template.
+        $pollMax = 60; $pollInterval = 3
+        Write-Host "Waiting for template initialization..." -NoNewline
+        $pollElapsed = 0
+        $templateReady = $false
+        while ($pollElapsed -lt $pollMax)
+        {
+            $commitCount = Invoke-External -FilePath 'gh' -ArgumentList @('api', "repos/$Owner/$repoName/commits?per_page=1", '--jq', 'length') -AllowFail
+            if ($commitCount.ExitCode -eq 0 -and ($commitCount.Output | Select-Object -First 1) -gt 0)
+            {
+                $templateReady = $true
+                break
+            }
+            Start-Sleep -Seconds $pollInterval
+            $pollElapsed += $pollInterval
+            Write-Host "." -NoNewline
+        }
+        if ($templateReady)
+        {
+            Write-Host " ready (${pollElapsed}s)"
+        }
+        else
+        {
+            Write-Host " timed out after ${pollMax}s, proceeding anyway"
+            Write-Warning "Template initialization not confirmed within ${pollMax}s — clone may race."
+        }
 
         # Create repo secrets needed for agent auth
         #New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
+        Write-Host "Setting repo secrets and variables..." -NoNewline
         New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'GEMINI_API_KEY'
         # New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'ZHIPU_API_KEY'
         # need to add repository variables
         #VERSION_PREFIX = '0.0.1'
         New-RepoVariable -Owner $Owner -RepoName $repoName -VariableName 'VERSION_PREFIX' -VariableValue '0.0.1'
-        Write-Verbose "Repository secrets and variables created for $Owner/$repoName"
+        Write-Host " done"
 
+        Write-Host "Cloning '$Owner/$repoName'..." -NoNewline
         $clonePath = Get-ClonePath -Parent $CloneParentDir -Name $repoName
         Invoke-GitClone -Owner $Owner -Name $repoName -Dest $clonePath
-        Write-Verbose "Repository cloned: $clonePath"
+        Write-Host " done ($clonePath)"
 
         # Copy plan docs
+        Write-Host "Copying plan docs..." -NoNewline
         Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
-        Write-Verbose "Plan docs copied: $PlanDocsDir -> $clonePath/$docsDir"
+        Write-Host " done"
 
         # Snapshot file list before replacement
         $preFiles = @(Get-ChildItem -LiteralPath $clonePath -Recurse -Force -File | Where-Object { $_.FullName -notmatch '[/\\]\.git([/\\]|$)' })
@@ -665,18 +697,22 @@ try
         Write-Verbose "[TRACE:Main] TEMPLATE_OWNER: '$TEMPLATE_OWNER' | Owner: '$Owner'"
 
         # Replace template placeholders in file contents and path names
+        Write-Host "Replacing template placeholders (repo name)..." -NoNewline
         Write-Verbose "[TRACE:Main] --- Step 1: Replace repo name ---"
         Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+        Write-Host " done"
 
         # Replace template owner in image/registry references (e.g. ghcr.io/intel-agency/... -> ghcr.io/nam20485/...)
         $ownerLower = $Owner.ToLower()
         if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
         {
+            Write-Host "Replacing template placeholders (owner)..." -NoNewline
             Write-Verbose "[TRACE:Main] --- Step 2: Replace owner ---"
             Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+            Write-Host " done"
         }
         else
         {
@@ -695,28 +731,35 @@ try
         }
 
         # Commit and push
+        Write-Host "Committing and pushing..." -NoNewline
         $seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
         $rebased = Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
 
         if ($rebased)
         {
+            Write-Host " rebase required"
             # Template race: rebase pulled in un-replaced template files.
             # Re-run all replacements on the rebased tree.
             Write-Warning "Template race detected — re-running placeholder replacements after rebase..."
 
+            Write-Host "Re-replacing template placeholders (repo name) after rebase..." -NoNewline
             Write-Verbose "[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+            Write-Host " done"
 
             $ownerLower = $Owner.ToLower()
             if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
             {
+                Write-Host "Re-replacing template placeholders (owner) after rebase..." -NoNewline
                 Write-Verbose "[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---"
                 Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
                 Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+                Write-Host " done"
             }
 
             # Amend the seed commit with the post-rebase replacements and force push
+            Write-Host "Amending commit and force-pushing..." -NoNewline
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'add', '.') | Out-Null
             $amendCommit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'commit', '--amend', '--no-edit') -AllowFail
             if ($amendCommit.ExitCode -ne 0)
@@ -725,11 +768,11 @@ try
                 if ($amendMsg -notmatch 'nothing to commit') { throw "git commit --amend failed: $amendMsg" }
             }
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'push', '--force-with-lease', 'origin', 'main') | Out-Null
-            Write-Verbose 'Post-rebase replacements committed and pushed'
+            Write-Host " done"
         }
         else
         {
-            Write-Verbose 'Changes committed and pushed (no rebase needed)'
+            Write-Host " done"
         }
 
         # Output clone destination path
@@ -752,6 +795,6 @@ try
 }
 catch
 {
-    "FAILED: Exception! $($_.Exception.Message)"	
+    Write-Host "FAILED: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
