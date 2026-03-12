@@ -95,7 +95,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+Write-Host '=== create-repo-with-plan-docs ===' -ForegroundColor Cyan
+if ($DryRun) { Write-Host '[DRY-RUN MODE]' -ForegroundColor Yellow }
+
 # Dot-source shared helper functions
+Write-Host 'Loading modules...' -ForegroundColor DarkGray -NoNewline
 $repoFunctions = Join-Path $PSScriptRoot 'repo-functions.ps1'
 if (Test-Path -LiteralPath $repoFunctions) { . $repoFunctions } else { throw "Required file not found: $repoFunctions" }
 
@@ -106,6 +110,7 @@ if (Test-Path -LiteralPath $commonAuth) { . $commonAuth } else { Write-Verbose '
 # Dot-source structured logging module
 $loggingModule = Join-Path $PSScriptRoot 'logging.ps1'
 if (Test-Path -LiteralPath $loggingModule) { . $loggingModule } else { Write-Verbose 'logging.ps1 not found; proceeding without structured logging' }
+Write-Host ' done' -ForegroundColor DarkGray
 
 #$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
 $TEMPLATE = 'intel-agency/ai-new-workflow-app-template' # Template repository for new repos
@@ -128,9 +133,11 @@ try
 
     if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly')
     {
+        Write-Host "Replacing placeholders in existing repo '$ExistingRepoRoot'..." -ForegroundColor Cyan -NoNewline
         $resolvedRepoRoot = (Resolve-Path -LiteralPath $ExistingRepoRoot).Path
         Update-TemplatePlaceholders -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $RepoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME
+        Write-Host ' done' -ForegroundColor Green
         Write-Output "SUCCESS: template placeholders replaced and validated in '$resolvedRepoRoot'"
         return
     }
@@ -139,8 +146,12 @@ try
     $TEMPLATE_OWNER_LOWER = $TEMPLATE_OWNER.ToLower()
 
     # Preconditions
+    Write-Host 'Checking prerequisites...' -ForegroundColor Cyan -NoNewline
     Test-ToolExists 'git'
     Test-ToolExists 'gh'
+    Write-Host ' done' -ForegroundColor Green
+
+    Write-Host 'Authenticating with GitHub...' -ForegroundColor Cyan -NoNewline
     if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else
     {
         # Fallback local check if helper not available
@@ -151,8 +162,10 @@ try
             if ($DryRun) { Write-Warning '[dry-run] Would run: gh auth login' } else { Invoke-External -FilePath 'gh' -ArgumentList @('auth', 'login') | Out-Null }
         }
     }
+    Write-Host ' done' -ForegroundColor Green
 
     # Determine final repo names (ensure not colliding; try up to 5 suffixes)
+    Write-Host 'Resolving repo names...' -ForegroundColor Cyan -NoNewline
     $repoNames = @()
     for ($i = 0; $i -lt 5 -and -not $repoNames; $i++)
     {
@@ -173,6 +186,7 @@ try
         }
     }
     if (-not $repoNames) { throw "Unable to find an available set of repo names after multiple attempts for base '$RepoName'" }
+    Write-Host " $($repoNames -join ', ')" -ForegroundColor Green
 
     Write-Output ''
     if (-not $Yes)
@@ -203,43 +217,43 @@ try
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'create-repo' -Message "Creating $Owner/$repoName" -Data @{ owner = $Owner; repoName = $repoName; visibility = $Visibility } }
 
         # Create repository
-        Write-Host "Creating repository '$Owner/$repoName'..." -NoNewline
+        Write-Host "Creating repository '$Owner/$repoName'..." -ForegroundColor Cyan -NoNewline
         New-GitHubRepository -Owner $Owner -Name $repoName -Visibility $Visibility
-        Write-Host " done"
+        Write-Host ' done' -ForegroundColor Green
 
         # Poll GitHub API until the template's initial commit exists on the default branch.
-        Write-Host "Waiting for template initialization..." -NoNewline
+        Write-Host 'Waiting for template initialization...' -ForegroundColor Cyan -NoNewline
         $pollResult = Wait-TemplateReady -Owner $Owner -RepoName $repoName
         if ($pollResult.Ready)
         {
-            Write-Host " ready ($($pollResult.ElapsedSeconds)s)"
+            Write-Host " ready ($($pollResult.ElapsedSeconds)s)" -ForegroundColor Green
         }
         else
         {
-            Write-Host " timed out after $($pollResult.ElapsedSeconds)s, proceeding anyway"
-            Write-Warning "Template initialization not confirmed — clone may race."
+            Write-Host " timed out after $($pollResult.ElapsedSeconds)s" -ForegroundColor Yellow
+            Write-Warning 'Template initialization not confirmed — clone may race.'
         }
 
         # Create repo secrets needed for agent auth
         #New-RepoSecret 'CLAUDE_CODE_OAUTH_TOKEN'
-        Write-Host "Setting repo secrets and variables..." -NoNewline
+        Write-Host 'Setting repo secrets and variables...' -ForegroundColor Cyan -NoNewline
         New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'GEMINI_API_KEY'
         # New-RepoSecret -Owner $Owner -RepoName $repoName -SecretName 'ZHIPU_API_KEY'
         # need to add repository variables
         #VERSION_PREFIX = '0.0.1'
         New-RepoVariable -Owner $Owner -RepoName $repoName -VariableName 'VERSION_PREFIX' -VariableValue '0.0.1'
-        Write-Host " done"
+        Write-Host ' done' -ForegroundColor Green
 
-        Write-Host "Cloning '$Owner/$repoName'..." -NoNewline
+        Write-Host "Cloning '$Owner/$repoName'..." -ForegroundColor Cyan -NoNewline
         $clonePath = Get-ClonePath -Parent $CloneParentDir -Name $repoName
         Invoke-GitClone -Owner $Owner -Name $repoName -Dest $clonePath
-        Write-Host " done ($clonePath)"
+        Write-Host " done ($clonePath)" -ForegroundColor Green
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'clone' -Message "Cloned $Owner/$repoName" -Data @{ clonePath = $clonePath } }
 
         # Copy plan docs
-        Write-Host "Copying plan docs..." -NoNewline
+        Write-Host 'Copying plan docs...' -ForegroundColor Cyan -NoNewline
         Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
-        Write-Host " done"
+        Write-Host ' done' -ForegroundColor Green
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'copy-docs' -Message "Copied plan docs" -Data @{ sourceDir = $PlanDocsDir; repoRoot = $clonePath } }
 
         # Snapshot file list before replacement
@@ -252,22 +266,22 @@ try
         Write-Verbose "[TRACE:Main] TEMPLATE_OWNER: '$TEMPLATE_OWNER' | Owner: '$Owner'"
 
         # Replace template placeholders in file contents and path names
-        Write-Host "Replacing template placeholders (repo name)..." -NoNewline
+        Write-Host 'Replacing template placeholders (repo name)...' -ForegroundColor Cyan -NoNewline
         Write-Verbose "[TRACE:Main] --- Step 1: Replace repo name ---"
         Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
-        Write-Host " done"
+        Write-Host ' done' -ForegroundColor Green
 
         # Replace template owner in image/registry references (e.g. ghcr.io/intel-agency/... -> ghcr.io/nam20485/...)
         $ownerLower = $Owner.ToLower()
         if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
         {
-            Write-Host "Replacing template placeholders (owner)..." -NoNewline
+            Write-Host 'Replacing template placeholders (owner)...' -ForegroundColor Cyan -NoNewline
             Write-Verbose "[TRACE:Main] --- Step 2: Replace owner ---"
             Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
-            Write-Host " done"
+            Write-Host ' done' -ForegroundColor Green
         }
         else
         {
@@ -286,35 +300,35 @@ try
         }
 
         # Commit and push
-        Write-Host "Committing and pushing..." -NoNewline
+        Write-Host 'Committing and pushing...' -ForegroundColor Cyan -NoNewline
         $seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
         $rebased = Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
 
         if ($rebased)
         {
-            Write-Host " rebase required"
+            Write-Host ' rebase required' -ForegroundColor Yellow
             # Template race: rebase pulled in un-replaced template files.
             # Re-run all replacements on the rebased tree.
             Write-Warning "Template race detected — re-running placeholder replacements after rebase..."
 
-            Write-Host "Re-replacing template placeholders (repo name) after rebase..." -NoNewline
+            Write-Host 'Re-replacing template placeholders (repo name) after rebase...' -ForegroundColor Cyan -NoNewline
             Write-Verbose "[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
-            Write-Host " done"
+            Write-Host ' done' -ForegroundColor Green
 
             $ownerLower = $Owner.ToLower()
             if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
             {
-                Write-Host "Re-replacing template placeholders (owner) after rebase..." -NoNewline
+                Write-Host 'Re-replacing template placeholders (owner) after rebase...' -ForegroundColor Cyan -NoNewline
                 Write-Verbose "[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---"
                 Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
                 Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
-                Write-Host " done"
+                Write-Host ' done' -ForegroundColor Green
             }
 
             # Amend the seed commit with the post-rebase replacements and force push
-            Write-Host "Amending commit and force-pushing..." -NoNewline
+            Write-Host 'Amending commit and force-pushing...' -ForegroundColor Cyan -NoNewline
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'add', '.') | Out-Null
             $amendCommit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'commit', '--amend', '--no-edit') -AllowFail
             if ($amendCommit.ExitCode -ne 0)
@@ -323,15 +337,15 @@ try
                 if ($amendMsg -notmatch 'nothing to commit') { throw "git commit --amend failed: $amendMsg" }
             }
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'push', '--force-with-lease', 'origin', 'main') | Out-Null
-            Write-Host " done"
+            Write-Host ' done' -ForegroundColor Green
         }
         else
         {
-            Write-Host " done"
+            Write-Host ' done' -ForegroundColor Green
         }
 
         # Output clone destination path
-        Write-Output "SUCCESS: '$clonePath' created and checked in"
+        Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
     }
 
@@ -348,6 +362,7 @@ try
         if ($LaunchEditor -and $lastEditorTarget) { code-insiders $lastEditorTarget }
     }
 
+    Write-Host '=== All done ===' -ForegroundColor Cyan
     if (Get-Command Complete-RunLog -ErrorAction SilentlyContinue) { Complete-RunLog -Status 'SUCCESS' }
 }
 catch
