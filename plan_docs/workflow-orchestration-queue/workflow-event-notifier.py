@@ -140,6 +140,5 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-
     # In dev, run with: uv run uvicorn notifier_service:app --reload
     uvicorn.run(app, host="0.0.0.0", port=8000)
