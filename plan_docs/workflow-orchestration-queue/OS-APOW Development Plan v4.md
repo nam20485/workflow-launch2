@@ -1,12 +1,12 @@
-# **OS-APOW: Detailed Development Plan**
+# **workflow-orchestration-queue: Detailed Development Plan**
 
-This document provides a comprehensive, multi-phase roadmap for building the **Opencode-Server Agent Powered Orchestration Workflow (OS-APOW)** system. It prioritizes the creation of a resilient **Sentinel Orchestrator** to handle task discovery and execution, followed by the "Ear" (webhook) and advanced planning layers.
+This document provides a comprehensive, multi-phase roadmap for building the **workflow-orchestration-queue** system. It prioritizes the creation of a resilient **Sentinel Orchestrator** to handle task discovery and execution, followed by the "Ear" (webhook) and advanced planning layers.
 
 ## **1\. Motivation & Guiding Principles**
 
-Traditional agentic development is "Human-Gated." Even with advanced models, a human must manually clone repositories, configure local .env files, and initiate starting prompts. OS-APOW transforms this workflow into an **Autonomous Development Floor**. By leveraging a persistent background service, work flows directly from high-level project management artifacts (GitHub Issues) to technical implementation (verified Pull Requests) without human intervention.
+Traditional agentic development is "Human-Gated." Even with advanced models, a human must manually clone repositories, configure local .env files, and initiate starting prompts. workflow-orchestration-queue transforms this workflow into an **Autonomous Development Floor**. By leveraging a persistent background service, work flows directly from high-level project management artifacts (GitHub Issues) to technical implementation (verified Pull Requests) without human intervention.
 
-Success for OS-APOW is defined as "Zero-Touch Construction": a user opens a single "Specification Issue" and, within minutes, receives a functional, test-passed branch and PR.
+Success for workflow-orchestration-queue is defined as "Zero-Touch Construction": a user opens a single "Specification Issue" and, within minutes, receives a functional, test-passed branch and PR.
 
 **Guiding Principles:**
 

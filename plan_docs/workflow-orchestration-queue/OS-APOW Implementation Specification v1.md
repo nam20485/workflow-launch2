@@ -2,7 +2,7 @@
 
 ## **App Title**
 
-**OS-APOW (Opencode-Server Agent Powered Orchestration Workflow)**
+workflow-orchestration-queue
 
 ## **Development Plan**
 
@@ -15,16 +15,16 @@ The system's lifecycle is structured across a 4-phase evolutionary roadmap. This
 
 ## **Description**
 
-OS-APOW is a groundbreaking headless agentic orchestration platform that fundamentally transforms the current paradigm of "interactive" AI coding. Today's AI development tools (like GitHub Copilot or Cursor) act as passive co-pilots; they sit idle until a human developer explicitly highlights code, writes a prompt, and continuously guides the AI through every roadblock. OS-APOW eliminates this human-in-the-loop dependency, shifting the AI from a passive assistant to an autonomous background production service—effectively acting as a tireless junior developer on your team.
+workflow-orchestration-queue is a groundbreaking headless agentic orchestration platform that fundamentally transforms the current paradigm of "interactive" AI coding. Today's AI development tools (like GitHub Copilot or Cursor) act as passive co-pilots; they sit idle until a human developer explicitly highlights code, writes a prompt, and continuously guides the AI through every roadblock. workflow-orchestration-queue eliminates this human-in-the-loop dependency, shifting the AI from a passive assistant to an autonomous background production service—effectively acting as a tireless junior developer on your team.
 
-The system natively integrates into existing Agile workflows by translating standard project management artifacts (such as GitHub Issues, Epics, and Kanban board movements) into automated Execution Orders. A product manager or lead engineer simply writes a standard issue description, applies a specific label, and walks away. The OS-APOW system detects this intent and dispatches a specialized AI agent (the Opencode-Server worker). This worker autonomously clones the target repository, configures its own local environment, generates and modifies code across multiple files, runs local test suites to verify its changes, and ultimately submits a fully formatted Pull Request for human review. It bridges the gap between natural language requirements and deployed infrastructure.
+The system natively integrates into existing Agile workflows by translating standard project management artifacts (such as GitHub Issues, Epics, and Kanban board movements) into automated Execution Orders. A product manager or lead engineer simply writes a standard issue description, applies a specific label, and walks away. The workflow-orchestration-queue system detects this intent and dispatches a specialized AI agent (the Opencode-Server worker). This worker autonomously clones the target repository, configures its own local environment, generates and modifies code across multiple files, runs local test suites to verify its changes, and ultimately submits a fully formatted Pull Request for human review. It bridges the gap between natural language requirements and deployed infrastructure.
 
 ## **Overview**
 
 The system architecture is strictly decoupled, adhering to an event-driven pattern that ensures high availability, modularity, and security. It is distributed across four conceptual pillars, each handling a distinct domain of the workflow:
 
 1. **The Ear (Work Event Notifier):** A high-performance FastAPI-based webhook receiver serving as the system's sensory input. It securely ingests incoming events—primarily GitHub webhook events (issue creation, PR comments, label changes)—and parses the incoming JSON payloads. It maps these disparate events into standardized WorkItem manifests, ensuring that the downstream queue only deals with sanitized, uniform data structures, regardless of the originating platform.  
-2. **The State (Work Queue):** A distributed state management layer that uniquely leverages GitHub Issues as its primary database, a concept referred to as "Markdown as a Database." Rather than maintaining an opaque, proprietary SQL database, OS-APOW uses public-facing issue labels to manage task states (agent:queued, agent:in-progress, agent:success, agent:error). This provides perfect transparency; humans can view, audit, pause, or cancel the agent's state simply by looking at the GitHub UI.  
+2. **The State (Work Queue):** A distributed state management layer that uniquely leverages GitHub Issues as its primary database, a concept referred to as "Markdown as a Database." Rather than maintaining an opaque, proprietary SQL database, workflow-orchestration-queue uses public-facing issue labels to manage task states (agent:queued, agent:in-progress, agent:success, agent:error). This provides perfect transparency; humans can view, audit, pause, or cancel the agent's state simply by looking at the GitHub UI.  
 3. **The Brain (Sentinel Orchestrator):** The core decision engine. This asynchronous Python background service is responsible for polling the queue and claiming tasks. It utilizes GitHub's assignment feature as a distributed locking mechanism to prevent race conditions among multiple Sentinels. Once a task is securely claimed, the Brain marshals the necessary resources, injects temporary authentication tokens, and manages the entire lifecycle of the worker container, waiting for its exit code to determine the next step.  
 4. **The Hands (Opencode Worker):** The execution layer where the actual coding happens. This is an isolated, high-fidelity Docker DevContainer invoked via a strict shell bridge (./scripts/devcontainer-opencode.sh). Inside this container, an LLM-driven agent executes markdown-based instruction modules against the cloned codebase. Because it uses a DevContainer, the AI operates in a locally reproducible environment that is bit-for-bit identical to what a human developer would use, completely eliminating "it works on my machine" discrepancies.
 
@@ -112,7 +112,7 @@ The system architecture is strictly decoupled, adhering to an event-driven patte
 
 ## **Project Structure/Package System**
 
-os-apow-orchestrator/  
+workflow-orchestration-queue/  
 ├── pyproject.toml               \# Core definition file for uv dependencies and metadata  
 ├── uv.lock                      \# Deterministic lockfile for exact package versions  
 ├── src/                         \# Main application source code  
@@ -135,7 +135,7 @@ os-apow-orchestrator/
 
 ## **GitHub**
 
-**Repo:** https://github.com/intel-agency/os-apow *(configurable dynamically via environment variables in .env)*
+**Repo:** <https://github.com/intel-agency/workflow-orchestration-queue> *(configurable dynamically via environment variables in .env)*
 
 **Branch Strategy:**
 

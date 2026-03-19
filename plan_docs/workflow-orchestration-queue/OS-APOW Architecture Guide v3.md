@@ -1,8 +1,8 @@
-# **Architecture Guide: OS-APOW (Opencode-Server Agent Powered Orchestration Workflow)**
+# **Architecture Guide: workflow-orchestration-queue**
 
 ## **1\. Executive Summary**
 
-OS-APOW represents a paradigm shift from **Interactive AI Coding** to **Headless Agentic Orchestration**. Traditional AI developer tools require a human-in-the-loop to navigate files, provide context, and trigger executions. OS-APOW replaces this manual overhead with a persistent, event-driven infrastructure. It transforms standard project management artifacts—specifically GitHub Issues—into "Execution Orders" that are autonomously fulfilled by specialized AI agents. This system moves the agent from a passive co-pilot role to a background production service capable of multi-step, specification-driven task fulfillment without human intervention.
+workflow-orchestration-queue represents a paradigm shift from **Interactive AI Coding** to **Headless Agentic Orchestration**. Traditional AI developer tools require a human-in-the-loop to navigate files, provide context, and trigger executions. workflow-orchestration-queue replaces this manual overhead with a persistent, event-driven infrastructure. It transforms standard project management artifacts—specifically GitHub Issues—into "Execution Orders" that are autonomously fulfilled by specialized AI agents. This system moves the agent from a passive co-pilot role to a background production service capable of multi-step, specification-driven task fulfillment without human intervention.
 
 The system is designed to be **Self-Bootstrapping**. The initial deployment is seeded from a clone of the ai-new-workflow-app-template, which provides the foundational Docker/DevContainer configs and the devcontainer-opencode.sh bridge. Once the "Sentinel" is active, the system uses its own orchestration capabilities (via the project-setup workflow) to refine its components, effectively allowing the AI to "build its own house" while residing within it. This details the transition from a manual seed to an autonomous engine by using its own orchestration logic to configure its internal environment and indices.
 
@@ -64,7 +64,7 @@ The system is designed to be **Self-Bootstrapping**. The initial deployment is s
 ### **ADR 08: Polling-First Resiliency Model**
 
 * **Decision:** The Sentinel uses a polling loop as its primary discovery mechanism; Webhooks (the Notifier) are treated as an "Optimization."  
-* **Rationale:** Webhooks are "Fire and Forget." If the OS-APOW server is down for maintenance or a power cycle during a GitHub event, that event is lost forever. Polling ensures that upon every restart, the Sentinel performs a "State Reconciliation" by looking at GitHub labels, making the system inherently self-healing and resilient against server downtime or network partitions.
+* **Rationale:** Webhooks are "Fire and Forget." If the workflow-orchestration-queue server is down for maintenance or a power cycle during a GitHub event, that event is lost forever. Polling ensures that upon every restart, the Sentinel performs a "State Reconciliation" by looking at GitHub labels, making the system inherently self-healing and resilient against server downtime or network partitions.
 
 ### **ADR 09: Provider-Agnostic Interface Layer**
 
@@ -92,10 +92,10 @@ The system is designed to be **Self-Bootstrapping**. The initial deployment is s
 
 ## **6\. Self-Bootstrapping Lifecycle**
 
-OS-APOW is built to be an iterative, evolving system.
+workflow-orchestration-queue is built to be an iterative, evolving system.
 
 1. **Bootstrap:** The developer manually clones the ai-new-workflow-app-template.  
 2. **Seed:** The developer adds these plan docs to the repo and runs the create-repo-from-plan-docs script.  
 3. **Init:** The developer runs devcontainer-opencode.sh up for the first time.  
 4. **Orchestrate:** The developer uses the orchestrate-dynamic-workflow command with the project-setup assignment to allow the agent to configure its own environment variables and index the codebase. This phase transitions the system from human-managed setup to agent-managed environment configuration.  
-5. **Autonomous Phase:** Once initialized, the "Sentinel" service is started on the server, and from that point forward, the AI manages all further development of the OS-APOW system itself.
+5. **Autonomous Phase:** Once initialized, the "Sentinel" service is started on the server, and from that point forward, the AI manages all further development of the workflow-orchestration-queue system itself.
