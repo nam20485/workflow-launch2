@@ -6,37 +6,45 @@ to a unified Work Item queue.
 
 import hmac
 import hashlib
-import json
+import os
+import sys
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
-from enum import Enum
+from typing import Dict, Any
 from fastapi import FastAPI, Request, HTTPException, Header, Depends
-from pydantic import BaseModel
 
+# Canonical shared model — see I-1 / R-3 in Plan Review
+from src.models.work_item import (
+    TaskType,
+    WorkItemStatus,
+    WorkItem,
+)
+
+
+# --- 0. Environment validation at import time (I-5 / R-6) ---
+
+_WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
+_GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+_PLACEHOLDER_VALUES = {"your_webhook_secret_here", "YOUR_GITHUB_TOKEN", ""}
+
+if _WEBHOOK_SECRET in _PLACEHOLDER_VALUES:
+    print(
+        "FATAL: WEBHOOK_SECRET is missing or still set to a placeholder value. "
+        "Set it to the GitHub App webhook secret.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+if _GITHUB_TOKEN in _PLACEHOLDER_VALUES:
+    print(
+        "FATAL: GITHUB_TOKEN is missing or still set to a placeholder value.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+WEBHOOK_SECRET = _WEBHOOK_SECRET.encode()
 
 # --- 1. Modular Interface Definitions ---
-
-
-class WorkItemType(str, Enum):
-    APPLICATION_PLAN = "APPLICATION_PLAN"
-    EPIC = "EPIC"
-    STORY = "STORY"
-    TASK = "TASK"
-
-
-class WorkItemStatus(str, Enum):
-    QUEUED = "queued"
-    IN_PROGRESS = "in-progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
-
-class WorkItem(BaseModel):
-    provider_id: str
-    target_repo: str
-    item_type: WorkItemType
-    content: str
-    raw_payload: Dict[str, Any]
 
 
 class ITaskQueue(ABC):
@@ -61,11 +69,9 @@ class GitHubIssuesQueue(ITaskQueue):
 
     def __init__(self, token: str):
         self.token = token
-        # In a real impl, we'd use httpx or a GH library here
-        print(f"Initialized GH Issues Queue with token: {token[:4]}***")
 
     async def add_to_queue(self, item: WorkItem) -> bool:
-        print(f"[Queue] Triage: Adding {item.item_type} to GH Issue {item.provider_id}")
+        print(f"[Queue] Triage: Adding {item.task_type} to GH Issue {item.id}")
         # Logic: Add 'agent:queued' label to the issue via GH API
         return True
 
@@ -82,15 +88,10 @@ class GitHubIssuesQueue(ITaskQueue):
 app = FastAPI(title="OS-APOW Event Notifier")
 
 
-# Dependency Injection for the Queue Implementation
 def get_queue() -> ITaskQueue:
-    # Phase 1: Default to GitHub implementation
-    # This can be swapped for LinearIssuesQueue() in Phase 4
-    return GitHubIssuesQueue(token="YOUR_GITHUB_TOKEN")
-
-
-# Webhook Secret (Configured in GH App)
-WEBHOOK_SECRET = b"your_webhook_secret_here"
+    """Dependency injection for the queue implementation.
+    Phase 1: GitHub. Can be swapped for Linear, Redis, etc."""
+    return GitHubIssuesQueue(token=_GITHUB_TOKEN)
 
 
 async def verify_signature(request: Request, x_hub_signature_256: str = Header(None)):
@@ -114,23 +115,24 @@ async def handle_github_webhook(
     payload = await request.json()
     event_type = request.headers.get("X-GitHub-Event")
 
-    # Triage Logic: Map GH Events to Unified Work Items
     if event_type == "issues" and payload.get("action") == "opened":
         issue = payload["issue"]
+        labels = [label["name"] for label in issue.get("labels", [])]
 
-        # Check if it matches an OS-APOW template (simulated)
-        if "[Application Plan]" in issue["title"] or "agent:plan" in [
-            l["name"] for l in issue["labels"]
-        ]:
+        if "[Application Plan]" in issue["title"] or "agent:plan" in labels:
             work_item = WorkItem(
-                provider_id=str(issue["number"]),
-                target_repo=payload["repository"]["full_name"],
-                item_type=WorkItemType.APPLICATION_PLAN,
-                content=issue["body"],
+                id=str(issue["id"]),
+                issue_number=issue["number"],
+                source_url=issue["html_url"],
+                target_repo_slug=payload["repository"]["full_name"],
+                task_type=TaskType.PLAN,
+                context_body=issue.get("body") or "",
+                status=WorkItemStatus.QUEUED,
+                node_id=issue["node_id"],
                 raw_payload=payload,
             )
             await queue.add_to_queue(work_item)
-            return {"status": "accepted", "item_id": work_item.provider_id}
+            return {"status": "accepted", "item_id": work_item.id}
 
     return {"status": "ignored", "reason": "No actionable OS-APOW event mapping found"}
 

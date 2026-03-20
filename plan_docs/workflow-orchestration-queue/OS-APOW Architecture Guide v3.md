@@ -28,21 +28,23 @@ The system is designed to be **Self-Bootstrapping**. The initial deployment is s
   * agent:reconciling: A specialized state for a "Reconciliation Loop" in the Sentinel. If a Sentinel instance crashes while a task is 'in-progress', a background loop identifies "stale" tasks (e.g., no updates for 15 minutes) and moves them here for re-assignment or recovery, ensuring the system is truly self-healing.  
   * agent:success: The workflow reached a terminal success state (e.g., PR created and tests passed).  
   * agent:error: A technical failure occurred. **Detail:** The agent automatically posts the last 50 lines of the worker's stderr as a comment for the developer. This protocol ensures the system doesn't just stall; it reports diagnostic logs back to the issue UI.  
-* **Concurrency Control:** The system utilizes GitHub "Assignees" as a semaphore. A Sentinel will only pick up a queued task if it can successfully assign the issue to itself, ensuring no two containers work on the same branch simultaneously.
+* **Concurrency Control:** The system utilizes GitHub "Assignees" as a semaphore. A Sentinel will only pick up a queued task if it can successfully assign the issue to itself **and verify the assignment by re-fetching the issue** (assign-then-verify pattern). This two-step check ensures no two Sentinel instances can claim the same ticket, even under simultaneous API calls. If another Sentinel won the race, the loser aborts gracefully and moves to the next queued item. The `SENTINEL_BOT_LOGIN` env var must be set to the GitHub login of the bot account used by the Sentinel.
 
 ### **C. The Sentinel Orchestrator (The "Brain")**
 
 * **Technology Stack:** Python (Async Background Service), PowerShell Core (pwsh), Docker CLI.  
 * **Role:** The persistent supervisor that manages the lifecycle of Worker environments and maps high-level intent to low-level shell commands.  
 * **Lifecycle Management Detail:**  
-  1. **Polling Discovery:** Every 60 seconds (configurable), the Sentinel scans the organization for issues with the agent:queued label. This strategy uses a configurable heartbeat and interval-based discovery to ensure a steady task discovery cycle.  
+  1. **Polling Discovery:** Every 60 seconds (configurable), the Sentinel scans the organization for issues with the agent:queued label using the **GitHub Search API** (`GET /search/issues?q=label:agent:queued+org:{ORG}+is:issue+is:open`) for org-wide cross-repo discovery. The `GITHUB_REPO` env var is optional — when set, restricts polling to a single repo. This strategy uses a configurable heartbeat and interval-based discovery to ensure a steady task discovery cycle. On rate-limit responses (HTTP 403/429), the Sentinel applies **jittered exponential backoff** to avoid hammering the API.  
   2. **Auth Synchronization:** Before execution, it runs scripts/gh-auth.ps1 and scripts/common-auth.ps1. This ensures that the environment has the necessary scoped installation tokens to perform git operations and API calls, explicitly linking the Orchestrator's logic to your provided authentication infrastructure.  
   3. **The Shell-Bridge Protocol:** The Sentinel manages the Worker via three primary commands, utilizing formalized return codes (e.g., Exit 0 \= Success, Exit 1-10 \= Infra Error, Exit 11+ \= Logic/Agent Error) to determine if it should retry or escalate to a human:  
      * ./scripts/devcontainer-opencode.sh up: Ensures the Docker network and base volumes are provisioned.  
      * ./scripts/devcontainer-opencode.sh start: Launches the opencode-server inside the DevContainer.  
      * ./scripts/devcontainer-opencode.sh prompt "{workflow\_instruction}": This is the core "dispatch" mechanism.  
   4. **Workflow Mapping:** It translates the issue type into a specific prompt string. For example, an issue with the epic label triggers the implement-epic workflow module. The metadata is used to select the correct agent-instruction module for precise prompt construction.  
-  5. **Telemetry:** The Sentinel captures the Worker's stdout and streams it to a local log file, while periodically updating the GitHub issue with "Heartbeat" comments to let the user know the agent is still alive. This logging and telemetry data provides observability into long-running worker processes.
+  5. **Telemetry:** The Sentinel captures the Worker's stdout and streams it to a local log file, while periodically updating the GitHub issue with "Heartbeat" comments to let the user know the agent is still alive. **Heartbeats are posted every 5 minutes** (configurable via `SENTINEL_HEARTBEAT_INTERVAL`) by a background `asyncio` coroutine running concurrently with `process_task()`. This is critical because `devcontainer-opencode.sh prompt` calls can take 15+ minutes during subagent delegation with zero client-side output. The heartbeat is cancelled when the task completes.
+  6. **Environment Reset:** After each task, the Sentinel optionally tears down the worker environment to prevent state bleed between tasks. The `SENTINEL_ENV_RESET` env var controls this: `"none"` (keep running), `"stop"` (stop but keep container for fast restart), `"down"` (full teardown, pristine). Default: `"stop"`.
+  7. **Graceful Shutdown:** The Sentinel handles `SIGTERM` and `SIGINT` signals. On receipt, it sets a shutdown flag, finishes the current task, closes the `httpx` connection pool, and exits cleanly. This prevents orphaned `agent:in-progress` issues when the container is stopped.
 
 ### **D. Opencode Worker (The "Hands")**
 
@@ -79,7 +81,7 @@ The system is designed to be **Self-Bootstrapping**. The initial deployment is s
 4. **Claim:** The **Sentinel** poller detects the new label. It assigns the issue to the Agent account and updates the label to agent:in-progress.  
 5. **Sync:** Sentinel runs git clone or git pull on the target repo into a managed workspace volume, ensuring the local repository state is synced before the Worker container begins work.  
 6. **Environment Check:** Sentinel executes devcontainer-opencode.sh up.  
-7. **Dispatch:** Sentinel sends the command: ./scripts/devcontainer-opencode.sh prompt "Run workflow: create-app-plan.md for context: https://github.com/org/repo/issues/123".  
+7. **Dispatch:** Sentinel sends the command: ./scripts/devcontainer-opencode.sh prompt "Run workflow: create-app-plan.md for context: <https://github.com/org/repo/issues/123>".  
 8. **Execution:** The **Worker** (Opencode) reads the issue, analyzes the tech stack, and calls the GitHub API to create 5 new "Epic" issues, each linked back to the parent Plan. This fleshes out how an "Application Plan" autonomously results in the creation of sub-tasks.  
 9. **Finalize:** The Worker posts a "Execution Complete" comment. The Sentinel detects the subprocess exit, removes the in-progress label, and adds agent:success.
 
@@ -87,7 +89,7 @@ The system is designed to be **Self-Bootstrapping**. The initial deployment is s
 
 * **Network Isolation:** Worker containers run in a dedicated Docker network. They can reach the internet to fetch packages but cannot access the Orchestrator's host network or local subnet. This isolation strategy prevents an agent from probing the local host infrastructure.  
 * **Credential Scoping:** The Sentinel manages the GitHub App Installation Token. This token is passed to the Worker container via a temporary environment variable that is destroyed as soon as the session ends. This "least privilege" model limits worker access to only what is necessary for the current task.  
-* **Credential Scrubbing & Audit Trail:** All log output from the Worker is piped through a regex-based "Scrubber." It produces a sanitized log for GitHub visibility and a raw, encrypted log for local forensic audit trails (The "Black Box"). This creates a secure internal record for forensics while preventing accidental leaking of sensitive credentials into public comments.  
+* **Credential Scrubbing & Audit Trail:** All log output from the Worker is piped through a regex-based "Scrubber" (`scrub_secrets()` in `src/models/work_item.py`). The scrubber strips patterns matching GitHub PATs (`ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`), Bearer tokens, API keys (`sk-*`), ZhipuAI keys, and IPv4 addresses. It produces a sanitized log for GitHub visibility and a raw, encrypted log for local forensic audit trails (The "Black Box"). This creates a secure internal record for forensics while preventing accidental leaking of sensitive credentials into public comments.  
 * **Resource Constraints:** Worker containers are assigned strict CPU and RAM limits (e.g., 2 CPUs, 4GB RAM) to prevent a "rogue agent" from causing a denial-of-service on the host server. This protects the host infrastructure and ensures orchestrator stability.
 
 ## **6\. Self-Bootstrapping Lifecycle**

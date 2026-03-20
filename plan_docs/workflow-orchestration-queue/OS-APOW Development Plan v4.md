@@ -56,6 +56,11 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
     * The script runs as a persistent service using uv run.  
     * Successfully logs the discovery of multiple issues across different repositories.  
     * Integrates with scripts/gh-auth.ps1 to maintain valid installation tokens for the GitHub App.  
+  * **Implementation Directions:**  
+    * On HTTP 403 or 429 responses, apply exponential backoff with random jitter: `wait = min(current_backoff + random(0, 0.1 * current_backoff), MAX_BACKOFF)`. Double `current_backoff` on each consecutive rate-limit hit. Reset to `POLL_INTERVAL` on any successful poll.  
+    * `MAX_BACKOFF` defaults to 960s (16 min) and is configurable via `SENTINEL_MAX_BACKOFF` env var.  
+    * Use the GitHub Search API (`GET /search/issues?q=label:agent:queued+org:{ORG}+is:issue+is:open`) for cross-repo discovery instead of single-repo issue listing. `GITHUB_REPO` env var becomes optional — when empty, poll across the entire org.  
+    * Create `httpx.AsyncClient` once in `GitHubQueue.__init__()` and reuse across all API calls for connection pooling. Add an `async close()` wired to shutdown.  
 * **Story 3: Shell-Bridge Dispatcher**  
   * **As an** Orchestrator, **I want** to invoke ./scripts/devcontainer-opencode.sh prompt when a task is found, **so that** the agentic environment begins technical work.  
   * **Rationale:** By piping the task into the existing shell bridge, we inherit all the SSH-agent forwarding, volume mounts, and Docker network configurations defined in the ai-new-workflow-app-template.  
@@ -69,13 +74,30 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
     * On task start, the Sentinel assigns the issue to the Agent account and posts a comment: "Sentinel ![][image1] is starting work."  
     * On completion, it removes the queue label and adds the terminal state label. For tasks exceeding 5 minutes, the Sentinel must post a \[Heartbeat\] comment every 5 minutes to confirm active status.  
     * If an error occurs, it attaches the last 20 lines of the worker log to a GitHub comment and performs contextual labeling: failures during 'up' or 'start' are flagged with agent:infra-failure, while failures during 'prompt' are flagged with agent:impl-error.  
+  * **Implementation Directions — Heartbeat:**  
+    * Implement a `_heartbeat_loop(item, start_time)` async coroutine that sleeps for `HEARTBEAT_INTERVAL` seconds (default 300, configurable via env var), then posts a status comment with elapsed time.  
+    * Launch the heartbeat as an `asyncio.create_task()` alongside `process_task()`. Cancel it in a `finally` block when the task completes.  
+    * This is critical because `devcontainer-opencode.sh prompt` calls can take 15+ minutes during subagent delegation with zero client-side output.  
+  * **Implementation Directions — Locking (Assign-then-Verify):**  
+    * Task claiming MUST use the assign-then-verify pattern to prevent race conditions between multiple Sentinel instances:  
+      1. Attempt to assign `SENTINEL_BOT_LOGIN` to the issue via `POST /repos/{owner}/{repo}/issues/{number}/assignees`.  
+      2. Re-fetch the issue via `GET /repos/{owner}/{repo}/issues/{number}`.  
+      3. Verify that `SENTINEL_BOT_LOGIN` appears in the `assignees` array.  
+      4. Only then update labels and post the claim comment.  
+    * If verification fails (another sentinel won the race), abort gracefully and move to the next queued item.  
+    * `SENTINEL_BOT_LOGIN` must be set to the GitHub login of the bot account. If unset, log a warning that locking is disabled.  
+  * **Implementation Directions — Credential Scrubbing:**  
+    * All log output and error messages posted to GitHub issue comments MUST be passed through a `scrub_secrets()` utility before posting.  
+    * The scrubber strips patterns matching: `ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`, `Bearer`, `token`, `sk-*`, and IPv4 addresses.  
+    * Implemented in the shared `src/models/work_item.py` module.  
 * **Story 5: Unique Instance Identification**  
   * **As an** Administrator, **I want** each Sentinel to generate or accept a unique SENTINEL\_ID on startup, **so that** its actions and issue assignments are clearly attributable in logs and the GitHub UI.  
 * **Story 6: Cost Guardrails & Resource Safety**  
   * **As an** Owner, **I want** the Sentinel to monitor LLM usage costs, **so that** the system does not exceed the daily budget during an autonomous loop.  
   * **Acceptance Criteria:**  
     * Sentinel checks a local credits\_used file after every prompt call.  
-    * The polling loop automatically shuts down and labels the issue agent:stalled-budget if a daily threshold is exceeded.
+    * The polling loop automatically shuts down and labels the issue agent:stalled-budget if a daily threshold is exceeded.  
+  * **Implementation Note:** Deferred from first version to reduce complexity. The `WorkItemStatus.STALLED_BUDGET` label and the `agent:stalled-budget` state are defined in the shared model but the monitoring logic should be implemented in a later iteration once the core polling-claim-execute loop is stable.
 
 ## **4\. Phase 2: The "Ear" (Webhook Automation)**
 
@@ -146,9 +168,9 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
 
 | **LLM "Looping" / Hallucination** | High | Implement a max\_steps timeout in the opencode run config. Implement Story 6 "Cost Guardrails" to monitor usage. Add an agent:retries counter to labels; if \>3, move to agent:stalled. |
 
-| **Concurrency Collisions** | Medium | Use the GitHub "Assignee" feature as a locking mechanism. The Sentinel must successfully assign the issue to itself before changing status to in-progress. |
+| **Concurrency Collisions** | Medium | Use the GitHub "Assignee" feature as a locking mechanism. The Sentinel must use the **assign-then-verify** pattern: (1) assign itself, (2) re-fetch the issue, (3) verify it is the current assignee before proceeding. If another Sentinel won the race, abort gracefully. |
 
-| **Container Drift** | Medium | The Sentinel runs docker-compose down && up periodically (e.g., between major Epics) to ensure a perfectly clean worker environment. |
+| **Container Drift** | Medium | The Sentinel runs environment teardown between tasks, controlled by the `SENTINEL_ENV_RESET` env var. Options: `"none"` (keep running, fastest), `"stop"` (stop container but keep it for fast restart), `"down"` (full teardown, pristine but slower). Default: `"stop"`. |
 
 | **Security Injection** | Medium | Strict HMAC signature validation on all webhooks; the worker container is denied access to the host's .env files except via explicit injection. |
 
@@ -157,5 +179,29 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
 * Support for non-Git providers (e.g., Bitbucket, SVN).  
 * Automatic deployment to production cloud environments (Agents stop at the PR/Staging phase).  
 * Real-time websocket log streaming to a custom web GUI (Logs are retrieved via GitHub Issue comments or host file tailing only).
+
+## **9\. Cross-Cutting Implementation Directions**
+
+The following directions apply across multiple stories and phases. They are drawn from the plan review (see `OS-APOW Plan Review.md`).
+
+### **Unified Data Model (I-1 / R-3)**
+
+All Pydantic models (`WorkItem`, `TaskType`, `WorkItemStatus`) MUST be defined in a single shared module: `src/models/work_item.py`. Both `orchestrator_sentinel.py` and `notifier_service.py` import from there. This prevents model divergence between components.
+
+### **Graceful Shutdown (R-4)**
+
+The Sentinel MUST handle `SIGTERM` and `SIGINT` via `signal.signal()`. On receipt, set a `_shutdown_requested` flag. The polling loop checks this flag before starting a new task and after each sleep. The current task is allowed to finish before the process exits. This prevents orphaned `agent:in-progress` issues when the container is stopped by Docker or systemd.
+
+### **Subprocess Timeout Safety Net (R-8)**
+
+All `devcontainer-opencode.sh` subprocess calls MUST use `asyncio.wait_for()` with a timeout. The prompt command uses `SUBPROCESS_TIMEOUT` (default 5700s = 95 min), set higher than `run_opencode_prompt.sh`'s `HARD_CEILING_SECS` (5400s = 90 min) to avoid racing the inner watchdog. Infrastructure commands (`up`, `start`, `stop`, `down`) use shorter timeouts (60\u2013300s).
+
+### **Environment Variable Validation (I-5 / R-6)**
+
+Both the Sentinel and the Notifier MUST validate required environment variables at startup and crash immediately with a clear error message if any are missing or still set to placeholder values. Never embed secrets as default values in source code.
+
+### **Connection Pooling (I-4 / R-5)**
+
+The `GitHubQueue` class MUST create a single `httpx.AsyncClient` in `__init__()` and reuse it across all API calls. An `async close()` method releases the pool during graceful shutdown.
 
 [image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAZCAYAAADAHFVeAAABeElEQVR4Xu2TvUrEUBCFd13xD0RRbPKfsBIJwlaCpYUg+A6ChYXvIDZWdraCb6AIwoJisY2dha2NTToLH0LPLHOX8ZDEQu3ywZDdOSeT5Nx7O52Wv6Yoipksy5a4D6a44fv+KlcQBCvsqyVJkvM4jj+5ZJD1hWHosYfqA7Xf7/dn7X2VwPgqN3Gf6MJzFkXRI4ausYj+nc6YZu0b7u24b0EKy/DcYOiFxF+hb0Mv5craBMldHiZDWLNgyJ74EOkWa4LneQuYcQnPlfxmfUyapgMZgmHHrFngORFfVYSCedgDr7mjp5tkJJuARQsGPTetKxJaV0/1l2mEw7p1sOi6ltx3uJhRp/jbZV3e9qBpHRx5ni+Kr2ldod/qrOqE3DmrNSjwbYgP10PWHPLVTTGLYahD5lizaERlXQJymDXCa9YmqOFX5wv9Xehv8O2wZunpw0YsWDTCl6oIscHmob1De2JtDKLY1IdwHVmf2zwNdZ/8cDZbWlr+ny9Eg4OAbRYuWgAAAABJRU5ErkJggg==>
