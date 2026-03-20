@@ -8,16 +8,16 @@ import hmac
 import hashlib
 import os
 import sys
-from abc import ABC, abstractmethod
 from typing import Dict, Any
 from fastapi import FastAPI, Request, HTTPException, Header, Depends
 
-# Canonical shared model — see I-1 / R-3 in Plan Review
+# Canonical shared model and queue
 from src.models.work_item import (
     TaskType,
     WorkItemStatus,
     WorkItem,
 )
+from src.queue.github_queue import ITaskQueue, GitHubQueue
 
 
 # --- 0. Environment validation at import time (I-5 / R-6) ---
@@ -44,45 +44,7 @@ if _GITHUB_TOKEN in _PLACEHOLDER_VALUES:
 
 WEBHOOK_SECRET = _WEBHOOK_SECRET.encode()
 
-# --- 1. Modular Interface Definitions ---
-
-
-class ITaskQueue(ABC):
-    """Interface for the Work Queue (e.g., GH Issues, Redis, etc.)"""
-
-    @abstractmethod
-    async def add_to_queue(self, item: WorkItem) -> bool:
-        pass
-
-    @abstractmethod
-    async def update_status(
-        self, provider_id: str, status: WorkItemStatus, comment: str
-    ):
-        pass
-
-
-# --- 2. Concrete Implementation: GitHub Issues Queue ---
-
-
-class GitHubIssuesQueue(ITaskQueue):
-    """Phase 1 Implementation: Maps WorkItems to GitHub Issue Labels/Comments"""
-
-    def __init__(self, token: str):
-        self.token = token
-
-    async def add_to_queue(self, item: WorkItem) -> bool:
-        print(f"[Queue] Triage: Adding {item.task_type} to GH Issue {item.id}")
-        # Logic: Add 'agent:queued' label to the issue via GH API
-        return True
-
-    async def update_status(
-        self, provider_id: str, status: WorkItemStatus, comment: str
-    ):
-        print(f"[Queue] Status Update: {provider_id} -> {status}")
-        # Logic: Post comment and update labels
-
-
-# --- 3. FastAPI Application ---
+# --- 1. FastAPI Application ---
 
 
 app = FastAPI(title="OS-APOW Event Notifier")
@@ -90,8 +52,8 @@ app = FastAPI(title="OS-APOW Event Notifier")
 
 def get_queue() -> ITaskQueue:
     """Dependency injection for the queue implementation.
-    Phase 1: GitHub. Can be swapped for Linear, Redis, etc."""
-    return GitHubIssuesQueue(token=_GITHUB_TOKEN)
+    Phase 1: GitHub. Can be swapped for Linear, Jira, etc."""
+    return GitHubQueue(token=_GITHUB_TOKEN)
 
 
 async def verify_signature(request: Request, x_hub_signature_256: str = Header(None)):
@@ -105,7 +67,7 @@ async def verify_signature(request: Request, x_hub_signature_256: str = Header(N
         raise HTTPException(status_code=401, detail="Invalid signature")
 
 
-# --- 4. Endpoints ---
+# --- 2. Endpoints ---
 
 
 @app.post("/webhooks/github", dependencies=[Depends(verify_signature)])
@@ -129,7 +91,6 @@ async def handle_github_webhook(
                 context_body=issue.get("body") or "",
                 status=WorkItemStatus.QUEUED,
                 node_id=issue["node_id"],
-                raw_payload=payload,
             )
             await queue.add_to_queue(work_item)
             return {"status": "accepted", "item_id": work_item.id}

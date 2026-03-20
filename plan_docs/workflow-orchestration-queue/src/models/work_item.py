@@ -10,7 +10,6 @@ See: OS-APOW Plan Review, I-1 / R-3
 
 import re
 from enum import Enum
-from typing import Dict, Any, Optional
 from pydantic import BaseModel
 
 
@@ -50,7 +49,6 @@ class WorkItem(BaseModel):
     task_type: TaskType
     status: WorkItemStatus
     node_id: str
-    raw_payload: Optional[Dict[str, Any]] = None
 
 
 # --- Credential Scrubber (R-7) ---
@@ -66,7 +64,6 @@ _SECRET_PATTERNS = [
     re.compile(r"token\s+[A-Za-z0-9\-._~+/]{20,}", re.IGNORECASE),
     re.compile(r"sk-[A-Za-z0-9]{20,}"),  # OpenAI-style API keys
     re.compile(r"[A-Za-z0-9]{32,}\.zhipu[A-Za-z0-9]*"),  # ZhipuAI keys
-    re.compile(r"\b\d{1,3}(\.\d{1,3}){3}\b"),  # IPv4 addresses (private IPs)
 ]
 
 

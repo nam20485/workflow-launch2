@@ -43,24 +43,20 @@ The system architecture is strictly decoupled, adhering to an event-driven patte
 * **Intelligent Triaging:** The Notifier service features an intelligent routing layer. It automatically detects specific string templates (e.g., \[Application Plan\], \[Bugfix\]) in issue titles or bodies. Based on this detection, it dynamically assigns appropriate internal WorkItemTypes, applies tags, and prioritizes the execution queue accordingly, ensuring urgent bugs preempt standard feature work.  
 * **Resilient Task Polling:** To guarantee system stability, the Sentinel utilizes a polling-first discovery mechanism fortified with jittered exponential backoff. This means if the Sentinel service crashes, experiences network outages, or the server restarts, it will automatically query the GitHub API upon reboot to find and reconcile any tasks that were left in the agent:queued or agent:in-progress states, ensuring zero dropped workloads.  
 * **Concurrency Control:** In environments running multiple Sentinel instances, race conditions are a major risk. The system mitigates this risk by employing the **assign-then-verify** pattern using GitHub Assignees as a distributed lock semaphore. A Sentinel must: (1) attempt to assign itself to the issue, (2) re-fetch the issue, (3) verify it is the current assignee before proceeding. If another Sentinel won the race, the loser aborts gracefully. The `SENTINEL_BOT_LOGIN` env var identifies the bot account for this check.  
-* **Shell-Bridge Execution:** The Orchestrator interacts with the underlying AI worker strictly via the ./scripts/devcontainer-opencode.sh CLI abstraction. It does not use direct Docker SDK bindings. This "script-first" approach guarantees that the AI operates in a locally reproducible environment identical to a human developer, and allows human engineers to debug the exact same scripts the AI uses.  
-* **Hierarchical Task Delegation:** A profound capability where the AI acts as its own project manager. Utilizing an "Architect Sub-Agent," the system can digest a large, monolithic Epic description and autonomously decompose it into a sequentially ordered list of smaller, discrete child tasks (User Stories). It then creates these new issues in GitHub, linking them back to the parent Epic via markdown task lists in the parent issue body or GitHub native issue tracking relationships.  
-* **Self-Healing/Reconciliation Loop:** The system features an automated recovery mechanism for "zombie" tasks. If an issue remains in the agent:in-progress state longer than a configurable timeout threshold (defined via a TASK\_TIMEOUT\_MINUTES environment variable, defaulting to 120), the system assumes the worker container crashed silently. The Sentinel will automatically transition the state back to agent:queued and append a warning comment, allowing a fresh worker to retry the execution.
+* **Shell-Bridge Execution:** The Orchestrator interacts with the underlying AI worker strictly via the ./scripts/devcontainer-opencode.sh CLI abstraction. It does not use direct Docker SDK bindings. This "script-first" approach guarantees that the AI operates in a locally reproducible environment identical to a human developer, and allows human engineers to debug the exact same scripts the AI uses.
 
 ### **Test cases**
 
 * **TC-01 (Security Verification):** Trigger a POST request to /webhooks/github with a malformed or missing X-Hub-Signature-256 header. The system must instantly return a 401 Unauthorized response without parsing the JSON body, validating the primary defense against malicious payloads.  
 * **TC-02 (Ingestion & Triage):** Send a valid webhook payload representing a newly opened issue with the title \[Application Plan\] Create Authentication Module. The system must successfully validate the signature, parse the text, dynamically apply the agent:queued label via the add\_to\_queue interface, and return a 200 OK with the tracking ID.  
 * **TC-03 (Concurrency Locking):** Simulate two Sentinel instances attempting to claim the same agent:queued issue simultaneously. The first instance must successfully assign itself and begin work. The second instance, detecting the assignment during its API call, must safely ignore the issue and move to the next item in the queue without throwing a fatal error.  
-* **TC-04 (Failure Reporting):** Force a DevContainer startup failure (e.g., by corrupting the devcontainer.json in the target repo). The Sentinel must catch the non-zero exit code from the shell bridge, immediately apply the agent:infra-failure label, and post a heavily sanitized snippet of the stderr logs as an issue comment to aid human debugging.  
-* **TC-05 (Cost Management):** Inject a mock LLM usage report indicating the session has exceeded the pre-configured token/budget limit. The Orchestrator must immediately halt the worker execution, prevent further API calls, and flag the issue with the agent:stalled-budget label, protecting against runaway infrastructure costs.  
-* **TC-06 (Feedback Loop):** Simulate a human developer leaving a "Request Changes" review on a PR generated by the agent. The webhook receiver must catch the pull\_request\_review event, parse the reviewer's comments, automatically transition the parent issue from agent:success back to agent:queued (or a specific agent:revision state), and append the feedback to the context payload for the next run.
+* **TC-04 (Failure Reporting):** Force a DevContainer startup failure (e.g., by corrupting the devcontainer.json in the target repo). The Sentinel must catch the non-zero exit code from the shell bridge, immediately apply the agent:infra-failure label, and post a heavily sanitized snippet of the stderr logs as an issue comment to aid human debugging.
 
 ### **Logging**
 
-* **Worker Output (Black Box):** To maintain a flawless audit trail, every byte of raw stdout and stderr generated by the worker container is captured and saved to persistent, encrypted local files on the host server (e.g., worker\_run\_ID\_TIMESTAMP.jsonl). These logs contain full execution contexts, including potentially sensitive variable dumps, and are strictly reserved for internal forensic analysis and debugging by system administrators.  
-* **Public Telemetry:** For user-facing visibility, the system relies on sanitized telemetry. A dedicated `scrub_secrets()` utility in `src/models/work_item.py` uses regex patterns to strip GitHub PATs (`ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`), Bearer tokens, API keys (`sk-*`), ZhipuAI keys, and IPv4 addresses from all output before posting to GitHub. Heartbeat comments are posted every 5 minutes (configurable via `SENTINEL_HEARTBEAT_INTERVAL` env var) by a background async coroutine.  
-* **Service Logging:** Both the Sentinel Orchestrator and Notifier Webhook components utilize robust, structured Python logging. They employ a combination of StreamHandler for console output and rotating FileHandler for disk storage. Every log line is stamped with a unique SENTINEL\_ID identifier, allowing administrators to easily trace workflows in a multi-node deployment cluster.
+* **Worker Output (Black Box):** To maintain a flawless audit trail, every byte of raw stdout and stderr generated by the worker container is captured and saved to persistent local files on the host server (e.g., worker\_run\_ID\_TIMESTAMP.jsonl). These logs contain full execution contexts, including potentially sensitive variable dumps, and are strictly reserved for internal forensic analysis and debugging by system administrators.  
+* **Public Telemetry:** For user-facing visibility, the system relies on sanitized telemetry. A dedicated `scrub_secrets()` utility in `src/models/work_item.py` uses regex patterns to strip GitHub PATs (`ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`), Bearer tokens, API keys (`sk-*`), and ZhipuAI keys from all output before posting to GitHub. Heartbeat comments are posted every 5 minutes (configurable via `SENTINEL_HEARTBEAT_INTERVAL` env var) by a background async coroutine.  
+* **Service Logging:** Both the Sentinel Orchestrator and Notifier Webhook components utilize structured Python logging via StreamHandler for console output. When running in Docker, stdout is captured by the container runtime (`docker logs`). Every log line is stamped with a unique SENTINEL\_ID identifier, allowing administrators to easily trace workflows in a multi-node deployment cluster.
 
 ### **Containerization: Docker**
 
@@ -70,11 +66,8 @@ The system architecture is strictly decoupled, adhering to an event-driven patte
 
 ### **Containerization: Docker Compose**
 
-* The system extensively leverages Docker Compose, orchestrated by the underlying devcontainer-opencode.sh framework, to manage complex, multi-container needs. If an Epic requires testing a web application alongside a PostgreSQL database, Docker Compose orchestrates both. The Sentinel's `SENTINEL_ENV_RESET` env var controls environment teardown between tasks:
-  * `"none"` — Keep container running (fastest, risk of state bleed).
-  * `"stop"` — Stop container but keep it (fast restart via `up`). **Default.**
-  * `"down"` — Full teardown (`docker-compose down -v`), pristine but slower.
-* This guarantees a configurable balance between speed and isolation, eliminating the risk of "environment drift" or contaminated state bleeding from one task to another.
+* The system extensively leverages Docker Compose, orchestrated by the underlying devcontainer-opencode.sh framework, to manage complex, multi-container needs. If an Epic requires testing a web application alongside a PostgreSQL database, Docker Compose orchestrates both. The Sentinel stops the worker container between tasks to prevent state bleed, while keeping it available for fast restart.
+* This guarantees a clean environment between tasks, eliminating the risk of "environment drift" or contaminated state bleeding from one task to another.
 
 ### **Swagger/OpenAPI**
 
@@ -125,8 +118,8 @@ workflow-orchestration-queue/
 │   ├── models/                  \# Pydantic data schemas defining system entities  
 │   │   ├── work\_item.py         \# Unified WorkItem, TaskType, WorkItemStatus, scrub\_secrets()  
 │   │   └── github\_events.py     \# Schemas for parsing GitHub webhook payloads  
-│   └── interfaces/              \# Abstract Base Classes ensuring modularity  
-│       └── i\_task\_queue.py      \# Defines standard operations (add, claim, update)  
+│   └── queue/                   \# Consolidated queue implementations  
+│       └── github\_queue.py      \# ITaskQueue ABC + GitHubQueue (shared by sentinel & notifier)  
 ├── scripts/                     \# The "Shell Bridge" execution layer  
 │   ├── devcontainer-opencode.sh \# Core orchestrator invoking the worker Docker context  
 │   ├── gh-auth.ps1              \# PowerShell utility for syncing GitHub App authentication  
@@ -152,3 +145,22 @@ workflow-orchestration-queue/
 2. **Fully functional orchestrator\_sentinel.py:** A robust, asynchronous polling mechanism designed to run as a persistent background daemon (e.g., via systemd), capable of claiming tasks and managing state transitions without race conditions.  
 3. **Shell bridge integration:** A deeply integrated script suite (devcontainer-opencode.sh) and corresponding DevContainer configurations (devcontainer.json, Dockerfile) that successfully marshal the environment, inject secure variables, and execute Opencode agents against generated context workflows without leaking state to the host.  
 4. **A complete suite of Markdown instruction modules:** Thoroughly engineered prompts located in the local\_ai\_instruction\_modules directory, covering the entire lifecycle of software development: initial planning, execution, testing, and automated bug-fixing phases.
+
+---
+
+## **Appendix: Future Work**
+
+*The following features and test cases are deferred from the current iteration. They are documented here for future planning.*
+
+### **Deferred Features**
+
+* **Hierarchical Task Delegation (Phase 3):** A capability where the AI acts as its own project manager. Utilizing an "Architect Sub-Agent," the system can digest a large, monolithic Epic description and autonomously decompose it into a sequentially ordered list of smaller, discrete child tasks (User Stories). It then creates these new issues in GitHub, linking them back to the parent Epic via markdown task lists in the parent issue body or GitHub native issue tracking relationships.
+* **Self-Healing/Reconciliation Loop (Phase 3):** An automated recovery mechanism for "zombie" tasks. If an issue remains in the agent:in-progress state longer than a configurable timeout threshold (defined via a TASK\_TIMEOUT\_MINUTES environment variable, defaulting to 120), the system assumes the worker container crashed silently. The Sentinel will automatically transition the state back to agent:queued and append a warning comment, allowing a fresh worker to retry the execution.
+* **Cost Guardrails & Resource Safety (Dev Plan Story 6):** The Sentinel monitors LLM usage costs so that the system does not exceed the daily budget during an autonomous loop. The `WorkItemStatus.STALLED_BUDGET` label and the `agent:stalled-budget` state are defined in the shared model but the monitoring logic is deferred until the core polling-claim-execute loop is stable.
+* **Cross-Repo Org-Wide Polling:** Polling via the GitHub Search API (`GET /search/issues?q=label:agent:queued+org:{ORG}+is:issue+is:open`) for org-wide task discovery across multiple repos. Currently the Sentinel targets a single repo via `GITHUB_REPO`.
+* **Configurable Environment Reset Modes:** Three-mode environment teardown between tasks (`"none"` / `"stop"` / `"down"`), controlled by an env var. Currently hardcoded to `"stop"`.
+
+### **Deferred Test Cases**
+
+* **TC-05 (Cost Management):** Inject a mock LLM usage report indicating the session has exceeded the pre-configured token/budget limit. The Orchestrator must immediately halt the worker execution, prevent further API calls, and flag the issue with the agent:stalled-budget label, protecting against runaway infrastructure costs.
+* **TC-06 (Feedback Loop):** Simulate a human developer leaving a "Request Changes" review on a PR generated by the agent. The webhook receiver must catch the pull\_request\_review event, parse the reviewer's comments, automatically transition the parent issue from agent:success back to agent:queued (or a specific agent:revision state), and append the feedback to the context payload for the next run.

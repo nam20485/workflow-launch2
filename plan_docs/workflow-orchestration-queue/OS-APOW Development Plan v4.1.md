@@ -54,13 +54,14 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
   * **Detail:** The poller must handle "Secondary Rate Limits" and 403 Forbidden responses using a jittered exponential backoff strategy.  
   * **Acceptance Criteria:**  
     * The script runs as a persistent service using uv run.  
-    * Successfully logs the discovery of multiple issues across different repositories.  
+    * Successfully logs the discovery of issues in the configured repository.  
     * Integrates with scripts/gh-auth.ps1 to maintain valid installation tokens for the GitHub App.  
   * **Implementation Directions:**  
-    * On HTTP 403 or 429 responses, apply exponential backoff with random jitter: `wait = min(current_backoff + random(0, 0.1 * current_backoff), MAX_BACKOFF)`. Double `current_backoff` on each consecutive rate-limit hit. Reset to `POLL_INTERVAL` on any successful poll.  
-    * `MAX_BACKOFF` defaults to 960s (16 min) and is configurable via `SENTINEL_MAX_BACKOFF` env var.  
-    * Use the GitHub Search API (`GET /search/issues?q=label:agent:queued+org:{ORG}+is:issue+is:open`) for cross-repo discovery instead of single-repo issue listing. `GITHUB_REPO` env var becomes optional — when empty, poll across the entire org.  
-    * Create `httpx.AsyncClient` once in `GitHubQueue.__init__()` and reuse across all API calls for connection pooling. Add an `async close()` wired to shutdown.  
+    * On HTTP 403 or 429 responses, apply exponential backoff with random jitter: `wait = min(current_backoff + random(0, 0.1 * current_backoff), MAX_BACKOFF)`. Double `current_backoff` on each consecutive rate-limit hit. Reset to `POLL_INTERVAL` on any successful poll.
+    * `MAX_BACKOFF` defaults to 960s (16 min).
+    * Use the single-repo GitHub Issues API (`GET /repos/{owner}/{repo}/issues?labels=agent:queued&state=open`) for task discovery. `GITHUB_REPO` is a required env var.
+    * **Future Phase:** Cross-repo org-wide polling via the GitHub Search API (`GET /search/issues?q=label:agent:queued+org:{ORG}+is:issue+is:open`) is planned for when the org has multiple workflow repos. At that point, `GITHUB_REPO` becomes optional and the Sentinel discovers work across the entire org.
+    * Create `httpx.AsyncClient` once in `GitHubQueue.__init__()` and reuse across all API calls for connection pooling. Add an `async close()` wired to shutdown.
 * **Story 3: Shell-Bridge Dispatcher**  
   * **As an** Orchestrator, **I want** to invoke ./scripts/devcontainer-opencode.sh prompt when a task is found, **so that** the agentic environment begins technical work.  
   * **Rationale:** By piping the task into the existing shell bridge, we inherit all the SSH-agent forwarding, volume mounts, and Docker network configurations defined in the ai-new-workflow-app-template.  
@@ -88,7 +89,7 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
     * `SENTINEL_BOT_LOGIN` must be set to the GitHub login of the bot account. If unset, log a warning that locking is disabled.  
   * **Implementation Directions — Credential Scrubbing:**  
     * All log output and error messages posted to GitHub issue comments MUST be passed through a `scrub_secrets()` utility before posting.  
-    * The scrubber strips patterns matching: `ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`, `Bearer`, `token`, `sk-*`, and IPv4 addresses.  
+    * The scrubber strips patterns matching: `ghp_*`, `ghs_*`, `gho_*`, `github_pat_*`, `Bearer`, `token`, `sk-*`, and ZhipuAI keys.  
     * Implemented in the shared `src/models/work_item.py` module.  
 * **Story 5: Unique Instance Identification**  
   * **As an** Administrator, **I want** each Sentinel to generate or accept a unique SENTINEL\_ID on startup, **so that** its actions and issue assignments are clearly attributable in logs and the GitHub UI.  
@@ -170,7 +171,7 @@ Success for workflow-orchestration-queue is defined as "Zero-Touch Construction"
 
 | **Concurrency Collisions** | Medium | Use the GitHub "Assignee" feature as a locking mechanism. The Sentinel must use the **assign-then-verify** pattern: (1) assign itself, (2) re-fetch the issue, (3) verify it is the current assignee before proceeding. If another Sentinel won the race, abort gracefully. |
 
-| **Container Drift** | Medium | The Sentinel runs environment teardown between tasks, controlled by the `SENTINEL_ENV_RESET` env var. Options: `"none"` (keep running, fastest), `"stop"` (stop container but keep it for fast restart), `"down"` (full teardown, pristine but slower). Default: `"stop"`. |
+| **Container Drift** | Medium | The Sentinel stops the worker container between tasks to prevent state bleed, while keeping it available for fast restart. |
 
 | **Security Injection** | Medium | Strict HMAC signature validation on all webhooks; the worker container is denied access to the host's .env files except via explicit injection. |
 
@@ -202,6 +203,6 @@ Both the Sentinel and the Notifier MUST validate required environment variables 
 
 ### **Connection Pooling (I-4 / R-5)**
 
-The `GitHubQueue` class MUST create a single `httpx.AsyncClient` in `__init__()` and reuse it across all API calls. An `async close()` method releases the pool during graceful shutdown.
+The `GitHubQueue` class in `src/queue/github_queue.py` MUST create a single `httpx.AsyncClient` in `__init__()` and reuse it across all API calls. An `async close()` method releases the pool during graceful shutdown. Both the Sentinel and the Notifier import and use this consolidated class (see Simplification Report S-6).
 
 [image1]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAZCAYAAADAHFVeAAABeElEQVR4Xu2TvUrEUBCFd13xD0RRbPKfsBIJwlaCpYUg+A6ChYXvIDZWdraCb6AIwoJisY2dha2NTToLH0LPLHOX8ZDEQu3ywZDdOSeT5Nx7O52Wv6Yoipksy5a4D6a44fv+KlcQBCvsqyVJkvM4jj+5ZJD1hWHosYfqA7Xf7/dn7X2VwPgqN3Gf6MJzFkXRI4ausYj+nc6YZu0b7u24b0EKy/DcYOiFxF+hb0Mv5craBMldHiZDWLNgyJ74EOkWa4LneQuYcQnPlfxmfUyapgMZgmHHrFngORFfVYSCedgDr7mjp5tkJJuARQsGPTetKxJaV0/1l2mEw7p1sOi6ltx3uJhRp/jbZV3e9qBpHRx5ni+Kr2ldod/qrOqE3DmrNSjwbYgP10PWHPLVTTGLYahD5lizaERlXQJymDXCa9YmqOFX5wv9Xehv8O2wZunpw0YsWDTCl6oIscHmob1De2JtDKLY1IdwHVmf2zwNdZ/8cDZbWlr+ny9Eg4OAbRYuWgAAAABJRU5ErkJggg==>

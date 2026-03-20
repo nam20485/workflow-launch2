@@ -2,7 +2,7 @@
 
 *Generated: March 19, 2026*
 
-This report identifies areas of over-engineering or natural simplification opportunities across the three plan docs and reference code files. **No changes have been made.** Each item is presented for review and feedback before action.
+This report identifies areas of over-engineering or natural simplification opportunities across the three plan docs and reference code files. Items marked **IMPLEMENTED** have been applied. Items marked **KEPT** were retained per user feedback.
 
 ---
 
@@ -15,7 +15,7 @@ The `ITaskQueue` ABC with `GitHubIssuesQueue` as the sole concrete implementatio
 **Opportunity:** Drop the ABC. Use a plain `GitHubIssuesQueue` class directly. Re-introduce the interface if/when a second provider is actually needed.
 
 **Remarks:**
-Keep- I want to use this as an easy stepping stone to rplacing GH issues w/ other providers e.g. Linear or Jira.
+Keep- I want to use this as an easy stepping stone to rplacing GH issues w/ other providers e.g. Linear or Jira
 ---
 
 ## S-2. Duplicate Prose Across Three Documents
@@ -47,7 +47,7 @@ The Sentinel exposes: `SENTINEL_POLL_INTERVAL`, `SENTINEL_MAX_BACKOFF`, `SENTINE
 **Opportunity:** Keep the 3 required vars. Hardcode the rest with their current defaults and promote to env vars later if operational experience warrants it. This cuts the `.env` documentation surface by 70%.
 
 **Remarks:**
-Good- change it to 3 env vars only.
+Good- change it to 3 env vars only
 ---
 
 ## S-4. Three-Mode ENV_RESET_MODE
@@ -59,7 +59,7 @@ Three options (`"none"` / `"stop"` / `"down"`) with corresponding branching logi
 **Opportunity:** Default to `"stop"` only. Remove the branching. Add the config knob later when multi-tenant or high-throughput scenarios arise.
 
 **Remarks:**
-Good- change it.
+Good- change it
 ---
 
 ## S-5. Cross-Repo Org-Wide Polling
@@ -71,7 +71,7 @@ The Search API path (`/search/issues`) and the single-repo path (`/repos/.../iss
 **Opportunity:** Start with single-repo mode only. Add the Search API path when the org actually has multiple workflow repos.
 
 **Remarks:**
-Ok sounds good. Change it. Keep some details about it mentioned for a future phase.
+Ok sounds good. Change it. Keep some details about it mentioned for a future phase
 ---
 
 ## S-6. GitHubIssuesQueue Is a Stub
@@ -96,7 +96,7 @@ The regex `\b\d{1,3}(\.\d{1,3}){3}\b` matches **all** IPv4 addresses, including 
 **Opportunity:** Either remove the IPv4 pattern entirely (the real secrets are tokens, not IPs) or restrict it to RFC 1918 private ranges only.
 
 **Remarks:**
-Ok remove the pattern and stop scrubbing them then.
+Ok remove the pattern and stop scrubbing them then
 ---
 
 ## S-8. "Encrypted Black Box" Logs — Mentioned But Undesigned
@@ -108,7 +108,7 @@ Multiple references to "raw, encrypted local files" for forensic audit trails, b
 **Opportunity:** Drop the "encrypted" qualifier. For MVP, plain local log files (already captured by the shell bridge) are sufficient. If compliance requires encryption at rest, that's a separate story with its own key management design.
 
 **Remarks:**
-Agree- get rid of the encryptojn verbiage. 
+Agree- get rid of the encryptojn verbiage.
 ---
 
 ## S-9. Phase 3 "Architect Sub-Agent" Detail in MVP Docs
@@ -120,7 +120,7 @@ Phase 3 describes a LangChain-based Architect Sub-Agent that decomposes Epics in
 **Opportunity:** Move Phase 3 features to a separate "Future Directions" appendix or a dedicated Phase 3 spec. Keep the Implementation Spec focused on what's being built in the current iteration.
 
 **Remarks:**
-Agree- move to an appendix for potential future work feature requests. Put the prev. issue I flagged as fiuture work also int o this appendix.
+Agree- move to an appendix for potential future work feature requests. Put the prev. issue I flagged as fiuture work also int o this appendix
 ---
 
 ## S-10. Dual Logging (File + Stdout) in Sentinel
@@ -132,7 +132,7 @@ The Sentinel logs to both `sentinel.log` (FileHandler) and stdout (StreamHandler
 **Opportunity:** Log to stdout only. Use `docker logs` or a log aggregator to persist. Add file logging later if running outside Docker.
 
 **Remarks:**
-Soudns good. Change it.
+Soudns good. Change it
 ---
 
 ## S-11. raw_payload Field on WorkItem
@@ -151,18 +151,18 @@ Agree- remove it.
 
 ## Summary Table
 
-| ID | Area | Severity | Effort to Simplify |
-|----|------|----------|-------------------|
-| S-1 | ITaskQueue ABC | Medium | Low — delete ABC + DI wiring |
-| S-2 | Doc duplication | High | Medium — refactor to single-source-of-truth |
-| S-3 | 10 env vars | Medium | Low — hardcode 7, keep 3 |
-| S-4 | 3-mode env reset | Low | Low — hardcode "stop" |
-| S-5 | Cross-repo polling | Medium | Low — remove Search API branch |
-| S-6 | Stub queue class | Medium | Low — inline or implement |
-| S-7 | IPv4 scrubbing | Low | Low — remove or restrict |
-| S-8 | Encrypted logs | Low | Low — remove prose |
-| S-9 | Phase 3 in MVP spec | Medium | Medium — move to appendix |
-| S-10 | Dual logging | Low | Low — remove FileHandler |
-| S-11 | raw_payload field | Low | Low — delete field |
+| ID | Area | Severity | Effort to Simplify | Status |
+|----|------|----------|-------------------|--------|
+| S-1 | ITaskQueue ABC | Medium | Low — delete ABC + DI wiring | **KEPT** — retained for future provider swapping |
+| S-2 | Doc duplication | High | Medium — refactor to single-source-of-truth | **KEPT** — duplication aids autonomous agents |
+| S-3 | 10 env vars | Medium | Low — hardcode 7, keep 3 | **IMPLEMENTED** |
+| S-4 | 3-mode env reset | Low | Low — hardcode "stop" | **IMPLEMENTED** |
+| S-5 | Cross-repo polling | Medium | Low — remove Search API branch | **IMPLEMENTED** (noted as future phase) |
+| S-6 | Stub queue class | Medium | Low — inline or implement | **IMPLEMENTED** (consolidated to `src/queue/github_queue.py`) |
+| S-7 | IPv4 scrubbing | Low | Low — remove or restrict | **IMPLEMENTED** (pattern removed) |
+| S-8 | Encrypted logs | Low | Low — remove prose | **IMPLEMENTED** |
+| S-9 | Phase 3 in MVP spec | Medium | Medium — move to appendix | **IMPLEMENTED** (new "Future Work" appendix) |
+| S-10 | Dual logging | Low | Low — remove FileHandler | **IMPLEMENTED** |
+| S-11 | raw_payload field | Low | Low — delete field | **IMPLEMENTED** |
 
 **Highest-impact simplifications:** S-2 (doc dedup) and S-1 + S-6 (remove abstractions nobody uses) would do the most to reduce cognitive overhead and maintenance burden.
