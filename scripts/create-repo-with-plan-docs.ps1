@@ -348,17 +348,17 @@ try
         Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
-        # Trigger project-setup workflow on the new repo
-        Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
-        $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
-        if (Test-Path -LiteralPath $triggerScript) {
-            $triggerParams = @{ Repo = "$Owner/$repoName" }
-            if ($DryRun) { $triggerParams['DryRun'] = $true }
-            & $triggerScript @triggerParams
-            Write-Host ' done' -ForegroundColor Green
-        } else {
-            Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
-        }
+        # # Trigger project-setup workflow on the new repo
+        # Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
+        # $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
+        # if (Test-Path -LiteralPath $triggerScript) {
+        #     $triggerParams = @{ Repo = "$Owner/$repoName" }
+        #     if ($DryRun) { $triggerParams['DryRun'] = $true }
+        #     & $triggerScript @triggerParams
+        #     Write-Host ' done' -ForegroundColor Green
+        # } else {
+        #     Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
+        # }
     }
 
     if (-not $Yes)
