@@ -15,7 +15,7 @@ The `ITaskQueue` ABC with `GitHubIssuesQueue` as the sole concrete implementatio
 **Opportunity:** Drop the ABC. Use a plain `GitHubIssuesQueue` class directly. Re-introduce the interface if/when a second provider is actually needed.
 
 **Remarks:**
-
+Keep- I want to use this as an easy stepping stone to rplacing GH issues w/ other providers e.g. Linear or Jira.
 ---
 
 ## S-2. Duplicate Prose Across Three Documents
@@ -35,7 +35,7 @@ Every change to a design decision requires edits in 3+ places. This is the singl
 **Opportunity:** Define each mechanism **once** in the Architecture Guide, then reference it by section number from the Dev Plan and Impl Spec. Example: *"Concurrency control uses assign-then-verify (see Architecture Guide §2B)."*
 
 **Remarks:**
-
+Duplication is fine. The more details and reinforcement the agents on the dev team have the more likely they are to adhere to it during autononous implemention. WHats your take on this?
 ---
 
 ## S-3. Ten Configurable Environment Variables for an MVP
@@ -47,7 +47,7 @@ The Sentinel exposes: `SENTINEL_POLL_INTERVAL`, `SENTINEL_MAX_BACKOFF`, `SENTINE
 **Opportunity:** Keep the 3 required vars. Hardcode the rest with their current defaults and promote to env vars later if operational experience warrants it. This cuts the `.env` documentation surface by 70%.
 
 **Remarks:**
-
+Good- change it to 3 env vars only.
 ---
 
 ## S-4. Three-Mode ENV_RESET_MODE
@@ -59,7 +59,7 @@ Three options (`"none"` / `"stop"` / `"down"`) with corresponding branching logi
 **Opportunity:** Default to `"stop"` only. Remove the branching. Add the config knob later when multi-tenant or high-throughput scenarios arise.
 
 **Remarks:**
-
+Good- change it.
 ---
 
 ## S-5. Cross-Repo Org-Wide Polling
@@ -71,7 +71,7 @@ The Search API path (`/search/issues`) and the single-repo path (`/repos/.../iss
 **Opportunity:** Start with single-repo mode only. Add the Search API path when the org actually has multiple workflow repos.
 
 **Remarks:**
-
+Ok sounds good. Change it. Keep some details about it mentioned for a future phase.
 ---
 
 ## S-6. GitHubIssuesQueue Is a Stub
@@ -83,6 +83,7 @@ The Search API path (`/search/issues`) and the single-repo path (`/repos/.../iss
 **Opportunity:** Either implement the Notifier's queue methods (using shared code from the Sentinel's `GitHubQueue`) or remove the stub and have the Notifier simply add the `agent:queued` label directly in the webhook handler — which is a 3-line httpx call.
 
 **Remarks:**
+OK- so which class makes more sense to contain it design-wise? Collapse down in to one definiton there. Or if both need such a queue put it in a single file and import into both.
 
 ---
 
@@ -95,7 +96,7 @@ The regex `\b\d{1,3}(\.\d{1,3}){3}\b` matches **all** IPv4 addresses, including 
 **Opportunity:** Either remove the IPv4 pattern entirely (the real secrets are tokens, not IPs) or restrict it to RFC 1918 private ranges only.
 
 **Remarks:**
-
+Ok remove the pattern and stop scrubbing them then.
 ---
 
 ## S-8. "Encrypted Black Box" Logs — Mentioned But Undesigned
@@ -107,7 +108,7 @@ Multiple references to "raw, encrypted local files" for forensic audit trails, b
 **Opportunity:** Drop the "encrypted" qualifier. For MVP, plain local log files (already captured by the shell bridge) are sufficient. If compliance requires encryption at rest, that's a separate story with its own key management design.
 
 **Remarks:**
-
+Agree- get rid of the encryptojn verbiage. 
 ---
 
 ## S-9. Phase 3 "Architect Sub-Agent" Detail in MVP Docs
@@ -119,7 +120,7 @@ Phase 3 describes a LangChain-based Architect Sub-Agent that decomposes Epics in
 **Opportunity:** Move Phase 3 features to a separate "Future Directions" appendix or a dedicated Phase 3 spec. Keep the Implementation Spec focused on what's being built in the current iteration.
 
 **Remarks:**
-
+Agree- move to an appendix for potential future work feature requests. Put the prev. issue I flagged as fiuture work also int o this appendix.
 ---
 
 ## S-10. Dual Logging (File + Stdout) in Sentinel
@@ -131,7 +132,7 @@ The Sentinel logs to both `sentinel.log` (FileHandler) and stdout (StreamHandler
 **Opportunity:** Log to stdout only. Use `docker logs` or a log aggregator to persist. Add file logging later if running outside Docker.
 
 **Remarks:**
-
+Soudns good. Change it.
 ---
 
 ## S-11. raw_payload Field on WorkItem
@@ -143,6 +144,8 @@ The Sentinel logs to both `sentinel.log` (FileHandler) and stdout (StreamHandler
 **Opportunity:** Remove it. If a future consumer needs the raw payload, add it then.
 
 **Remarks:**
+
+Agree- remove it.
 
 ---
 
