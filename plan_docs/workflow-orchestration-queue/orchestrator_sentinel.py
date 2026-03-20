@@ -26,7 +26,8 @@ from src.models.work_item import TaskType, WorkItemStatus, WorkItem
 from src.queue.github_queue import GitHubQueue
 
 # --- 1. Configuration ---
-# Required env vars: GITHUB_TOKEN, GITHUB_ORG, SENTINEL_BOT_LOGIN
+# Required env vars: GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO
+# Optional: SENTINEL_BOT_LOGIN (enables assign-then-verify locking)
 # All other values are hardcoded with sensible defaults for MVP.
 # Promote to env vars later if operational experience warrants it (see S-3).
 
