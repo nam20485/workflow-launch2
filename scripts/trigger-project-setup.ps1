@@ -74,9 +74,8 @@ $workflow_name = project-setup
 '@
 
 $params = @{
-    Repo   = $Repo
-    Body   = $body
-    Labels = @('automation', 'orchestration')
+    Repo = $Repo
+    Body = $body
 }
 if ($Project) { $params['Project'] = $Project }
 if ($Milestone) { $params['Milestone'] = $Milestone }
