@@ -106,6 +106,10 @@ class GitHubQueue(ITaskQueue):
 
         response = await self._client.get(url, params=params)
 
+        if response.status_code in (403, 429):
+            # Propagate rate-limit errors so the sentinel's backoff logic fires
+            response.raise_for_status()
+
         if response.status_code != 200:
             logger.error(
                 f"GitHub API error: {response.status_code} {response.text[:200]}"
@@ -146,13 +150,11 @@ class GitHubQueue(ITaskQueue):
         base = self._repo_api_url(item.target_repo_slug)
         url_labels = f"{base}/issues/{item.issue_number}/labels"
 
-        try:
-            await self._client.delete(
-                f"{url_labels}/{WorkItemStatus.IN_PROGRESS.value}"
-            )
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code not in (404, 410):
-                logger.error(f"Label cleanup failed: {exc}")
+        resp = await self._client.delete(
+            f"{url_labels}/{WorkItemStatus.IN_PROGRESS.value}"
+        )
+        if resp.status_code not in (200, 204, 404, 410):
+            logger.error(f"Label cleanup failed: {resp.status_code}")
 
         await self._client.post(url_labels, json={"labels": [status.value]})
 
@@ -209,12 +211,10 @@ class GitHubQueue(ITaskQueue):
 
         # Step 3: Update labels
         url_labels = f"{url_issue}/labels"
-        try:
-            await self._client.delete(f"{url_labels}/{WorkItemStatus.QUEUED.value}")
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code not in (404, 410):
-                logger.error(f"Label removal failed: {exc}")
-                return False
+        resp = await self._client.delete(f"{url_labels}/{WorkItemStatus.QUEUED.value}")
+        if resp.status_code not in (200, 204, 404, 410):
+            logger.error(f"Label removal failed: {resp.status_code}")
+            return False
 
         await self._client.post(
             url_labels,
