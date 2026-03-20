@@ -123,16 +123,14 @@ $docsDir = 'plan_docs'
 # Main execution
 #
 
-try
-{
+try {
     # Start structured run log
     if (Get-Command Start-RunLog -ErrorAction SilentlyContinue) {
         $logPath = Start-RunLog -RunName 'create-repo'
         Write-Verbose "Run log: $logPath"
     }
 
-    if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly')
-    {
+    if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly') {
         Write-Host "Replacing placeholders in existing repo '$ExistingRepoRoot'..." -ForegroundColor Cyan -NoNewline
         $resolvedRepoRoot = (Resolve-Path -LiteralPath $ExistingRepoRoot).Path
         Update-TemplatePlaceholders -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $RepoName
@@ -152,12 +150,10 @@ try
     Write-Host ' done' -ForegroundColor Green
 
     Write-Host 'Authenticating with GitHub...' -ForegroundColor Cyan -NoNewline
-    if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else
-    {
+    if (Get-Command Initialize-GitHubAuth -ErrorAction SilentlyContinue) { Initialize-GitHubAuth -DryRun:$DryRun } else {
         # Fallback local check if helper not available
         $st = Invoke-External -FilePath 'gh' -ArgumentList @('auth', 'status') -AllowFail
-        if ($st.ExitCode -ne 0)
-        {
+        if ($st.ExitCode -ne 0) {
             Write-Verbose 'GitHub CLI not authenticated. Initiating gh auth login...'
             if ($DryRun) { Write-Warning '[dry-run] Would run: gh auth login' } else { Invoke-External -FilePath 'gh' -ArgumentList @('auth', 'login') | Out-Null }
         }
@@ -167,21 +163,17 @@ try
     # Determine final repo names (ensure not colliding; try up to 5 suffixes)
     Write-Host 'Resolving repo names...' -ForegroundColor Cyan -NoNewline
     $repoNames = @()
-    for ($i = 0; $i -lt 5 -and -not $repoNames; $i++)
-    {
+    for ($i = 0; $i -lt 5 -and -not $repoNames; $i++) {
         $suffix = Get-RandomSuffix
         $candidates = Get-RepoNamesForSuffix -RepoName $RepoName -Suffix $suffix -Count $Count
         $collision = $false
-        foreach ($candidate in $candidates)
-        {
-            if (Test-RepoExists -Owner $Owner -Name $candidate)
-            {
+        foreach ($candidate in $candidates) {
+            if (Test-RepoExists -Owner $Owner -Name $candidate) {
                 $collision = $true
                 break
             }
         }
-        if (-not $collision)
-        {
+        if (-not $collision) {
             $repoNames = $candidates
         }
     }
@@ -189,30 +181,25 @@ try
     Write-Host " $($repoNames -join ', ')" -ForegroundColor Green
 
     Write-Output ''
-    if (-not $Yes)
-    {
-        if ($Count -gt 1)
-        {
+    if (-not $Yes) {
+        if ($Count -gt 1) {
             $confirm = Read-Host "You have specified to create $Count repos from the $RepoName plans. Are you sure? (y/N):"
             if (($confirm ?? '').Trim().ToLower() -ne 'y') { throw 'User aborted' }
         }
-        else
-        {
+        else {
             $continue = Read-Host "Ready. Create repo with name: '$Owner/$($repoNames[0])' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
             $continueNorm = ($continue ?? '').Trim().ToLower()
             if ($continueNorm -ne 'y') { throw 'User aborted' }
         }
     }
-    else
-    {
+    else {
         Write-Verbose '-Yes specified: proceeding without confirmation'
     }
 
     Write-Verbose "Chosen repository names: $($repoNames -join ', ')"
 
     $lastEditorTarget = $null
-    foreach ($repoName in $repoNames)
-    {
+    foreach ($repoName in $repoNames) {
         Write-Verbose "Creating repository: $Owner/$repoName"
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'create-repo' -Message "Creating $Owner/$repoName" -Data @{ owner = $Owner; repoName = $repoName; visibility = $Visibility } }
 
@@ -224,12 +211,10 @@ try
         # Poll GitHub API until the template's initial commit exists on the default branch.
         Write-Host 'Waiting for template initialization...' -ForegroundColor Cyan -NoNewline
         $pollResult = Wait-TemplateReady -Owner $Owner -RepoName $repoName
-        if ($pollResult.Ready)
-        {
+        if ($pollResult.Ready) {
             Write-Host " ready ($($pollResult.ElapsedSeconds)s)" -ForegroundColor Green
         }
-        else
-        {
+        else {
             Write-Host " timed out after $($pollResult.ElapsedSeconds)s" -ForegroundColor Yellow
             Write-Warning 'Template initialization not confirmed — clone may race.'
         }
@@ -254,7 +239,7 @@ try
         Write-Host 'Copying plan docs...' -ForegroundColor Cyan -NoNewline
         Copy-PlanDocs -SourceDir $PlanDocsDir -RepoRoot $clonePath
         Write-Host ' done' -ForegroundColor Green
-        if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'copy-docs' -Message "Copied plan docs" -Data @{ sourceDir = $PlanDocsDir; repoRoot = $clonePath } }
+        if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'copy-docs' -Message 'Copied plan docs' -Data @{ sourceDir = $PlanDocsDir; repoRoot = $clonePath } }
 
         # Snapshot file list before replacement
         $preFiles = @(Get-ChildItem -LiteralPath $clonePath -Recurse -Force -File | Where-Object { $_.FullName -notmatch '[/\\]\.git([/\\]|$)' })
@@ -267,34 +252,30 @@ try
 
         # Replace template placeholders in file contents and path names
         Write-Host 'Replacing template placeholders (repo name)...' -ForegroundColor Cyan -NoNewline
-        Write-Verbose "[TRACE:Main] --- Step 1: Replace repo name ---"
+        Write-Verbose '[TRACE:Main] --- Step 1: Replace repo name ---'
         Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
         Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
         Write-Host ' done' -ForegroundColor Green
 
         # Replace template owner in image/registry references (e.g. ghcr.io/intel-agency/... -> ghcr.io/nam20485/...)
         $ownerLower = $Owner.ToLower()
-        if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
-        {
+        if ($ownerLower -ne $TEMPLATE_OWNER_LOWER) {
             Write-Host 'Replacing template placeholders (owner)...' -ForegroundColor Cyan -NoNewline
-            Write-Verbose "[TRACE:Main] --- Step 2: Replace owner ---"
+            Write-Verbose '[TRACE:Main] --- Step 2: Replace owner ---'
             Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
             Write-Host ' done' -ForegroundColor Green
         }
-        else
-        {
+        else {
             Write-Verbose "[TRACE:Main] --- Step 2: SKIPPED (owner unchanged: '$Owner' == '$TEMPLATE_OWNER_LOWER') ---"
         }
 
         $workspacePath = Join-Path $clonePath "$repoName.code-workspace"
-        if (Test-Path -LiteralPath $workspacePath -PathType Leaf)
-        {
+        if (Test-Path -LiteralPath $workspacePath -PathType Leaf) {
             $lastEditorTarget = $workspacePath
         }
-        else
-        {
+        else {
             Write-Verbose "Expected workspace file not found, opening repo folder instead: $workspacePath"
             $lastEditorTarget = $clonePath
         }
@@ -304,24 +285,22 @@ try
         $seedCommitMessage = "Seed $repoName from template with plan docs and placeholder replacements"
         $rebased = Invoke-GitCommitAndPush -RepoRoot $clonePath -CommitMessage $seedCommitMessage
 
-        if ($rebased)
-        {
+        if ($rebased) {
             Write-Host ' rebase required' -ForegroundColor Yellow
             # Template race: rebase pulled in un-replaced template files.
             # Re-run all replacements on the rebased tree.
-            Write-Warning "Template race detected — re-running placeholder replacements after rebase..."
+            Write-Warning 'Template race detected — re-running placeholder replacements after rebase...'
 
             Write-Host 'Re-replacing template placeholders (repo name) after rebase...' -ForegroundColor Cyan -NoNewline
-            Write-Verbose "[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---"
+            Write-Verbose '[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---'
             Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
             Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
             Write-Host ' done' -ForegroundColor Green
 
             $ownerLower = $Owner.ToLower()
-            if ($ownerLower -ne $TEMPLATE_OWNER_LOWER)
-            {
+            if ($ownerLower -ne $TEMPLATE_OWNER_LOWER) {
                 Write-Host 'Re-replacing template placeholders (owner) after rebase...' -ForegroundColor Cyan -NoNewline
-                Write-Verbose "[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---"
+                Write-Verbose '[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---'
                 Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
                 Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
                 Write-Host ' done' -ForegroundColor Green
@@ -331,21 +310,21 @@ try
             Write-Host 'Amending commit and force-pushing...' -ForegroundColor Cyan -NoNewline
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'add', '.') | Out-Null
             $amendCommit = Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'commit', '--amend', '--no-edit') -AllowFail
-            if ($amendCommit.ExitCode -ne 0)
-            {
+            if ($amendCommit.ExitCode -ne 0) {
                 $amendMsg = ($amendCommit.Output -join ' ')
                 if ($amendMsg -notmatch 'nothing to commit') { throw "git commit --amend failed: $amendMsg" }
             }
             Invoke-External -FilePath 'git' -ArgumentList @('-C', $clonePath, 'push', '--force-with-lease', 'origin', 'main') | Out-Null
             Write-Host ' done' -ForegroundColor Green
         }
-        else
-        {
+        else {
             Write-Host ' done' -ForegroundColor Green
         }
 
         # Output clone destination path
-        Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green
+        Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green        
+        $repoUrl = " (https://github.com/$Owner/$repoName)"
+        Write-Host $repoUrl -ForegroundColor Cyan       
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
         # # Trigger project-setup workflow on the new repo
@@ -361,24 +340,20 @@ try
         # }
     }
 
-    if (-not $Yes)
-    {
+    if (-not $Yes) {
         $launch = Read-Host 'Launch editor? (y/N)'
-        if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor )
-        {
+        if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor ) {
             code-insiders $lastEditorTarget
         }
     }
-    else
-    {
+    else {
         if ($LaunchEditor -and $lastEditorTarget) { code-insiders $lastEditorTarget }
     }
 
     Write-Host '=== All done ===' -ForegroundColor Cyan
     if (Get-Command Complete-RunLog -ErrorAction SilentlyContinue) { Complete-RunLog -Status 'SUCCESS' }
 }
-catch
-{
+catch {
     if (Get-Command Complete-RunLog -ErrorAction SilentlyContinue) { Complete-RunLog -Status 'FAILURE' -ErrorMessage $_.Exception.Message }
     Write-Host "FAILED: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
