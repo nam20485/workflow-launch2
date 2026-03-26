@@ -117,6 +117,7 @@ function Ensure-DispatchBootstrapLabel {
     $color = ([string]$label.color).Trim().TrimStart('#')
     $description = if ($null -ne $label.description) { [string]$label.description } else { '' }
 
+    Write-Host ""
     Write-Host "Creating bootstrap label '$labelName' on '$TargetRepo'..." -ForegroundColor Cyan -NoNewline
     $ghArgs = @(
         'api', "repos/$TargetRepo/labels", '-X', 'POST',
