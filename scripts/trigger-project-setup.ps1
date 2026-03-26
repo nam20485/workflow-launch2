@@ -46,6 +46,9 @@ param(
     [string]$Repo,
 
     [Parameter()]
+    [string]$BootstrapLabelsFile,
+
+    [Parameter()]
     [string]$Project,
 
     [Parameter()]
@@ -62,6 +65,75 @@ param(
 
 $scriptDir = $PSScriptRoot
 $createDispatch = Join-Path $scriptDir 'create-dispatch-issue.ps1'
+
+function Get-BootstrapLabelDefinition {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$LabelsFile,
+
+        [Parameter(Mandatory = $true)]
+        [string]$LabelName
+    )
+
+    if (-not (Test-Path -LiteralPath $LabelsFile)) {
+        throw "Bootstrap labels file not found: $LabelsFile"
+    }
+
+    $labels = Get-Content -LiteralPath $LabelsFile -Raw | ConvertFrom-Json
+    $label = $labels | Where-Object { $_.name -eq $LabelName } | Select-Object -First 1
+    if (-not $label) {
+        throw "Bootstrap label '$LabelName' not found in labels file '$LabelsFile'."
+    }
+
+    return $label
+}
+
+function Ensure-DispatchBootstrapLabel {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetRepo,
+
+        [Parameter(Mandatory = $true)]
+        [string]$LabelsFile,
+
+        [switch]$IsDryRun
+    )
+
+    $labelName = 'orchestration:dispatch'
+    $label = Get-BootstrapLabelDefinition -LabelsFile $LabelsFile -LabelName $labelName
+    $encodedLabelName = [uri]::EscapeDataString($labelName)
+
+    if ($IsDryRun) {
+        Write-Host "[dry-run] Would ensure bootstrap label '$labelName' exists on '$TargetRepo' using '$LabelsFile'." -ForegroundColor Yellow
+        return
+    }
+
+    & gh api "repos/$TargetRepo/labels/$encodedLabelName" *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Verbose "Bootstrap label '$labelName' already exists on '$TargetRepo'."
+        return
+    }
+
+    $color = ([string]$label.color).Trim().TrimStart('#')
+    $description = if ($null -ne $label.description) { [string]$label.description } else { '' }
+
+    Write-Host "Creating bootstrap label '$labelName' on '$TargetRepo'..." -ForegroundColor Cyan -NoNewline
+    $ghArgs = @(
+        'api', "repos/$TargetRepo/labels", '-X', 'POST',
+        '-f', "name=$labelName",
+        '-f', "color=$color"
+    )
+    if ($description -ne '') {
+        $ghArgs += @('-f', "description=$description")
+    }
+
+    & gh @ghArgs *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create bootstrap label '$labelName' on '$TargetRepo'."
+    }
+
+    Write-Host ' done' -ForegroundColor Green
+}
 
 if (-not (Test-Path -LiteralPath $createDispatch)) {
     Write-Error "Required script not found: $createDispatch"
@@ -83,5 +155,9 @@ if ($Milestone) { $params['Milestone'] = $Milestone }
 if ($Template) { $params['Template'] = $Template }
 if ($Assignee) { $params['Assignee'] = $Assignee }
 if ($DryRun) { $params['DryRun'] = $true }
+
+if ($BootstrapLabelsFile) {
+    Ensure-DispatchBootstrapLabel -TargetRepo $Repo -LabelsFile $BootstrapLabelsFile -IsDryRun:$DryRun
+}
 
 & $createDispatch @params

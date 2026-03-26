@@ -187,7 +187,10 @@ try {
             if (($confirm ?? '').Trim().ToLower() -ne 'y') { throw 'User aborted' }
         }
         else {
-            $continue = Read-Host "Ready. Create repo with name: '$Owner/$($repoNames[0])' with plan docs from '$PlanDocsDir' at '$CloneParentDir'? (y/N)"
+            Write-Host "Ready to create repository: $Owner/$($repoNames[0])" -ForegroundColor Cyan
+            Write-Host "Plan docs source: $PlanDocsDir" -ForegroundColor DarkGray
+            Write-Host "Clone destination parent: $CloneParentDir" -ForegroundColor DarkGray
+            $continue = Read-Host 'Proceed? (y/N)'
             $continueNorm = ($continue ?? '').Trim().ToLower()
             if ($continueNorm -ne 'y') { throw 'User aborted' }
         }
@@ -331,7 +334,14 @@ try {
         Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
         $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
         if (Test-Path -LiteralPath $triggerScript) {
+            $bootstrapLabelsFile = Join-Path $clonePath '.github/.labels.json'
             $triggerParams = @{ Repo = "$Owner/$repoName" }
+            if (Test-Path -LiteralPath $bootstrapLabelsFile) {
+                $triggerParams['BootstrapLabelsFile'] = $bootstrapLabelsFile
+            }
+            elseif (-not $DryRun) {
+                throw "Expected bootstrap labels file not found: $bootstrapLabelsFile"
+            }
             if ($DryRun) { $triggerParams['DryRun'] = $true }
             & $triggerScript @triggerParams
             Write-Host ' done' -ForegroundColor Green
