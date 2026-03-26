@@ -108,8 +108,8 @@ function Ensure-DispatchBootstrapLabel {
         return
     }
 
-    & gh api "repos/$TargetRepo/labels/$encodedLabelName" *> $null
-    if ($LASTEXITCODE -eq 0) {
+    $checkResult = & gh api "repos/$TargetRepo/labels/$encodedLabelName" 2>&1
+    if ($LASTEXITCODE -eq 0 -and $checkResult -notmatch '"message"') {
         Write-Verbose "Bootstrap label '$labelName' already exists on '$TargetRepo'."
         return
     }
