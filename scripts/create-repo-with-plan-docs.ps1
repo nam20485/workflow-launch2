@@ -274,6 +274,31 @@ try {
             Write-Verbose "[TRACE:Main] --- Step 2: SKIPPED (owner unchanged: '$Owner' == '$TEMPLATE_OWNER_LOWER') ---"
         }
 
+        # Rewrite AGENTS.md to identify this as a project instance, not the source template.
+        # Generic placeholder replacements have already run, so the parenthetical now shows the new
+        # repo name — we only need to flip the label text and restore the template source reference.
+        Write-Host 'Rewriting AGENTS.md instance identification...' -ForegroundColor Cyan -NoNewline
+        $agentsMdPath = Join-Path $clonePath 'AGENTS.md'
+        if (Test-Path -LiteralPath $agentsMdPath) {
+            $agentsMd = Get-Content -LiteralPath $agentsMdPath -Raw
+            $oldLabel = '**GitHub template repo**'
+            $newLabel = "**project instance** cloned from the ``$TEMPLATE_OWNER/$TEMPLATE_REPO_NAME`` GitHub template"
+            if ($agentsMd.Contains($oldLabel)) {
+                $agentsMd = $agentsMd.Replace($oldLabel, $newLabel)
+                if (-not $DryRun) {
+                    Set-Content -LiteralPath $agentsMdPath -Value $agentsMd -NoNewline
+                } else {
+                    Write-Warning '[dry-run] Would rewrite AGENTS.md instance identification'
+                }
+                Write-Host ' done' -ForegroundColor Green
+            } else {
+                Write-Host ' skipped (already updated)' -ForegroundColor DarkGray
+            }
+        } else {
+            Write-Warning "AGENTS.md not found at '$agentsMdPath'"
+            Write-Host ' skipped' -ForegroundColor Yellow
+        }
+
         $workspacePath = Join-Path $clonePath "$repoName.code-workspace"
         if (Test-Path -LiteralPath $workspacePath -PathType Leaf) {
             $lastEditorTarget = $workspacePath
@@ -307,6 +332,29 @@ try {
                 Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
                 Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
                 Write-Host ' done' -ForegroundColor Green
+            }
+
+            # Re-apply AGENTS.md instance identification rewrite after rebase
+            Write-Host 'Re-rewriting AGENTS.md instance identification after rebase...' -ForegroundColor Cyan -NoNewline
+            $agentsMdPath = Join-Path $clonePath 'AGENTS.md'
+            if (Test-Path -LiteralPath $agentsMdPath) {
+                $agentsMd = Get-Content -LiteralPath $agentsMdPath -Raw
+                $oldLabel = '**GitHub template repo**'
+                $newLabel = "**project instance** cloned from the ``$TEMPLATE_OWNER/$TEMPLATE_REPO_NAME`` GitHub template"
+                if ($agentsMd.Contains($oldLabel)) {
+                    $agentsMd = $agentsMd.Replace($oldLabel, $newLabel)
+                    if (-not $DryRun) {
+                        Set-Content -LiteralPath $agentsMdPath -Value $agentsMd -NoNewline
+                    } else {
+                        Write-Warning '[dry-run] Would rewrite AGENTS.md instance identification (post-rebase)'
+                    }
+                    Write-Host ' done' -ForegroundColor Green
+                } else {
+                    Write-Host ' skipped (already updated)' -ForegroundColor DarkGray
+                }
+            } else {
+                Write-Warning "AGENTS.md not found at '$agentsMdPath'"
+                Write-Host ' skipped' -ForegroundColor Yellow
             }
 
             # Amend the seed commit with the post-rebase replacements and force push
