@@ -1,7 +1,10 @@
 # OS-APOW Standalone Orchestration Service — Full Migration & Implementation Plan
 
 > **Status:** Ready for Autonomous Implementation  
-> **Architecture Guide:** OS-APOW Architecture Guide v3.2 (expected in `plan_docs/`)  
+> **Parent:** [task.md](task.md)  
+> **Architecture Guide:** [OS-APOW Architecture Guide v3.2](../OS-APOW%20Architecture%20Guide%20v3.2.md)  
+> **Options Analysis:** [F1-orchestration-migration-options.md](F1-orchestration-migration-options.md)  
+> **Related:** [F1-feature-full-dev-plan.md](F1-feature-full-dev-plan.md) | [F1-full-dev-plan\_(OPENCODE).md](F1-full-dev-plan_(OPENCODE).md)  
 > **Last Updated:** 2026-03-28
 
 ---
@@ -122,7 +125,7 @@ The migration is primarily an **integration and packaging** effort — not a gre
 1. **Shell Bridge as Primary API** (ADR-07): The Sentinel interacts with the orchestration server exclusively via `devcontainer-opencode.sh`. No Docker SDK reimplementation.
 2. **Polling-First Resiliency** (ADR-08): Webhook delivery is an optimization; polling ensures self-healing on restart.
 3. **Provider-Agnostic Queue** (ADR-09): All queue interactions go through `ITaskQueue` ABC — GitHub today, Linear/Jira later.
-4. **Option 2 Architecture**: Separate webhook handler service forwards events to the orchestration server. Better separation of concerns and independent scaling.
+4. **Option 2 Architecture** (task.md): Separate webhook handler service forwards events to the orchestration server. Better separation of concerns and independent scaling.
 5. **Credential Scrubbing** (R-7): All output posted to GitHub is sanitized via `scrub_secrets()` before posting.
 
 ---

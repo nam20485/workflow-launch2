@@ -16,23 +16,29 @@
 | Document | Path | Purpose |
 |---|---|---|
 | **Migration & Implementation Plan** | [`OS-APOW-standalone-service-migration-plan.md`](OS-APOW-standalone-service-migration-plan.md) | Full 6-phase migration plan with architecture, code inventory, task breakdowns, validation plans, agent assignment matrix, risk register, and file migration map |
+| **Pre-Task Execution Plan** | [`pre-task-execution-plan.md`](pre-task-execution-plan.md) | 3 pre-task steps that must complete before main plan phases begin (rename references, project-setup audit, upstream template sync) |
 
 ### Existing Project Plan Docs (seeded at clone time)
 
-These documents are expected to exist in the parent `plan_docs/` directory, seeded by the `create-repo-from-slug.ps1` workflow:
-
-| Document | Expected Location | Purpose |
+| Document | Path | Purpose |
 |---|---|---|
-| Architecture Guide v3.2 | `plan_docs/OS-APOW Architecture Guide v3.2.md` | System-level diagrams, security boundaries, 4-pillar overview |
-| Development Plan v4.2 | `plan_docs/OS-APOW Development Plan v4.2.md` | Phased roadmap, guiding principles, user stories, risk mitigations |
-| Architecture doc | `plan_docs/architecture.md` | System overview, data flow, security model |
-| Tech Stack doc | `plan_docs/tech-stack.md` | Python, FastAPI, opencode, Docker, uv |
+| Architecture Guide v3.2 | [`../OS-APOW Architecture Guide v3.2.md`](../OS-APOW%20Architecture%20Guide%20v3.2.md) | System-level diagrams, security boundaries, 4-pillar overview |
+| Development Plan v4.2 | [`../OS-APOW Development Plan v4.2.md`](../OS-APOW%20Development%20Plan%20v4.2.md) | Phased roadmap, guiding principles, user stories, risk mitigations |
+| Architecture doc | [`../architecture.md`](../architecture.md) | System overview, data flow, security model |
+| Tech Stack doc | [`../tech-stack.md`](../tech-stack.md) | Python, FastAPI, opencode, Docker, uv |
+
+### Historical Revisions (context only — do not implement from these)
+
+| Revision | Path | Notes |
+|---|---|---|
+| rev0 | [`.historical/rev0/`](.historical/rev0/) | Initial feature plans and migration options analysis (`F1-feature-full-dev-plan.md`, `F1-full-dev-plan_(OPENCODE).md`, `F1-orchestration-migration-options.md`) |
+| rev1 | [`.historical/rev1/`](.historical/rev1/) | First task definition and raw pre-task steps before they were expanded into the canonical pre-task execution plan |
 
 ### Related Documentation
 
-| Document | Expected Location | Purpose |
+| Document | Path | Purpose |
 |---|---|---|
-| Memory Server Migration Plan | `docs/memory-server-migration-plan.md` | MCP memory server migration (server-memory → mcp-memory-service) |
+| Memory Server Migration Plan | [`../../docs/memory-server-migration-plan.md`](../../docs/memory-server-migration-plan.md) | MCP memory server migration (server-memory → mcp-memory-service) — already implemented on this branch |
 
 ---
 
@@ -67,6 +73,24 @@ See the [Migration Plan §1–2](OS-APOW-standalone-service-migration-plan.md#1-
 ---
 
 ## Execution Plan
+
+### Step 0: Pre-Tasks (BEFORE main phases)
+
+**Source:** [pre-task-execution-plan.md](pre-task-execution-plan.md)
+
+These pre-tasks must complete before any main phase begins. The pre-task plan includes detailed inventories and acceptance criteria for each.
+
+| Pre-Task | Description | Status |
+|---|---|---|
+| **PT-1: Rename References** | Find-and-replace `queue-tango48` → `workflow-orchestration-service` across ~37 references in 19 files. Groups A–D updated; Group E (archived) intentionally skipped. | **✅ COMPLETE** |
+| **PT-2: Project Setup Audit** | Manually apply the 6 assignments from the `project-setup` dynamic workflow. 9 actions identified; all executed (project rename, labels, milestones, plan issue #3, architecture/tech-stack docs, repo summary). | **✅ COMPLETE** |
+| **PT-3: Upstream Template Sync** | Apply 6 upstream commits from `intel-agency/ai-new-workflow-app-template` made after this repo was cloned. | **✅ COMPLETE** |
+
+**Verification:** All 3 pre-tasks were completed on 2026-03-29. The pre-task execution plan contains detailed results for each action.
+
+> **For the implementing agent:** Verify pre-task completion by running `git grep "queue-tango48" -- ':!docs/.archived/' ':!plan_docs/.workflow-orchestration-queue*'` — should return zero results. If any active file still references the old name, apply PT-1 first.
+
+---
 
 ### Step 1: Phase 0 — Foundation & Dockerfile Consolidation
 
