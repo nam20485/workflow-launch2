@@ -1,5 +1,5 @@
 ﻿"""
-workflow-orchestration-service Work Event Notifier
+OS-APOW Work Event Notifier
 A FastAPI-based webhook receiver that maps provider events (GitHub, etc.)
 to a unified Work Item queue.
 """
@@ -47,7 +47,7 @@ WEBHOOK_SECRET = _WEBHOOK_SECRET.encode()
 # --- 1. FastAPI Application ---
 
 
-app = FastAPI(title="workflow-orchestration-service Event Notifier")
+app = FastAPI(title="OS-APOW Event Notifier")
 
 
 def get_queue() -> ITaskQueue:
@@ -95,15 +95,12 @@ async def handle_github_webhook(
             await queue.add_to_queue(work_item)
             return {"status": "accepted", "item_id": work_item.id}
 
-    return {
-        "status": "ignored",
-        "reason": "No actionable workflow-orchestration-service event mapping found",
-    }
+    return {"status": "ignored", "reason": "No actionable OS-APOW event mapping found"}
 
 
 @app.get("/health")
 def health_check():
-    return {"status": "online", "system": "workflow-orchestration-service Notifier"}
+    return {"status": "online", "system": "OS-APOW Notifier"}
 
 
 if __name__ == "__main__":

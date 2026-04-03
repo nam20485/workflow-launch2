@@ -1,11 +1,11 @@
 """
-workflow-orchestration-service GitHub Queue
+OS-APOW GitHub Queue
 
 Consolidated GitHub-backed work queue used by both the Sentinel
 Orchestrator and the Work Event Notifier. Implements the ITaskQueue
 ABC so the provider can be swapped to Linear, Jira, etc. in the future.
 
-See: workflow-orchestration-service Simplification Report, S-1 / S-6
+See: OS-APOW Simplification Report, S-1 / S-6
 """
 
 import logging
@@ -22,7 +22,7 @@ from src.models.work_item import (
     scrub_secrets,
 )
 
-logger = logging.getLogger("workflow-orchestration-service")
+logger = logging.getLogger("OS-APOW")
 
 
 # --- Abstract Interface (kept per S-1 for future provider swapping) ---
