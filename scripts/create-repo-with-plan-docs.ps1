@@ -373,9 +373,10 @@ try {
         }
 
         # Output clone destination path
-        Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green        
-        $repoUrl = " (https://github.com/$Owner/$repoName)"
-        Write-Host $repoUrl -ForegroundColor Green       
+        $repoUrl = "https://github.com/$Owner/$repoName"
+        Write-Host "SUCCESS: '$clonePath' created and checked in ($repoUrl) " -ForegroundColor Green        
+        
+        Write-Host -ForegroundColor Green       
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
         # Trigger project-setup workflow on the new repo
@@ -408,7 +409,7 @@ try {
         if ($LaunchEditor -and $lastEditorTarget) { code-insiders $lastEditorTarget }
     }
 
-    Write-Host '=== All done ===' -ForegroundColor Cyan
+    Write-Host '=== All done ===' -ForegroundColor Green
     if (Get-Command Complete-RunLog -ErrorAction SilentlyContinue) { Complete-RunLog -Status 'SUCCESS' }
 }
 catch {
