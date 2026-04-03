@@ -168,4 +168,3 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Issue created: $issueUrl" -ForegroundColor Green
-Write-Output $issueUrl

@@ -235,7 +235,7 @@ try {
         Write-Host "Cloning '$Owner/$repoName'..." -ForegroundColor Cyan -NoNewline
         $clonePath = Get-ClonePath -Parent $CloneParentDir -Name $repoName
         Invoke-GitClone -Owner $Owner -Name $repoName -Dest $clonePath
-        Write-Host " done ($clonePath)" -ForegroundColor Green
+        Write-Host " done" -ForegroundColor Green
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'clone' -Message "Cloned $Owner/$repoName" -Data @{ clonePath = $clonePath } }
 
         # Copy plan docs
@@ -375,7 +375,7 @@ try {
         # Output clone destination path
         Write-Host "SUCCESS: '$clonePath' created and checked in" -ForegroundColor Green        
         $repoUrl = " (https://github.com/$Owner/$repoName)"
-        Write-Host $repoUrl -ForegroundColor Cyan       
+        Write-Host $repoUrl -ForegroundColor Green       
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
         # Trigger project-setup workflow on the new repo
@@ -392,7 +392,7 @@ try {
             }
             if ($DryRun) { $triggerParams['DryRun'] = $true }
             & $triggerScript @triggerParams
-            Write-Host ' done' -ForegroundColor Green
+            #Write-Host ' done' -ForegroundColor Green
         } else {
             Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
         }
