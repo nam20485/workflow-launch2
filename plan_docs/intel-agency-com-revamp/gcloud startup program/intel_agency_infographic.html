@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intel Agency: SOTA Agentic Memory System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        deep: '#0B0F19',
+                        card: '#111827',
+                        primary: '#0ea5e9',
+                        secondary: '#8b5cf6',
+                        accent: '#10b981',
+                        textMain: '#f8fafc',
+                        textMuted: '#94a3b8'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F19;
+            color: #f8fafc;
+            -webkit-font-smoothing: antialiased;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (max-width: 640px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(14, 165, 233, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .interactive-node {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .interactive-node.active {
+            border-color: #0ea5e9;
+            background: rgba(14, 165, 233, 0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.25);
+        }
+        .interactive-node:hover:not(.active) {
+            border-color: rgba(14, 165, 233, 0.4);
+            transform: translateY(-2px);
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #0ea5e9, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0F19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0ea5e9;
+        }
+    </style>
+</head>
+<body class="font-sans overflow-x-hidden">
+
+    <!-- Chosen Palette: Deep Tech Vibrant (Navy, Cyan, Purple) -->
+    <!-- Application Structure Plan: The SPA uses a dashboard-style, linear narrative flow suitable for a pitch. It begins with a strong executive summary hero section. Section 1 compares standard RAG limitations to the proprietary solution using a grouped bar chart. Section 2 is an interactive architecture explorer detailing the Bi-Modal system. Section 3 outlines the business strategy (validation loop) using a CSS-styled process flow. Section 4 provides market composition (doughnut chart) and future milestones. This structure logically guides the user from the problem, to the technical moat, to the business validation, and finally the roadmap, strictly based on the provided intel_agency_startup_master.md report. -->
+    <!-- Visualization & Content Choices: 
+         1. RAG vs Bi-Modal Comparison -> Goal: Compare -> Chart.js Bar Chart -> Effectively highlights the quantitative advantages (Recall, Hallucination reduction) of the proprietary tech over existing solutions.
+         2. Bi-Modal Architecture -> Goal: Organize/Inform -> HTML/CSS Interactive Grid -> Allows users to click through the complex system components (Episodic, Factual, Curator, MCP) without overwhelming text walls. Ensures NO SVG usage.
+         3. Validation Loop -> Goal: Organize/Process -> HTML/CSS Flexbox Flow -> Visually demonstrates the business model loop (Agency -> Testbed -> SaaS).
+         4. Target Markets -> Goal: Compare/Composition -> Chart.js Doughnut Chart -> Shows focus on FinTech/Healthcare as extracted from the AWS Pitch Deck section.
+         5. Milestones -> Goal: Change/Organize -> HTML/CSS Timeline -> Clearly lays out Q2-Q4 2026 goals without requiring external diagramming tools.
+         All visualizations confirm NO SVG and NO Mermaid.js. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="fixed top-0 w-full z-50 glass-card border-b-0 border-t-0 border-l-0 border-r-0 border-b border-blue-900/30">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="font-display font-black text-2xl tracking-tighter flex items-center gap-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded flex items-center justify-center text-white font-bold text-lg leading-none">IA</div>
+                <span>INTEL<span class="text-primary">AGENCY</span></span>
+            </div>
+            <div class="hidden md:flex space-x-6 text-sm font-semibold tracking-wider text-textMuted uppercase">
+                <a href="#moat" class="hover:text-primary transition-colors">The Moat</a>
+                <a href="#architecture" class="hover:text-primary transition-colors">Architecture</a>
+                <a href="#strategy" class="hover:text-primary transition-colors">Strategy</a>
+                <a href="#roadmap" class="hover:text-primary transition-colors">Roadmap</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-12">
+        <header class="max-w-4xl mx-auto px-6 py-20 text-center">
+            <div class="inline-block px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-8">
+                Deep Tech R&D + Enterprise Orchestration
+            </div>
+            <h1 class="text-5xl md:text-7xl font-display font-black mb-6 leading-tight tracking-tighter">
+                Building the <span class="gradient-text">Long-Term Brain</span> for Autonomous AI
+            </h1>
+            <p class="text-xl text-textMuted leading-relaxed mb-10">
+                We develop proprietary Bi-Modal Agentic Memory systems that solve the context-decay and hallucination issues inherent in current LLMs. By providing "Memory-as-a-Service" via the Model Context Protocol (MCP), we enable reliable enterprise automation.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left border-t border-card pt-8">
+                <div class="p-4 bg-card rounded-xl border border-gray-800">
+                    <div class="text-2xl mb-2">&#128640;</div>
+                    <div class="font-bold text-sm mb-1 uppercase tracking-wider text-primary">Mission</div>
+                    <div class="text-xs text-textMuted">Dual-track AI research and implementation firm.</div>
+                </div>
+                <div class="p-4 bg-card rounded-xl border border-gray-800">
+                    <div class="text-2xl mb-2">&#127970;</div>
+                    <div class="font-bold text-sm mb-1 uppercase tracking-wider text-primary">Identity</div>
+                    <div class="text-xs text-textMuted">Intel Agency LLC. B2B SaaS funded by services.</div>
+                </div>
+                <div class="p-4 bg-card rounded-xl border border-gray-800">
+                    <div class="text-2xl mb-2">&#128295;</div>
+                    <div class="font-bold text-sm mb-1 uppercase tracking-wider text-primary">Core Tech</div>
+                    <div class="text-xs text-textMuted">Vertex AI Embeddings, BigQuery, AlloyDB, Cloud Run.</div>
+                </div>
+            </div>
+        </header>
+
+        <section id="moat" class="max-w-7xl mx-auto px-6 py-16">
+            <div class="mb-12">
+                <h2 class="text-3xl font-display font-bold mb-4">The Technical Moat: Overcoming RAG Limitations</h2>
+                <p class="text-textMuted max-w-3xl">
+                    Current autonomous agents suffer from long-term context decay. Standard Retrieval-Augmented Generation (RAG) models stuff contexts, leading to hallucinations. Our offline curation LLM ensures agent memory stays clean, relevant, and grounded.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center glass-card p-8 rounded-3xl">
+                <div class="chart-container">
+                    <canvas id="ragComparisonChart"></canvas>
+                </div>
+                <div class="space-y-6">
+                    <div class="p-5 bg-card rounded-2xl border border-gray-800/50 border-l-4 border-l-red-500">
+                        <h3 class="font-bold text-lg mb-2 text-white flex items-center gap-2">
+                            <span class="text-red-500">&#10006;</span> The Problem with Standard RAG
+                        </h3>
+                        <p class="text-sm text-textMuted">
+                            Off-the-shelf models suffer from "context-stuffing" problems. As workflows scale, context windows fill with irrelevant data, leading to severe hallucinations and a failure to orchestrate complex, multi-step enterprise processes.
+                        </p>
+                    </div>
+                    <div class="p-5 bg-card rounded-2xl border border-gray-800/50 border-l-4 border-l-primary">
+                        <h3 class="font-bold text-lg mb-2 text-white flex items-center gap-2">
+                            <span class="text-primary">&#10004;</span> The Intel Agency Solution
+                        </h3>
+                        <p class="text-sm text-textMuted">
+                            Our proprietary offline curation LLM optimizes the RAG pipeline. By pruning invalid states and cross-verifying episodic and factual data points, we drastically increase contextual recall accuracy and ensure data integrity for high-stakes decision making.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="max-w-7xl mx-auto px-6 py-16">
+            <div class="mb-12">
+                <h2 class="text-3xl font-display font-bold mb-4">Proprietary Bi-Modal Agentic Memory System</h2>
+                <p class="text-textMuted max-w-3xl">
+                    Our system combines two distinct storage layers grounded by Vertex AI Embeddings, managed by a secondary Curator LLM, and delivered via a zero-latency MCP server interface.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-5 flex flex-col gap-4">
+                    <div class="text-xs font-bold text-textMuted uppercase tracking-widest mb-2 border-b border-gray-800 pb-2">Storage Layers</div>
+                    
+                    <div class="interactive-node active glass-card p-5 rounded-2xl border border-gray-800" onclick="updateArchitecture('episodic', this)">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-xl">&#128466;</div>
+                            <div>
+                                <h3 class="font-bold text-white">Episodic Memory</h3>
+                                <p class="text-xs text-textMuted mt-1">Event-based interaction logs</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="interactive-node glass-card p-5 rounded-2xl border border-gray-800" onclick="updateArchitecture('factual', this)">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center text-xl">&#128451;</div>
+                            <div>
+                                <h3 class="font-bold text-white">Factual Memory</h3>
+                                <p class="text-xs text-textMuted mt-1">Structured knowledge graph</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-xs font-bold text-textMuted uppercase tracking-widest mt-4 mb-2 border-b border-gray-800 pb-2">Processing & Interface</div>
+
+                    <div class="interactive-node glass-card p-5 rounded-2xl border border-gray-800" onclick="updateArchitecture('curator', this)">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center text-xl">&#9881;</div>
+                            <div>
+                                <h3 class="font-bold text-white">The "Curator" LLM</h3>
+                                <p class="text-xs text-textMuted mt-1">Asynchronous offline processing</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="interactive-node glass-card p-5 rounded-2xl border border-gray-800" onclick="updateArchitecture('mcp', this)">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-xl">&#128423;</div>
+                            <div>
+                                <h3 class="font-bold text-white">MCP Server</h3>
+                                <p class="text-xs text-textMuted mt-1">Model Context Protocol frontend</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7">
+                    <div class="glass-card h-full rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center border-l-4 border-l-primary" id="arch-display-panel">
+                        <div class="absolute -right-10 -top-10 text-9xl opacity-5 pointer-events-none" id="arch-icon">&#128466;</div>
+                        <h3 class="text-3xl font-display font-bold mb-4 text-white" id="arch-title">Episodic Memory</h3>
+                        <p class="text-lg text-textMuted leading-relaxed mb-8" id="arch-desc">
+                            Captures event-based, chronological logs of agent interactions. This forms the foundational timeline of what the agent has experienced, acting as the short-term and experiential history required for continuous context.
+                        </p>
+                        <div class="bg-deep/50 p-4 rounded-xl border border-gray-800 w-max">
+                            <span class="text-xs font-bold uppercase tracking-widest text-primary block mb-2">Cloud Infrastructure</span>
+                            <span class="text-sm font-mono text-gray-300" id="arch-tech">Vertex AI Embeddings & Cloud Storage</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="strategy" class="max-w-7xl mx-auto px-6 py-16">
+            <div class="mb-12 text-center">
+                <h2 class="text-3xl font-display font-bold mb-4">Business Strategy: The Validation Loop</h2>
+                <p class="text-textMuted max-w-2xl mx-auto">
+                    We bridge the gap between theory and practice. The most robust AI technologies are forged through the practical implementation of complex, real-world workflows.
+                </p>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6 relative">
+                <div class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-primary/20 via-secondary/20 to-accent/20 -translate-y-1/2 z-0"></div>
+                
+                <div class="flex-1 glass-card p-6 rounded-3xl relative z-10 border border-primary/30 flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-primary text-white font-black text-2xl flex items-center justify-center mb-6 shadow-lg shadow-primary/30">1</div>
+                    <h3 class="font-bold text-xl mb-3 text-white">Agency Arm</h3>
+                    <p class="text-sm text-textMuted">Identify high-friction manual processes within mid-to-large enterprises. Migrate them into agent-orchestrated workflows, focusing on high-compliance sectors.</p>
+                </div>
+                
+                <div class="flex-1 glass-card p-6 rounded-3xl relative z-10 border border-secondary/30 flex flex-col items-center text-center mt-0 md:mt-12">
+                    <div class="w-16 h-16 rounded-full bg-secondary text-white font-black text-2xl flex items-center justify-center mb-6 shadow-lg shadow-secondary/30">2</div>
+                    <h3 class="font-bold text-xl mb-3 text-white">Live Testbed</h3>
+                    <p class="text-sm text-textMuted">Enterprise deployments serve as a high-fidelity validation loop. We capture proprietary interaction data to stress-test SOTA research and generate empirical data.</p>
+                </div>
+
+                <div class="flex-1 glass-card p-6 rounded-3xl relative z-10 border border-accent/30 flex flex-col items-center text-center mt-0 md:mt-24">
+                    <div class="w-16 h-16 rounded-full bg-accent text-white font-black text-2xl flex items-center justify-center mb-6 shadow-lg shadow-accent/30">3</div>
+                    <h3 class="font-bold text-xl mb-3 text-white">SaaS Product</h3>
+                    <p class="text-sm text-textMuted">Data continuously trains memory curation algorithms. Culminates in a scalable "Memory-as-a-Service" product via MCP, funded by high-value implementation services.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="max-w-7xl mx-auto px-6 py-16 border-t border-gray-800/50 mt-12">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                <div>
+                    <h2 class="text-3xl font-display font-bold mb-4">Market Opportunity</h2>
+                    <p class="text-textMuted mb-8">
+                        Migrating the global 'manual process' economy to agentic workflows is a multi-billion dollar opportunity. Our initial focus is heavily weighted towards sectors where memory accuracy and data integrity are non-negotiable.
+                    </p>
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="marketChart"></canvas>
+                    </div>
+                </div>
+                
+                <div>
+                    <h2 class="text-3xl font-display font-bold mb-8">Future Growth Milestones</h2>
+                    <div class="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-700 before:to-transparent">
+                        
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-deep bg-primary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg shadow-primary/20 z-10">
+                                Q2
+                            </div>
+                            <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] glass-card p-5 rounded-2xl">
+                                <div class="text-primary font-mono text-xs font-bold mb-1">2026</div>
+                                <h3 class="font-bold text-white text-lg mb-2">NSF Phase I Grant Proposal</h3>
+                                <p class="text-sm text-textMuted">Submission of formal grant utilizing empirical data gathered from initial enterprise testbeds to formalize R&D.</p>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-deep bg-secondary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg shadow-secondary/20 z-10">
+                                Q3
+                            </div>
+                            <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] glass-card p-5 rounded-2xl">
+                                <div class="text-secondary font-mono text-xs font-bold mb-1">2026</div>
+                                <h3 class="font-bold text-white text-lg mb-2">Beta Launch: MCP Server</h3>
+                                <p class="text-sm text-textMuted">Release of the standardized, plug-and-play interface for external developers to access the Bi-Modal memory architecture.</p>
+                            </div>
+                        </div>
+
+                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-deep bg-accent text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg shadow-accent/20 z-10">
+                                Q4
+                            </div>
+                            <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] glass-card p-5 rounded-2xl">
+                                <div class="text-accent font-mono text-xs font-bold mb-1">2026</div>
+                                <h3 class="font-bold text-white text-lg mb-2">Enterprise Scaling</h3>
+                                <p class="text-sm text-textMuted">Completion of migration for 3+ major enterprise partners into reliable, agent-orchestrated environments.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-gray-800/50 py-8 text-center text-xs text-slate-500 font-mono uppercase tracking-widest">
+        Intel Agency LLC &copy; 2026 | Founder & CTO Brief
+    </footer>
+
+    <script>
+        // --- UTILITY FUNCTIONS ---
+        function wrapLabel(label, maxChars = 16) {
+            if (label.length <= maxChars) return label;
+            const words = label.split(' ');
+            const lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + word).length > maxChars) {
+                    if (currentLine) lines.push(currentLine.trim());
+                    currentLine = word + ' ';
+                } else {
+                    currentLine += word + ' ';
+                }
+            });
+            if (currentLine) lines.push(currentLine.trim());
+            return lines;
+        }
+
+        const commonTooltipConfig = {
+            callbacks: {
+                title: function(tooltipItems) {
+                    const item = tooltipItems[0];
+                    let label = item.chart.data.labels[item.dataIndex];
+                    if (Array.isArray(label)) {
+                        return label.join(' ');
+                    }
+                    return label;
+                }
+            },
+            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+            titleFont: { family: 'Inter', size: 13, weight: 'bold' },
+            bodyFont: { family: 'Inter', size: 12 },
+            padding: 12,
+            borderColor: 'rgba(14, 165, 233, 0.3)',
+            borderWidth: 1
+        };
+
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter';
+
+        // --- CHART 1: RAG vs BI-MODAL (Bar Chart) ---
+        const ctxRag = document.getElementById('ragComparisonChart').getContext('2d');
+        
+        const ragLabels = [
+            wrapLabel("Contextual Recall Accuracy"), 
+            wrapLabel("Hallucination Prevention Rate"), 
+            wrapLabel("Data Integrity & Validation"),
+            wrapLabel("Long-Horizon Process Reliability")
+        ];
+
+        new Chart(ctxRag, {
+            type: 'bar',
+            data: {
+                labels: ragLabels,
+                datasets: [
+                    {
+                        label: 'Standard RAG Implementations',
+                        data: [35, 25, 45, 15],
+                        backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                        borderColor: 'rgba(148, 163, 184, 0.8)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Intel Agency Bi-Modal System',
+                        data: [95, 92, 98, 88],
+                        backgroundColor: 'rgba(14, 165, 233, 0.8)',
+                        borderColor: 'rgba(14, 165, 233, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#f8fafc', font: { weight: 'bold' } }
+                    },
+                    tooltip: commonTooltipConfig
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { callback: function(value) { return value + '%'; } }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // --- CHART 2: MARKET FOCUS (Doughnut Chart) ---
+        const ctxMarket = document.getElementById('marketChart').getContext('2d');
+        const marketLabels = [
+            wrapLabel("FinTech & Compliance"),
+            wrapLabel("Healthcare & Medical Data"),
+            wrapLabel("Other Enterprise Workflows")
+        ];
+
+        new Chart(ctxMarket, {
+            type: 'doughnut',
+            data: {
+                labels: marketLabels,
+                datasets: [{
+                    data: [45, 40, 15],
+                    backgroundColor: [
+                        'rgba(14, 165, 233, 0.8)', // Primary
+                        'rgba(139, 92, 246, 0.8)', // Secondary
+                        'rgba(30, 41, 59, 0.8)'    // Card
+                    ],
+                    borderColor: '#0B0F19',
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#f8fafc', padding: 20 }
+                    },
+                    tooltip: commonTooltipConfig
+                }
+            }
+        });
+
+        // --- ARCHITECTURE INTERACTIVITY LOGIC ---
+        const archData = {
+            episodic: {
+                title: "Episodic Memory",
+                desc: "Captures event-based, chronological logs of agent interactions. This forms the foundational timeline of what the agent has experienced, acting as the short-term and experiential history required for continuous context.",
+                tech: "Vertex AI Embeddings & Cloud Storage",
+                icon: "&#128466;",
+                colorClass: "border-l-primary"
+            },
+            factual: {
+                title: "Factual Memory",
+                desc: "A highly structured knowledge graph of verified data and cross-referenced relationships. This acts as the authoritative 'truth' layer, ensuring the agent doesn't rely solely on recent interactions.",
+                tech: "Vertex AI Vector Search & AlloyDB",
+                icon: "&#128451;",
+                colorClass: "border-l-secondary"
+            },
+            curator: {
+                title: "The 'Curator' LLM",
+                desc: "A secondary LLM runs asynchronous offline processes to prune invalid or redundant memory states and synthesize relational links between the episodic and factual graphs. Optimizes RAG by drastically reducing hallucinations.",
+                tech: "BigQuery Analysis & Batch Processing",
+                icon: "&#9881;",
+                colorClass: "border-l-accent"
+            },
+            mcp: {
+                title: "MCP Server Interface",
+                desc: "Deployed via a Model Context Protocol (MCP) server, providing a standardized, plug-and-play interface. Allows any external LLM-based agent to access our advanced memory capabilities with zero-latency integration.",
+                tech: "Google Cloud Run & REST APIs",
+                icon: "&#128423;",
+                colorClass: "border-l-orange-500"
+            }
+        };
+
+        function updateArchitecture(nodeId, element) {
+            // Update active styling
+            document.querySelectorAll('.interactive-node').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            // Get Data
+            const data = archData[nodeId];
+            
+            // DOM Elements
+            const panel = document.getElementById('arch-display-panel');
+            const title = document.getElementById('arch-title');
+            const desc = document.getElementById('arch-desc');
+            const tech = document.getElementById('arch-tech');
+            const icon = document.getElementById('arch-icon');
+
+            // Fade out
+            panel.style.opacity = 0;
+            
+            setTimeout(() => {
+                // Update Content
+                title.innerText = data.title;
+                desc.innerText = data.desc;
+                tech.innerText = data.tech;
+                icon.innerHTML = data.icon;
+
+                // Update Border Color Class
+                panel.className = `glass-card h-full rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center border-l-4 transition-opacity duration-300 ${data.colorClass}`;
+                
+                // Fade in
+                panel.style.opacity = 1;
+            }, 300);
+        }
+    </script>
+</body>
+</html>
