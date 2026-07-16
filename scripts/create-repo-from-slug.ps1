@@ -20,14 +20,18 @@ param(
 
     [Parameter(HelpMessage = 'Number of repositories to create from this slug.')]
     [ValidateScript({ $_ -ge 1 })]
-    [int]$Count = 1
+    [int]$Count = 1,
+
+    [Parameter(HelpMessage = 'Template repository name used for new repos. Used for placeholder replacement.')]
+    [ValidateNotNullOrEmpty()]
+    [string]$TemplateRepoName = 'ai-new-workflow-app-template'    
 )
 
 if ($Yes) {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Count $Count -Yes -LaunchEditor
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -Count $Count
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count
 }
 
 

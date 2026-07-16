@@ -38,6 +38,12 @@ Launch editor with workspace from new repo after creation
 .PARAMETER Count
 Number of repositories to create from the specified slug and plan docs. Letter suffixes are appended to the repo names when more than one repo is requested.
 
+.PARAMETER TemplateRepoName
+Template repository name used to create new repos and to substitute template placeholders. Default: ai-new-workflow-app-template
+
+.PARAMETER TemplateOwner
+Template repository owner used to create new repos and to substitute template owner references (e.g. in image/registry paths). Default: intel-agency
+
 .EXAMPLE
 ./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\plan_docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
 
@@ -90,7 +96,17 @@ param(
 
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'How many repositories to create from the slug and plan docs.')]
     [ValidateScript({ $_ -ge 1 })]
-    [int]$Count = 1
+    [int]$Count = 1,
+
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Template repository name used for new repos.')]
+    [Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Template repository name used for placeholder replacement.')]
+    [ValidateNotNullOrEmpty()]
+    [string]$TemplateRepoName = 'ai-new-workflow-app-template',
+
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Template repository owner used for new repos.')]
+    [Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Template repository owner used for placeholder replacement.')]
+    [ValidateNotNullOrEmpty()]
+    [string]$TemplateOwner = 'intel-agency'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -112,11 +128,6 @@ $loggingModule = Join-Path $PSScriptRoot 'logging.ps1'
 if (Test-Path -LiteralPath $loggingModule) { . $loggingModule } else { Write-Verbose 'logging.ps1 not found; proceeding without structured logging' }
 Write-Host ' done' -ForegroundColor DarkGray
 
-#$TEMPLATE = 'nam20485/ai-new-app-template' # Template repository for new repos
-$TEMPLATE = 'intel-agency/ai-new-workflow-app-template' # Template repository for new repos
-$TEMPLATE_REPO_NAME = 'ai-new-workflow-app-template' # Template repository name for new repos
-$TEMPLATE_OWNER = $TEMPLATE.Split('/')[0] # Template repository owner (extracted from $TEMPLATE)
-
 $docsDir = 'plan_docs'
 
 #
@@ -133,15 +144,15 @@ try {
     if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly') {
         Write-Host "Replacing placeholders in existing repo '$ExistingRepoRoot'..." -ForegroundColor Cyan -NoNewline
         $resolvedRepoRoot = (Resolve-Path -LiteralPath $ExistingRepoRoot).Path
-        Update-TemplatePlaceholders -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $RepoName
-        Assert-NoTemplatePlaceholdersRemaining -RepoRoot $resolvedRepoRoot -TemplateText $TEMPLATE_REPO_NAME
+        Update-TemplatePlaceholders -RepoRoot $resolvedRepoRoot -TemplateText $TemplateRepoName -ReplacementText $RepoName
+        Assert-NoTemplatePlaceholdersRemaining -RepoRoot $resolvedRepoRoot -TemplateText $TemplateRepoName
         Write-Host ' done' -ForegroundColor Green
         Write-Output "SUCCESS: template placeholders replaced and validated in '$resolvedRepoRoot'"
         return
     }
 
     # Derive the owner to use for image/registry references
-    $TEMPLATE_OWNER_LOWER = $TEMPLATE_OWNER.ToLower()
+    $TemplateOwnerLower = $TemplateOwner.ToLower()
 
     # Preconditions
     Write-Host 'Checking prerequisites...' -ForegroundColor Cyan -NoNewline
@@ -249,29 +260,29 @@ try {
         Write-Verbose "[TRACE:Main] Pre-replacement file count: $($preFiles.Count)"
         Write-Verbose "[TRACE:Main] Clone path: $clonePath"
         Write-Verbose "[TRACE:Main] Clone path exists: $(Test-Path -LiteralPath $clonePath)"
-        Write-Verbose "[TRACE:Main] TEMPLATE_REPO_NAME: '$TEMPLATE_REPO_NAME'"
+        Write-Verbose "[TRACE:Main] TEMPLATE_REPO_NAME: '$TemplateRepoName'"
         Write-Verbose "[TRACE:Main] repoName: '$repoName'"
-        Write-Verbose "[TRACE:Main] TEMPLATE_OWNER: '$TEMPLATE_OWNER' | Owner: '$Owner'"
+        Write-Verbose "[TRACE:Main] TEMPLATE_OWNER: '$TemplateOwner' | Owner: '$Owner'"
 
         # Replace template placeholders in file contents and path names
         Write-Host 'Replacing template placeholders (repo name)...' -ForegroundColor Cyan -NoNewline
         Write-Verbose '[TRACE:Main] --- Step 1: Replace repo name ---'
-        Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
-        Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+        Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TemplateRepoName -ReplacementText $repoName
+        Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TemplateRepoName
         Write-Host ' done' -ForegroundColor Green
 
         # Replace template owner in image/registry references (e.g. ghcr.io/intel-agency/... -> ghcr.io/nam20485/...)
         $ownerLower = $Owner.ToLower()
-        if ($ownerLower -ne $TEMPLATE_OWNER_LOWER) {
+        if ($ownerLower -ne $TemplateOwnerLower) {
             Write-Host 'Replacing template placeholders (owner)...' -ForegroundColor Cyan -NoNewline
             Write-Verbose '[TRACE:Main] --- Step 2: Replace owner ---'
-            Write-Verbose "Replacing template owner '$TEMPLATE_OWNER' -> '$Owner' in file contents"
-            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
-            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+            Write-Verbose "Replacing template owner '$TemplateOwner' -> '$Owner' in file contents"
+            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TemplateOwner -ReplacementText $Owner
+            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TemplateOwner
             Write-Host ' done' -ForegroundColor Green
         }
         else {
-            Write-Verbose "[TRACE:Main] --- Step 2: SKIPPED (owner unchanged: '$Owner' == '$TEMPLATE_OWNER_LOWER') ---"
+            Write-Verbose "[TRACE:Main] --- Step 2: SKIPPED (owner unchanged: '$Owner' == '$TemplateOwnerLower') ---"
         }
 
         # Rewrite AGENTS.md to identify this as a project instance, not the source template.
@@ -282,7 +293,7 @@ try {
         if (Test-Path -LiteralPath $agentsMdPath) {
             $agentsMd = Get-Content -LiteralPath $agentsMdPath -Raw
             $oldLabel = '**GitHub template repo**'
-            $newLabel = "**project instance** cloned from the ``$TEMPLATE_OWNER/$TEMPLATE_REPO_NAME`` GitHub template"
+            $newLabel = "**project instance** cloned from the ``$TemplateOwner/$TemplateRepoName`` GitHub template"
             if ($agentsMd.Contains($oldLabel)) {
                 $agentsMd = $agentsMd.Replace($oldLabel, $newLabel)
                 if (-not $DryRun) {
@@ -321,16 +332,16 @@ try {
 
             Write-Host 'Re-replacing template placeholders (repo name) after rebase...' -ForegroundColor Cyan -NoNewline
             Write-Verbose '[TRACE:Main] --- Post-rebase Step 1: Re-replace repo name ---'
-            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME -ReplacementText $repoName
-            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_REPO_NAME
+            Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TemplateRepoName -ReplacementText $repoName
+            Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TemplateRepoName
             Write-Host ' done' -ForegroundColor Green
 
             $ownerLower = $Owner.ToLower()
-            if ($ownerLower -ne $TEMPLATE_OWNER_LOWER) {
+            if ($ownerLower -ne $TemplateOwnerLower) {
                 Write-Host 'Re-replacing template placeholders (owner) after rebase...' -ForegroundColor Cyan -NoNewline
                 Write-Verbose '[TRACE:Main] --- Post-rebase Step 2: Re-replace owner ---'
-                Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER -ReplacementText $Owner
-                Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TEMPLATE_OWNER
+                Update-TemplatePlaceholders -RepoRoot $clonePath -TemplateText $TemplateOwner -ReplacementText $Owner
+                Assert-NoTemplatePlaceholdersRemaining -RepoRoot $clonePath -TemplateText $TemplateOwner
                 Write-Host ' done' -ForegroundColor Green
             }
 
@@ -340,7 +351,7 @@ try {
             if (Test-Path -LiteralPath $agentsMdPath) {
                 $agentsMd = Get-Content -LiteralPath $agentsMdPath -Raw
                 $oldLabel = '**GitHub template repo**'
-                $newLabel = "**project instance** cloned from the ``$TEMPLATE_OWNER/$TEMPLATE_REPO_NAME`` GitHub template"
+                $newLabel = "**project instance** cloned from the ``$TemplateOwner/$TemplateRepoName`` GitHub template"
                 if ($agentsMd.Contains($oldLabel)) {
                     $agentsMd = $agentsMd.Replace($oldLabel, $newLabel)
                     if (-not $DryRun) {
