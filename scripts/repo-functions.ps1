@@ -320,12 +320,13 @@ function New-GitHubRepository
     param(
         [Parameter(Mandatory)][string]$Owner,
         [Parameter(Mandatory)][string]$Name,
-        [Parameter(Mandatory)][ValidateSet('public', 'private')][string]$Visibility
+        [Parameter(Mandatory)][ValidateSet('public', 'private')][string]$Visibility,
+        [Parameter(Mandatory)][string]$Template
     )
     $ghArgs = @('repo', 'create', "$Owner/$Name")
     if ($Visibility -eq 'private') { $ghArgs += '--private' } else { $ghArgs += '--public' }
     # Create from template repo explicitly
-    $ghArgs += @('--template', $TEMPLATE)
+    $ghArgs += @('--template', $Template)
     Write-Verbose "Creating GitHub repository: $Owner/$Name"
     if ($PSCmdlet.ShouldProcess("$Owner/$Name", 'Create GitHub repository'))
     {

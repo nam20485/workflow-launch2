@@ -24,14 +24,17 @@ param(
 
     [Parameter(HelpMessage = 'Template repository name used for new repos. Used for placeholder replacement.')]
     [ValidateNotNullOrEmpty()]
-    [string]$TemplateRepoName = 'ai-new-workflow-app-template'    
+    [string]$TemplateRepoName = 'ai-new-workflow-app-template',
+
+    [Parameter(HelpMessage = 'Trigger the project-setup workflow on the new repo after creation.')]
+    [bool]$TriggerProjectSetup = $true
 )
 
 if ($Yes) {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count -Yes -LaunchEditor
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count -TriggerProjectSetup $TriggerProjectSetup -Yes -LaunchEditor
 }
 else {
-    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count
+    ./scripts/create-repo-with-plan-docs.ps1 -RepoName $Slug -PlanDocsDir "./plan_docs/$Slug" -CloneParentDir ../dynamic_workflows -Visibility $Visibility -Owner $Owner -TemplateRepoName $TemplateRepoName -Count $Count -TriggerProjectSetup $TriggerProjectSetup
 }
 
 

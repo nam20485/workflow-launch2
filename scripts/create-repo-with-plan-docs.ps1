@@ -94,6 +94,9 @@ param(
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Launch editor with workspace from new repo after creation')]
     [switch]$LaunchEditor,
 
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Trigger the project-setup workflow on the new repo after creation.')]
+    [bool]$TriggerProjectSetup = $true,
+
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'How many repositories to create from the slug and plan docs.')]
     [ValidateScript({ $_ -ge 1 })]
     [int]$Count = 1,
@@ -219,7 +222,7 @@ try {
 
         # Create repository
         Write-Host "Creating repository '$Owner/$repoName'..." -ForegroundColor Cyan -NoNewline
-        New-GitHubRepository -Owner $Owner -Name $repoName -Visibility $Visibility
+        New-GitHubRepository -Owner $Owner -Name $repoName -Visibility $Visibility -Template "$TemplateOwner/$TemplateRepoName"
         Write-Host ' done' -ForegroundColor Green
 
         # Poll GitHub API until the template's initial commit exists on the default branch.
@@ -391,22 +394,26 @@ try {
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
         # Trigger project-setup workflow on the new repo
-        Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
-        $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
-        if (Test-Path -LiteralPath $triggerScript) {
-            $bootstrapLabelsFile = Join-Path $clonePath '.github/.labels.json'
-            $triggerParams = @{ Repo = "$Owner/$repoName" }
-            if (Test-Path -LiteralPath $bootstrapLabelsFile) {
-                $triggerParams['BootstrapLabelsFile'] = $bootstrapLabelsFile
+        if ($TriggerProjectSetup) {
+            Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
+            $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
+            if (Test-Path -LiteralPath $triggerScript) {
+                $bootstrapLabelsFile = Join-Path $clonePath '.github/.labels.json'
+                $triggerParams = @{ Repo = "$Owner/$repoName" }
+                if (Test-Path -LiteralPath $bootstrapLabelsFile) {
+                    $triggerParams['BootstrapLabelsFile'] = $bootstrapLabelsFile
+                }
+                elseif (-not $DryRun) {
+                    throw "Expected bootstrap labels file not found: $bootstrapLabelsFile"
+                }
+                if ($DryRun) { $triggerParams['DryRun'] = $true }
+                & $triggerScript @triggerParams
+                #Write-Host ' done' -ForegroundColor Green
+            } else {
+                Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
             }
-            elseif (-not $DryRun) {
-                throw "Expected bootstrap labels file not found: $bootstrapLabelsFile"
-            }
-            if ($DryRun) { $triggerParams['DryRun'] = $true }
-            & $triggerScript @triggerParams
-            #Write-Host ' done' -ForegroundColor Green
         } else {
-            Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
+            Write-Verbose 'Skipping project-setup workflow trigger (-TriggerProjectSetup:$false)'
         }
     }
 
