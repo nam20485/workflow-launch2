@@ -185,7 +185,7 @@ try {
             }
         }
         if (-not $collision) {
-            $repoNames = $candidates
+            $repoNames = @($candidates)
         }
     }
     if (-not $repoNames) { throw "Unable to find an available set of repo names after multiple attempts for base '$RepoName'" }
