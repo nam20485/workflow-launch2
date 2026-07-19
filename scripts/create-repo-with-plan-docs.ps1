@@ -98,7 +98,7 @@ param(
     [switch]$LaunchEditor,
 
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'VS Code profile to use when launching the editor.')]
-    [string]$EditorProfile = '.NET Stripped',
+    [string]$EditorProfile = '.NET (Stripped)',
 
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Trigger the project-setup workflow on the new repo after creation.')]
     [bool]$TriggerProjectSetup = $true,
