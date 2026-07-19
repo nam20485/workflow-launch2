@@ -35,6 +35,9 @@ Non-interactive mode. Assume 'yes' for the create confirmation and do not prompt
 .PARAMETER LaunchEditor
 Launch editor with workspace from new repo after creation
 
+.PARAMETER EditorProfile
+VS Code profile to use when launching the editor. Default: .NET Stripped
+
 .PARAMETER Count
 Number of repositories to create from the specified slug and plan docs. Letter suffixes are appended to the repo names when more than one repo is requested.
 
@@ -93,6 +96,9 @@ param(
 
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Launch editor with workspace from new repo after creation')]
     [switch]$LaunchEditor,
+
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'VS Code profile to use when launching the editor.')]
+    [string]$EditorProfile = '.NET Stripped',
 
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Trigger the project-setup workflow on the new repo after creation.')]
     [bool]$TriggerProjectSetup = $true,
@@ -420,11 +426,11 @@ try {
     if (-not $Yes) {
         $launch = Read-Host 'Launch editor? (y/N)'
         if ( ($launch ?? '').Trim().ToLower() -eq 'y' -or $LaunchEditor ) {
-            code-insiders $lastEditorTarget
+            code-insiders --profile $EditorProfile $lastEditorTarget
         }
     }
     else {
-        if ($LaunchEditor -and $lastEditorTarget) { code-insiders $lastEditorTarget }
+        if ($LaunchEditor -and $lastEditorTarget) { code-insiders --profile $EditorProfile $lastEditorTarget }
     }
 
     Write-Host '=== All done ===' -ForegroundColor Green
