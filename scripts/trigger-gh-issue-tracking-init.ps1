@@ -6,10 +6,14 @@
     Trigger `/gh-issue-tracking-init` on a freshly seeded agent-context clone.
 
 .DESCRIPTION
-    Creates an `orchestration:dispatch`-labeled issue on the target repo whose
-    body is the single-line dispatch trigger `/gh-issue-tracking-init`. The
-    skill's no-arg defaults resolve to the current repo + seeded plan_docs/,
-    which matches the post-clone state exactly.
+    Creates a dispatch issue on the target repo whose body is the single-line
+    trigger `/gh-issue-tracking-init`. By default the issue is created bare
+    (no labels): the gh-issue-tracking-init skill neither needs nor reads the
+    legacy `orchestration:dispatch` label, and manages its own label taxonomy.
+
+    To support the old orchestration method (or dual-method flows), pass
+    -ImportLegacyLabels: this bootstraps the `orchestration:dispatch` label
+    from -BootstrapLabelsFile and attaches it to the dispatch issue.
 
     This is the replacement trigger for `trigger-project-setup.ps1`: the legacy
     script dispatches `/orchestrate-dynamic-workflow $workflow_name = project-setup`
@@ -17,23 +21,36 @@
     new structure. This script dispatches the correct follow-up.
 
     Reuses the existing `create-dispatch-issue.ps1` for issue creation and
-    dot-sources `trigger-project-setup.ps1` for the `Ensure-DispatchBootstrapLabel`
-    helper.
+    dot-sources the shared `dispatch-labels.ps1` library for the
+    `Ensure-DispatchBootstrapLabel` helper (legacy mode only).
 
 .PARAMETER Repo
     Target repository in "owner/repo" form (required).
 
 .PARAMETER BootstrapLabelsFile
     Path to the clone's `.github/.labels.json` used to bootstrap the
-    `orchestration:dispatch` label if it doesn't yet exist (required unless
-    -DryRun). Throws if missing when -DryRun is not set.
+    `orchestration:dispatch` label. Only used when -ImportLegacyLabels is set;
+    ignored otherwise. Throws if missing when -ImportLegacyLabels is set and
+    -DryRun is not.
+
+.PARAMETER ImportLegacyLabels
+    Enable legacy orchestration:dispatch label behavior (old method): bootstrap
+    the label from -BootstrapLabelsFile and attach it to the dispatch issue.
+    Default off: the gh-issue-tracking-init method creates a bare, unlabeled
+    dispatch issue.
 
 .PARAMETER DryRun
     Show what would be created without making any changes.
 
 .EXAMPLE
+    # Default (new method): bare dispatch issue, no labels.
     ./scripts/trigger-gh-issue-tracking-init.ps1 `
-        -Repo "intel-agency/my-app-delta12" `
+        -Repo "intel-agency/my-app-delta12"
+
+.EXAMPLE
+    # Legacy method: bootstrap orchestration:dispatch and label the issue.
+    ./scripts/trigger-gh-issue-tracking-init.ps1 `
+        -Repo "intel-agency/my-app-delta12" -ImportLegacyLabels `
         -BootstrapLabelsFile "./clones/my-app-delta12/.github/.labels.json"
 
 .EXAMPLE
@@ -53,8 +70,11 @@ param(
     [ValidatePattern('^[^/]+/[^/]+$')]
     [string]$Repo,
 
-    [Parameter(HelpMessage = 'Path to the clone''s .github/.labels.json used to bootstrap the orchestration:dispatch label.')]
+    [Parameter(HelpMessage = 'Path to the clone''s .github/.labels.json used to bootstrap the orchestration:dispatch label. Only used when -ImportLegacyLabels is set.')]
     [string]$BootstrapLabelsFile,
+
+    [Parameter(HelpMessage = 'Enable legacy orchestration:dispatch label behavior: bootstrap the label from -BootstrapLabelsFile and attach it to the dispatch issue (old method). Default off: the gh-issue-tracking-init method creates a bare, unlabeled dispatch issue.')]
+    [switch]$ImportLegacyLabels,
 
     [Parameter(HelpMessage = 'Show what would be created without making any changes.')]
     [switch]$DryRun
@@ -67,22 +87,25 @@ if ($DryRun) { Write-Host '[DRY-RUN MODE]' -ForegroundColor Yellow }
 
 $scriptDir = $PSScriptRoot
 $createDispatch = Join-Path $scriptDir 'create-dispatch-issue.ps1'
-$projectSetupTrigger = Join-Path $scriptDir 'trigger-project-setup.ps1'
-
 if (-not (Test-Path -LiteralPath $createDispatch)) {
     throw "Required script not found: $createDispatch"
 }
-if (-not (Test-Path -LiteralPath $projectSetupTrigger)) {
-    throw "Required helper not found: $projectSetupTrigger (for Ensure-DispatchBootstrapLabel)"
+
+# Dot-source the shared dispatch-labels library for Ensure-DispatchBootstrapLabel.
+# (Functions only; does not run any dispatch logic, unlike trigger-project-setup.ps1.)
+$dispatchLabels = Join-Path $scriptDir 'dispatch-labels.ps1'
+if (-not (Test-Path -LiteralPath $dispatchLabels)) {
+    throw "Required helper not found: $dispatchLabels (for Ensure-DispatchBootstrapLabel)"
 }
+. $dispatchLabels
 
-# Dot-source the legacy trigger to borrow its label helpers. We use its
-# Ensure-DispatchBootstrapLabel function to ensure the orchestration:dispatch
-# label exists before issue creation.
-. $projectSetupTrigger
-
-# Bootstrap the required label if a labels file was provided.
-if ($BootstrapLabelsFile) {
+# Legacy label behavior (old orchestration method). Off by default: the new
+# gh-issue-tracking-init method creates a bare dispatch issue and does not need
+# orchestration:dispatch. Enable to support the old method / dual-method flows.
+if ($ImportLegacyLabels) {
+    if (-not $BootstrapLabelsFile) {
+        throw '-ImportLegacyLabels requires -BootstrapLabelsFile.'
+    }
     if (-not (Test-Path -LiteralPath $BootstrapLabelsFile)) {
         throw "Bootstrap labels file not found: $BootstrapLabelsFile"
     }
@@ -91,7 +114,7 @@ if ($BootstrapLabelsFile) {
     Write-Host ' done' -ForegroundColor Green
 }
 else {
-    Write-Verbose 'No BootstrapLabelsFile provided; skipping orchestration:dispatch label bootstrap'
+    Write-Verbose 'Legacy label import disabled (default); dispatch issue will be created without orchestration:dispatch.'
 }
 
 # Build the dispatch issue body: a single-line invocation of the skill.
@@ -106,10 +129,12 @@ if ($DryRun) {
 }
 
 $dispatchParams = @{
-    Repo   = $Repo
-    Title  = $title
-    Body   = $body
-    Labels = @('orchestration:dispatch')
+    Repo  = $Repo
+    Title = $title
+    Body  = $body
+}
+if ($ImportLegacyLabels) {
+    $dispatchParams['Labels'] = @('orchestration:dispatch')
 }
 if ($DryRun) { $dispatchParams['DryRun'] = $true }
 
