@@ -114,3 +114,143 @@ Notes
 - Simple Browser showing a blank page is expected for GitHub due to anti-embedding headers.
 - `gh run watch` tails only when a run is currently in progress; otherwise it exits with: “found no in progress runs to watch.”
 - If you prefer, disable Simple Browser in VS Code: Extensions → search “@builtin simple browser” → gear → “Disable (Workspace)”.
+
+
+agent-context clone seeding
+---------------------------
+
+`agent-context` is the upstream GitHub template repo (`intel-agency/agent-context`).
+Cloning it with the legacy `create-repo-from-slug.ps1` flow left two problems:
+
+1. **Class-2 state survived.** The clone inherited the template's own
+   `.agents/memory.md`, completed/deferred plans, and leaked run-reviews verbatim
+   (see `docs/plans/.deferred/template-content-strategy.md` in `agent-context`).
+2. **Hierarchy trigger was broken.** The `-TriggerProjectSetup $True` path
+   dispatched `/orchestrate-dynamic-workflow $workflow_name = project-setup`,
+   which is a legacy orchestrator that doesn't fit `agent-context`-seeded
+   instances. The workaround was always passing `-TriggerProjectSetup $False`
+   and running `/gh-issue-tracking-init` manually.
+
+Three new scripts fix both problems in parallel with the legacy flow. They
+never modify `create-repo-with-plan-docs.ps1`'s existing logic (other than one
+additive `-SkipProjectSetup` switch) and `trigger-project-setup.ps1` remains
+unchanged — other templates that depend on the legacy trigger keep working.
+
+Quick start (migrating from the old flow)
+
+**Old flow** (what you used before):
+
+```pwsh
+./scripts/create-repo-from-slug.ps1 `
+  -Slug "gap-miner-v2" `
+  -TemplateRepoName "agent-context" `
+  -TriggerProjectSetup $False -Yes
+# then manually invoke /gh-issue-tracking-init on the clone + run cleanup
+```
+
+**New flow** (do this now):
+
+```pwsh
+./scripts/create-repo-agent-context.ps1 `
+  -Slug "gap-miner-v2" `
+  -Visibility public `
+  -Yes
+```
+
+That one command now does everything end-to-end:
+
+- Creates the repo from the `intel-agency/agent-context` template.
+- Clones it locally into `../dynamic_workflows/<slug>-<random-suffix>/`.
+- Copies `plan_docs/<slug>/*` into `plan_docs/` on the clone.
+- Runs the legacy placeholder/owner substitutions + the AGENTS.md identity rewrite.
+- **NEW:** runs `cleanup-template-state.ps1` (clears template memory, plans,
+  run-reviews) and amends the seed commit.
+- **NEW:** creates a dispatch issue on the clone with body
+  `/gh-issue-tracking-init` (the orchestrator that handles the label picks it up).
+
+Script reference
+
+**`scripts/create-repo-agent-context.ps1`**
+Thin orchestrator wrapper. Accepts:
+
+- `-Slug` (mandatory) — base app-plan slug, same as before.
+- `-Owner` (default `intel-agency`), `-Visibility` (default `public`).
+- `-Count` — how many repos to create from the slug.
+- `-Yes`, `-LaunchAgent`, `-DryRun` — same semantics as `create-repo-from-slug`.
+- `-TriggerHierarchyInit` (default `$true`) — whether to create the
+  `/gh-issue-tracking-init` dispatch issue. Set `$false` to skip.
+
+Hard-codes `TemplateRepoName = 'agent-context'` and `TemplateOwner = 'intel-agency'`
+(this wrapper is agent-context-specific on purpose).
+
+**`scripts/cleanup-template-state.ps1`**
+Class-2 cleanup. Usually invoked by the orchestrator wrapper; run standalone to
+re-cleanup a clone later:
+
+```pwsh
+./scripts/cleanup-template-state.ps1 -RepoRoot "/path/to/clone"
+./scripts/cleanup-template-state.ps1 -RepoRoot "/path/to/clone" -DryRun
+```
+
+Behavior (idempotent):
+
+- `.agents/memory.md` is overwritten with a blank skeleton (section headers
+  only, italic placeholder line per section).
+- `docs/plans/.completed/*.md` and `docs/plans/.deferred/*.md` are deleted;
+  the lifecycle directories are preserved.
+- `docs/plans/.completed/run-issues-review/` subtree is removed entirely.
+- Clone-seeded content (`plan_docs/`, `.agents/rules/`, `.agents/skills/`) is
+  untouched — only template-self-referential state is removed.
+
+**`scripts/trigger-gh-issue-tracking-init.ps1`**
+Creates a dispatch issue on the target repo with body `/gh-issue-tracking-init`
+(the skill's no-arg defaults resolve to the clone + seeded `plan_docs/`):
+
+```pwsh
+./scripts/trigger-gh-issue-tracking-init.ps1 -Repo "intel-agency/my-app" `
+  -BootstrapLabelsFile "/path/to/clone/.github/.labels.json"
+./scripts/trigger-gh-issue-tracking-init.ps1 -Repo "intel-agency/my-app" -DryRun
+```
+
+Reuses `Ensure-DispatchBootstrapLabel` from the existing `trigger-project-setup.ps1`
+to bootstrap the `orchestration:dispatch` label before issue creation.
+
+Opting into cleanup on the legacy flow
+
+If you want to keep using `create-repo-from-slug.ps1` for `agent-context`
+clones but add Class-2 cleanup and the correct trigger, pass `-SkipProjectSetup`
+and run the two new scripts yourself after:
+
+```pwsh
+./scripts/create-repo-from-slug.ps1 `
+  -Slug "gap-miner-v2" `
+  -TemplateRepoName "agent-context" `
+  -TriggerProjectSetup $False -Yes
+
+$clonePath = "../dynamic_workflows/gap-miner-v2-<suffix>"
+./scripts/cleanup-template-state.ps1 -RepoRoot $clonePath
+./scripts/trigger-gh-issue-tracking-init.ps1 -Repo "intel-agency/gap-miner-v2-<suffix>" `
+  -BootstrapLabelsFile "$clonePath/.github/.labels.json"
+```
+
+(You'll also need to amend the seed commit and push — the orchestrator wrapper
+handles that automatically, so prefer the one-liner above.)
+
+Backward compatibility
+
+- `trigger-project-setup.ps1` is unchanged; other templates still fire the
+  legacy `project-setup` dispatch through it.
+- `create-repo-with-plan-docs.ps1`'s only change is the optional
+  `-SkipProjectSetup` switch. Default behavior is identical to before.
+- `create-repo-from-slug.ps1` is unchanged; the legacy flow still works for
+  non-`agent-context` templates.
+
+Tests
+
+```pwsh
+# cleanup script: 8 cases
+Invoke-Pester -Path tests/cleanup-template-state.Tests.ps1 -Output Detailed
+
+# set-project-fields (Phase/Priority/Status/Level guard) regression: 4 cases
+Invoke-Pester -Path <agent-context-repo>/.agents/skills/gh-issue-tracking-init/scripts/tests/SetProjectFields.Tests.ps1 -Output Detailed
+```
