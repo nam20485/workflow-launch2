@@ -145,16 +145,17 @@ Quick start (migrating from the old flow)
   -Slug "gap-miner-v2" `
   -TemplateRepoName "agent-context" `
   -TriggerProjectSetup $False -Yes
+
+# one line
+./scripts/create-repo-from-slug.ps1 -Slug "gap-miner-v2" -TemplateRepoName "agent-context" -TriggerProjectSetup $False -Yes
+
 # then manually invoke /gh-issue-tracking-init on the clone + run cleanup
 ```
 
 **New flow** (do this now):
 
 ```pwsh
-./scripts/create-repo-agent-context.ps1 `
-  -Slug "gap-miner-v2" `
-  -Visibility public `
-  -Yes
+./scripts/create-repo-agent-context.ps1 -Slug "gap-miner-v2" -Yes
 ```
 
 That one command now does everything end-to-end:
