@@ -4,6 +4,7 @@
 **Audience:** Autonomous AI Coding Agents (Claude Code, Cursor, OpenAI Codex)
 **Supervising Engineer:** Veteran .NET Architect (Human-in-the-Loop)
 **Source References:**
+
 - `Strategic Feasibility and Execution Plan for AI-Accelerated Micro-SaaS Ecosystems.md` (strategic context)
 - `Gap Mining Architecture Plan v2.md` (architectural baseline)
 **Version:** 1.0
@@ -17,6 +18,7 @@
 This document is an **executable development plan** designed for consumption by autonomous AI agent teams. Unlike the source architecture document (which describes *what* to build), this plan specifies *how* to build it, with atomic, verifiable, independently-completable tasks.
 
 **Every task in this document is designed to:**
+
 1. Fit within a single agent context window
 2. Have deterministic, testable acceptance criteria
 3. Produce a verifiable artifact (file, test, endpoint)
@@ -206,11 +208,13 @@ GapMiner/
 ## 6. Phase 0 — Environment & Foundation (Days 1–3)
 
 ### T-0.1: Repository Bootstrap
+
 **Owner:** Any agent
 **Prerequisites:** None
 **Scope:** Root-level scaffolding only.
 
 **Acceptance Criteria:**
+
 - [ ] `global.json` pins SDK `8.0.x` with rollForward policy `latestFeature`.
 - [ ] `Directory.Packages.props` enables Central Package Management and declares ALL versions from §3.
 - [ ] `Directory.Build.props` enables `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`, nullable reference types, and implicit usings.
@@ -218,6 +222,7 @@ GapMiner/
 - [ ] Empty solution `GapMiner.sln` with solution folders `src` and `tests` builds with `dotnet build` exit code 0.
 
 **Reference:**
+
 ```xml
 <!-- Directory.Packages.props (excerpt) -->
 <ItemGroup>
@@ -236,16 +241,19 @@ GapMiner/
 ---
 
 ### T-0.2: Aspire AppHost Skeleton
+
 **Owner:** Any agent
 **Prerequisites:** T-0.1
 **Scope:** `GapMiner.AppHost` project only.
 
 **Acceptance Criteria:**
+
 - [ ] `GapMiner.AppHost/Program.cs` declares resources: PostgreSQL (with `pgvector` extension enabled), Redis, and placeholder project references for Api, Web, ScraperWorker, AIWorker.
 - [ ] Running `dotnet run --project src/GapMiner.AppHost` launches the Aspire dashboard on `https://localhost:18888` (or equivalent) and shows PostgreSQL + Redis as "Running".
 - [ ] Connection strings for Postgres and Redis are accessible via `IConfiguration` in downstream projects.
 
 **Reference:**
+
 ```csharp
 // GapMiner.AppHost/Program.cs
 var builder = DistributedApplication.CreateBuilder(args);
@@ -277,10 +285,12 @@ builder.Build().Run();
 ---
 
 ### T-0.3: ServiceDefaults Project
+
 **Owner:** Any agent
 **Prerequisites:** T-0.2
 
 **Acceptance Criteria:**
+
 - [ ] `GapMiner.ServiceDefaults` project adds OpenTelemetry tracing, logging, and health checks (`/health`, `/alive`).
 - [ ] All downstream projects reference `ServiceDefaults` and call `builder.AddServiceDefaults()`.
 
@@ -289,11 +299,13 @@ builder.Build().Run();
 ## 7. Phase 1 — Domain & Data Layer (Days 4–8)
 
 ### T-1.1: Domain Entities
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 **Scope:** `GapMiner.Domain` only.
 
 **Acceptance Criteria:**
+
 - [ ] `CompetitorTarget` entity has: `Id` (Guid), `Name`, `MarketplaceKind` (enum), `MarketplaceUrl` (Uri wrapper), `CreatedAt`.
 - [ ] `Review` entity has: `Id`, `CompetitorTargetId`, `StarRating` (1–5, validated), `ReviewText` (non-empty), `ReviewAuthor`, `DatePosted`, `SourceReviewId` (external idempotency key), `Embedding` (`float[]` nullable).
 - [ ] `FeatureGap` entity has: `Id`, `CompetitorTargetId`, `Title`, `DetailedDescription`, `SeverityScore` (double 1–10), `MentionFrequency` (int ≥ 0), `SuggestedTechStack`, `ActionableImplementationPlan`, `IdentifiedAt`.
@@ -304,11 +316,13 @@ builder.Build().Run();
 ---
 
 ### T-1.2: EF Core DbContext & Migrations
+
 **Owner:** Any agent
 **Prerequisites:** T-1.1
 **Scope:** `GapMiner.Infrastructure/Persistence`.
 
 **Acceptance Criteria:**
+
 - [ ] `GapMinerDbContext` configures all three entities via IEntityTypeConfiguration classes (one per entity, in `Configurations/`).
 - [ ] `pgvector` extension enabled via `HasPostgresExtension("vector")`.
 - [ ] `Review.Embedding` mapped as `vector(3072)` (for `text-embedding-3-large`).
@@ -320,10 +334,12 @@ builder.Build().Run();
 ---
 
 ### T-1.3: Repository Layer
+
 **Owner:** Any agent
 **Prerequisites:** T-1.2
 
 **Acceptance Criteria:**
+
 - [ ] `ICompetitorTargetRepository` with: `AddAsync`, `GetByIdAsync`, `GetAllAsync`, `ExistsByUrlAsync`.
 - [ ] `IReviewRepository` with: `BulkInsertIgnoreDuplicatesAsync` (uses `ON CONFLICT DO NOTHING`), `GetUnembeddedAsync(targetId, limit)`, `GetByTargetIdAsync`.
 - [ ] `IFeatureGapRepository` with: `AddAsync`, `GetRankedAsync(sortBy, skip, take)`, `GetByTargetIdAsync`.
@@ -333,10 +349,12 @@ builder.Build().Run();
 ---
 
 ### T-1.4: Redis Queue Abstraction
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 
 **Acceptance Criteria:**
+
 - [ ] Generic `IJobQueue<TCommand>` interface with `EnqueueAsync`, `DequeueAsync`, `LengthAsync`.
 - [ ] `RedisJobQueue<TCommand>` implementation using `StackExchange.Redis` List (FIFO via `RPUSH` / `LPOP`).
 - [ ] Commands are serialized as JSON with `System.Text.Json` (camelCase, ignore nulls).
@@ -348,11 +366,13 @@ builder.Build().Run();
 ## 8. Phase 2 — Scraper Pipeline (Days 9–14)
 
 ### T-2.1: Apify Refit Client
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 **Scope:** `GapMiner.Infrastructure/Scraping`.
 
 **Acceptance Criteria:**
+
 - [ ] `IApifyClient` Refit interface defines:
   - `POST /v2/acts/{actorId}/run-sync-get-dataset-items` → triggers actor, returns run metadata.
   - `GET /v2/actor-runs/{runId}` → polls status.
@@ -365,10 +385,12 @@ builder.Build().Run();
 ---
 
 ### T-2.2: Marketplace Actor Registry
+
 **Owner:** Any agent
 **Prerequisites:** T-2.1
 
 **Acceptance Criteria:**
+
 - [ ] Static registry maps `MarketplaceKind` to Apify Actor ID and required input schema:
   - `ShopifyAppStore` → `apify/shopify-scraper` (or verified equivalent actor ID)
   - `ChromeWebStore` → `apify/google-play-scraper` (adapt for CWS if actor exists; otherwise mark as TODO)
@@ -382,10 +404,12 @@ builder.Build().Run();
 ---
 
 ### T-2.3: ScrapeReviewsJob (ScraperWorker)
+
 **Owner:** Any agent
 **Prerequisites:** T-2.1, T-2.2, T-1.3, T-1.4
 
 **Acceptance Criteria:**
+
 - [ ] `ScrapeReviewsJob` registered with Hangfire, triggered by `ScrapeTargetCommand` from Redis queue.
 - [ ] Job lifecycle:
   1. Dequeue command.
@@ -406,10 +430,12 @@ builder.Build().Run();
 ## 9. Phase 3 — Intelligence Pipeline (Days 15–22)
 
 ### T-3.1: Semantic Kernel Bootstrap
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 
 **Acceptance Criteria:**
+
 - [ ] `SemanticKernelBuilder` extension registers:
   - `IChatCompletionService` for Azure OpenAI GPT-4o (or Anthropic Claude via community connector).
   - `ITextGenerationService` for embeddings (`text-embedding-3-large`).
@@ -420,10 +446,12 @@ builder.Build().Run();
 ---
 
 ### T-3.2: EmbedReviewsJob
+
 **Owner:** Any agent
 **Prerequisites:** T-3.1, T-1.3
 
 **Acceptance Criteria:**
+
 - [ ] Fetches up to 200 unembedded reviews per batch from `IReviewRepository.GetUnembeddedAsync`.
 - [ ] Batched embedding calls (max 100 texts per API call to respect rate limits).
 - [ ] Stores 3072-dim vectors into `Review.Embedding`.
@@ -434,11 +462,14 @@ builder.Build().Run();
 ---
 
 ### T-3.3: Semantic Clustering (pgvector KNN)
+
 **Owner:** Any agent
 **Prerequisites:** T-3.2
 
 **Acceptance Criteria:**
+
 - [ ] Repository method `ClusterReviewsByTargetAsync(targetId, k)` executes:
+
   ```sql
   SELECT id, review_text,
          (embedding <=> centroid) AS distance
@@ -446,6 +477,7 @@ builder.Build().Run();
   WHERE competitor_target_id = @targetId AND embedding IS NOT NULL
   ORDER BY distance;
   ```
+
 - [ ] Implements simple k-means clustering in C# using centroid initialization from random sample.
 - [ ] Returns `List<ReviewCluster>` with `ClusterId`, `RepresentativeReviews` (top 5 by proximity), `Size`.
 - [ ] Unit test with synthetic vectors validates cluster assignment.
@@ -453,16 +485,19 @@ builder.Build().Run();
 ---
 
 ### T-3.4: AnalyzeGapsJob (Map-Reduce)
+
 **Owner:** Any agent
 **Prerequisites:** T-3.3, T-1.3, T-1.4
 **Scope:** `GapMiner.AIWorker/Jobs/AnalyzeGapsJob.cs` + `Infrastructure/AI/SemanticKernelGapAnalyzer.cs`.
 
 **Acceptance Criteria:**
+
 - [ ] Dequeues `AnalyzeReviewsCommand`.
 - [ ] Retrieves clusters for the target.
 - [ ] **Map phase:** For each cluster, calls LLM with `MapReviewsPrompt.txt` (see §13) to extract candidate gaps as JSON.
 - [ ] **Reduce phase:** Aggregates all candidates, deduplicates by title similarity (>0.8 cosine), calls LLM with `ReduceGapsPrompt.txt` to produce final ranked list.
 - [ ] Output strictly conforms to schema:
+
   ```json
   {
     "gaps": [
@@ -477,6 +512,7 @@ builder.Build().Run();
     ]
   }
   ```
+
 - [ ] JSON validated with `System.Text.Json` schema validator before persistence.
 - [ ] Invalid LLM output triggers ONE retry with stricter prompt; second failure logs and skips.
 - [ ] Persists `FeatureGap` records via repository.
@@ -486,10 +522,12 @@ builder.Build().Run();
 ## 10. Phase 4 — API Gateway (Days 23–25)
 
 ### T-4.1: Minimal API Endpoints
+
 **Owner:** Any agent
 **Prerequisites:** T-1.3, T-1.4
 
 **Acceptance Criteria:**
+
 - [ ] `POST /api/v1/targets` — ingests new competitor target; validates URL; enqueues `ScrapeTargetCommand`.
 - [ ] `GET /api/v1/targets` — lists targets with pagination.
 - [ ] `GET /api/v1/targets/{id}` — detail view.
@@ -506,10 +544,12 @@ builder.Build().Run();
 ## 11. Phase 5 — Blazor Dashboard (Days 26–28)
 
 ### T-5.1: Layout & Navigation
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 
 **Acceptance Criteria:**
+
 - [ ] Blazor Web App with Interactive Server render mode.
 - [ ] Sidebar navigation: Dashboard, Targets, Jobs, Opportunity Matrix.
 - [ ] Uses MudBlazor or Radzen.Blazor component library for consistent design system.
@@ -518,10 +558,12 @@ builder.Build().Run();
 ---
 
 ### T-5.2: Targets Page
+
 **Owner:** Any agent
 **Prerequisites:** T-4.1
 
 **Acceptance Criteria:**
+
 - [ ] Form to add new target (Name, Marketplace dropdown, URL).
 - [ ] Client + server validation (URL must match marketplace pattern).
 - [ ] DataGrid listing existing targets with status badges (Never Scraped / Scraping / Analyzed).
@@ -530,10 +572,12 @@ builder.Build().Run();
 ---
 
 ### T-5.3: Jobs Page
+
 **Owner:** Any agent
 **Prerequisites:** T-4.1
 
 **Acceptance Criteria:**
+
 - [ ] Live view of Hangfire job queue (polling every 5s via `Timer`).
 - [ ] Color-coded status: Queued (gray), Running (blue), Succeeded (green), Failed (red).
 - [ ] Click-through to Hangfire dashboard for details.
@@ -541,11 +585,13 @@ builder.Build().Run();
 ---
 
 ### T-5.4: Opportunity Matrix
+
 **Owner:** Any agent
 **Prerequisites:** T-4.1
 **Scope:** `OpportunityMatrix.razor`.
 
 **Acceptance Criteria:**
+
 - [ ] Scatter plot (Severity X vs Frequency Y) using `Blazor-ApexCharts` or `AntDesign.Charts`.
 - [ ] Each point = one `FeatureGap`; hover shows title + description.
 - [ ] Click on point navigates to detail modal with full `ActionableImplementationPlan`.
@@ -557,10 +603,12 @@ builder.Build().Run();
 ## 12. Phase 6 — Integration Testing & Hardening (Days 29–30)
 
 ### T-6.1: End-to-End Integration Test
+
 **Owner:** Any agent
 **Prerequisites:** All prior tasks
 
 **Acceptance Criteria:**
+
 - [ ] `GapMiner.Integration.Tests` project uses Testcontainers for Postgres + Redis.
 - [ ] Single test `FullPipeline_ShouldProduceGaps` performs:
   1. Seed 50 synthetic reviews into DB directly.
@@ -571,10 +619,12 @@ builder.Build().Run();
 ---
 
 ### T-6.2: Observability & Logging
+
 **Owner:** Any agent
 **Prerequisites:** T-0.3
 
 **Acceptance Criteria:**
+
 - [ ] Structured logging via Serilog with JSON sink.
 - [ ] OpenTelemetry traces for: scrape jobs, LLM calls, embedding calls.
 - [ ] Custom metrics: `gapminer.reviews.scraped`, `gapminer.gaps.identified`, `gapminer.llm.tokens.consumed`.
@@ -583,10 +633,12 @@ builder.Build().Run();
 ---
 
 ### T-6.3: Error Handling & Idempotency Audit
+
 **Owner:** Any agent
 **Prerequisites:** All prior tasks
 
 **Acceptance Criteria:**
+
 - [ ] Every job has a `MaxRetryAttempts` attribute (default 3).
 - [ ] Failed jobs write to `DeadLetterQueue` Redis list for human review.
 - [ ] Idempotency verified: re-running scrape + analyze on same target produces no duplicate `Review` or `FeatureGap` records.
@@ -708,12 +760,14 @@ Group C (AI Setup):  T-0.3 → T-3.1
 ```
 
 **Gate 1 (Day 8):** Groups A, B, C merge. Then:
+
 ```
 Group D (Scrape):    T-2.1 → T-2.2 → T-2.3
 Group E (Analyze):   T-3.1 → T-3.2 → T-3.3 → T-3.4
 ```
 
 **Gate 2 (Day 22):** Groups D, E merge. Then:
+
 ```
 Group F (API):       T-4.1
 Group G (UI):        T-5.1 → T-5.2 → T-5.3 → T-5.4 (parallel where possible)
@@ -745,6 +799,7 @@ If an agent encounters ambiguity NOT covered by this document, it MUST:
 3. Request human clarification before proceeding.
 
 **NEVER guess on:**
+
 - Apify actor IDs or response schemas
 - LLM provider API keys or endpoint URLs
 - Marketplace policy interpretations
@@ -753,4 +808,3 @@ If an agent encounters ambiguity NOT covered by this document, it MUST:
 ---
 
 *End of document. Agents: begin execution at T-0.1.*
-
