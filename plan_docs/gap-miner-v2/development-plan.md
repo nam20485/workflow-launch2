@@ -1,4 +1,3 @@
-```markdown
 # Gap Mining Platform — Autonomous Agent Development Plan v1.0
 
 **Document Type:** Implementation Handoff Specification
@@ -754,4 +753,4 @@ If an agent encounters ambiguity NOT covered by this document, it MUST:
 ---
 
 *End of document. Agents: begin execution at T-0.1.*
-```
+
