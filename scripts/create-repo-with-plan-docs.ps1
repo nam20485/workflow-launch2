@@ -103,6 +103,9 @@ param(
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Trigger the project-setup workflow on the new repo after creation.')]
     [bool]$TriggerProjectSetup = $true,
 
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Skip the legacy project-setup trigger at the end of creation. Intended for callers that invoke trigger-gh-issue-tracking-init.ps1 as a separate step (e.g. create-repo-agent-context.ps1). Default behavior identical.')]
+    [switch]$SkipProjectSetup,
+
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'How many repositories to create from the slug and plan docs.')]
     [ValidateScript({ $_ -ge 1 })]
     [int]$Count = 1,
@@ -399,8 +402,10 @@ try {
         Write-Host -ForegroundColor Green       
         if (Get-Command Write-RunLog -ErrorAction SilentlyContinue) { Write-RunLog -Level 'INFO' -Step 'repo-done' -Message "Repo complete: $repoName" -Data @{ clonePath = $clonePath } }
 
-        # Trigger project-setup workflow on the new repo
-        if ($TriggerProjectSetup) {
+        # Trigger project-setup workflow on the new repo (legacy path, preserved
+        # for backward compatibility with other templates that still rely on the
+        # /orchestrate-dynamic-workflow project-setup dispatch).
+        if ($TriggerProjectSetup -and -not $SkipProjectSetup) {
             Write-Host 'Triggering project-setup workflow...' -ForegroundColor Cyan -NoNewline
             $triggerScript = Join-Path $PSScriptRoot 'trigger-project-setup.ps1'
             if (Test-Path -LiteralPath $triggerScript) {
@@ -419,7 +424,11 @@ try {
                 Write-Warning "trigger-project-setup.ps1 not found at '$triggerScript'; skipping workflow trigger"
             }
         } else {
-            Write-Verbose 'Skipping project-setup workflow trigger (-TriggerProjectSetup:$false)'
+            if ($SkipProjectSetup) {
+                Write-Verbose 'Skipping legacy project-setup trigger (-SkipProjectSetup); caller will invoke trigger-gh-issue-tracking-init.ps1 separately.'
+            } else {
+                Write-Verbose 'Skipping project-setup workflow trigger (-TriggerProjectSetup:$false)'
+            }
         }
     }
 
