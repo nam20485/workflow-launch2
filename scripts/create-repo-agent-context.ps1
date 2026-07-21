@@ -139,25 +139,14 @@ if ($Yes)        { $createParams['Yes'] = $true }
 if ($LaunchAgent){ $createParams['LaunchEditor'] = $true }
 if ($DryRun)     { $createParams['DryRun'] = $true }
 
-# Invoke the existing workflow. It returns the clone path(s).
-# Since create-repo-with-plan-docs.ps1 outputs success via Write-Host and
-# Write-Output, we capture stdout and parse the clone paths from the success line.
-$rawOutput = & $createRepoScript @createParams
-$rawOutput
-
-# Extract the clone path(s) from the success lines. The existing script
-# emits: "SUCCESS: '<clonePath>' created and checked in (https://github.com/...)"
-$successPattern = "^SUCCESS:\s*'([^']+)'"
-$clonePaths = @()
-foreach ($line in $rawOutput) {
-    if ($line -match $successPattern) {
-        $clonePaths += $Matches[1]
-    }
+# Invoke the existing workflow. It returns each clone path on the pipeline
+# (Write-Output) and signals failure via its exit code (exit 1).
+$clonePaths = @(& $createRepoScript @createParams | Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Container) })
+if ($LASTEXITCODE -ne 0) {
+    throw "create-repo-with-plan-docs failed (exit code $LASTEXITCODE)."
 }
-
 if ($clonePaths.Count -eq 0) {
-    Write-Warning 'No SUCCESS lines parsed from create-repo-with-plan-docs output; skipping cleanup and trigger.'
-    return
+    throw 'create-repo-with-plan-docs returned no clone paths.'
 }
 
 Write-Host ''

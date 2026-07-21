@@ -203,7 +203,7 @@ try {
     if (-not $repoNames) { throw "Unable to find an available set of repo names after multiple attempts for base '$RepoName'" }
     Write-Host " $($repoNames -join ', ')" -ForegroundColor Green
 
-    Write-Output ''
+    Write-Host ''
     if (-not $Yes) {
         if ($Count -gt 1) {
             $confirm = Read-Host "You have specified to create $Count repos from the $RepoName plans. Are you sure? (y/N):"
@@ -397,6 +397,7 @@ try {
 
         # Output clone destination path
         $repoUrl = "https://github.com/$Owner/$repoName"
+        Write-Output $clonePath
         Write-Host "SUCCESS: '$clonePath' created and checked in ($repoUrl) " -ForegroundColor Green        
         
         Write-Host -ForegroundColor Green       
