@@ -167,7 +167,8 @@ That one command now does everything end-to-end:
 - **NEW:** runs `cleanup-template-state.ps1` (clears template memory, plans,
   run-reviews) and amends the seed commit.
 - **NEW:** creates a dispatch issue on the clone with body
-  `/gh-issue-tracking-init` (the orchestrator that handles the label picks it up).
+  `/gh-issue-tracking-init`, labeled `gh-issue-tracking:direct-body` (the
+  orchestrator's direct-body clause runs the body verbatim as a prompt).
 
 Script reference
 
@@ -213,8 +214,12 @@ Creates a dispatch issue on the target repo with body `/gh-issue-tracking-init`
 ./scripts/trigger-gh-issue-tracking-init.ps1 -Repo "intel-agency/my-app" -DryRun
 ```
 
-Reuses `Ensure-DispatchBootstrapLabel` from the existing `trigger-project-setup.ps1`
-to bootstrap the `orchestration:dispatch` label before issue creation.
+By default the dispatch issue is labeled `gh-issue-tracking:direct-body`, which
+the orchestrator's direct-body match clause matches to run the issue body
+verbatim as a prompt. Reuses `Ensure-DispatchBootstrapLabel` from the shared
+`dispatch-labels.ps1` library to bootstrap each label (from
+`-BootstrapLabelsFile`) before attaching it. Pass `-Labels 'orchestration:dispatch'`
+for the legacy method, or `-Labels @()` for a bare, unlabeled issue.
 
 Opting into cleanup on the legacy flow
 

@@ -25,7 +25,7 @@ create-repo-with-plan-docs.ps1  →  cleanup-template-state.ps1  →  trigger-gh
                                                                       ◾ stops here
 ```
 
-The two label changes just made (bare dispatch issue by default; legacy `orchestration:dispatch` import behind `-ImportLegacyLabels`, default off) reflect that **the `gh-issue-tracking-init` skill does not need that legacy label** — it manages its own taxonomy.
+The dispatch issue is now labeled `gh-issue-tracking:direct-body` by default (the orchestrator runs the body verbatim as a prompt), with the legacy `orchestration:dispatch` available via `-Labels 'orchestration:dispatch'` — reflecting that **the `gh-issue-tracking-init` skill does not need that legacy label**, it manages its own taxonomy.
 
 **The gap:** nothing currently *drives implementation* of the issues the skill created. The old orchestration method had a final trigger that started an implementation loop; the new method ends at skill dispatch. We need a new step, **after the skill completes successfully**, that invokes the new orchestration/implementation cycle.
 
@@ -62,7 +62,7 @@ The old method already implements the exact pattern Design 1 proposes, via a **c
 **Constraints**
 - The skill runs as an **autonomous agent**, asynchronously from the PowerShell trigger. There is no in-process return value to `trigger-gh-issue-tracking-init.ps1`.
 - Do not regress the agent-context pipeline or re-couple it to legacy labels.
-- Keep dual-method support possible (the `-ImportLegacyLabels` toggle is the precedent).
+- Keep dual-method support possible (the `-Labels` parameter is the precedent: default `gh-issue-tracking:direct-body`, pass `orchestration:dispatch` for the old method).
 
 ---
 
@@ -171,7 +171,7 @@ This is the part flagged as not-yet-solved ("we would need to add it in a place 
 - Candidate label scheme (illustrative, to be decided):
   - `gh-issue-tracking:done` / `gh-issue-tracking:failed` — skill completion signal (Axis A1).
   - `orchestration:implement` (or reuse a new `orchestration:*` value) — the triggering label the orchestrator's match clause recognizes (Axis C1/D1).
-- Keep the legacy `orchestration:dispatch` import available only via `-ImportLegacyLabels` (already implemented) so old-method repos still work.
+- Keep the legacy `orchestration:dispatch` import available via `-Labels 'orchestration:dispatch'` (default is `gh-issue-tracking:direct-body`) so old-method repos still work.
 
 ---
 
@@ -194,7 +194,7 @@ Pursue **Design 1**, explicitly reusing the **existing event-driven case-matchin
 - **A terminal skill-completion label** set by `gh-issue-tracking-init` on success (and a `:failed` variant) — sourced from the skill's own `labels.json` so `ensure-labels.ps1` creates it (**A1 + D1**).
 - **A new case in the existing case-matching workflow** that matches that terminal label and starts the implementation cycle — mirroring exactly how `orchestration-plan-approved` → epic creation → `orchestration:epic-created` → epic implementation already works.
 
-This requires **no changes in this repo** beyond the legacy-label toggle already implemented (`-ImportLegacyLabels`); it keeps each phase decoupled, reuses `create-dispatch-issue.ps1` and the proven match-clause architecture, and preserves dual-method support.
+This requires **no changes in this repo** beyond the `-Labels` parameter already implemented (default `gh-issue-tracking:direct-body`; `orchestration:dispatch` for legacy); it keeps each phase decoupled, reuses `create-dispatch-issue.ps1` and the proven match-clause architecture, and preserves dual-method support.
 
 Defer coupling the skill directly to orchestration (**Design 2 / A6**) unless reusing the watcher proves unjustified.
 
@@ -202,7 +202,7 @@ Defer coupling the skill directly to orchestration (**Design 2 / A6**) unless re
 
 ## 9. Appendix — Relevant Files
 
-- `scripts/trigger-gh-issue-tracking-init.ps1` — dispatch-issue trigger (now bare by default; `-ImportLegacyLabels` for old method).
+- `scripts/trigger-gh-issue-tracking-init.ps1` — dispatch-issue trigger (labeled `gh-issue-tracking:direct-body` by default; pass `-Labels 'orchestration:dispatch'` for the old method).
 - `scripts/create-dispatch-issue.ps1` — reusable issue creator (supports arbitrary `-Body`/`-Labels`).
 - `scripts/dispatch-labels.ps1` — shared label-bootstrap helpers (legacy `Ensure-DispatchBootstrapLabel`).
 - `scripts/trigger-project-setup.ps1` — legacy dispatch pattern reference (`/orchestrate-dynamic-workflow $workflow_name = project-setup` + `orchestration:dispatch`).
