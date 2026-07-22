@@ -182,9 +182,14 @@ foreach ($clonePath in $clonePaths) {
     }
 
     # Step 3: Dispatch /gh-issue-tracking-init
+    # Labeled gh-issue-tracking:direct-body so the orchestrator webhook runs the
+    # issue body verbatim as a prompt, invoking the skill.
     if ($TriggerHierarchyInit) {
         Write-Host "Running trigger-gh-issue-tracking-init.ps1 on $repoFullName..." -ForegroundColor Cyan
-        $triggerParams = @{ Repo = $repoFullName }
+        $triggerParams = @{
+            Repo   = $repoFullName
+            Labels = @('gh-issue-tracking:direct-body')
+        }
         $labelsFile = Join-Path $clonePath '.github/.labels.json'
         if (Test-Path -LiteralPath $labelsFile) {
             $triggerParams['BootstrapLabelsFile'] = $labelsFile

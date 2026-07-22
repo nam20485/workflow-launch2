@@ -42,21 +42,23 @@ function Ensure-DispatchBootstrapLabel {
         [Parameter(Mandatory = $true)]
         [string]$LabelsFile,
 
+        [Parameter()]
+        [string]$LabelName = 'orchestration:dispatch',
+
         [switch]$IsDryRun
     )
 
-    $labelName = 'orchestration:dispatch'
-    $label = Get-BootstrapLabelDefinition -LabelsFile $LabelsFile -LabelName $labelName
-    $encodedLabelName = [uri]::EscapeDataString($labelName)
+    $label = Get-BootstrapLabelDefinition -LabelsFile $LabelsFile -LabelName $LabelName
+    $encodedLabelName = [uri]::EscapeDataString($LabelName)
 
     if ($IsDryRun) {
-        Write-Host "[dry-run] Would ensure bootstrap label '$labelName' exists on '$TargetRepo' using '$LabelsFile'." -ForegroundColor Yellow
+        Write-Host "[dry-run] Would ensure bootstrap label '$LabelName' exists on '$TargetRepo' using '$LabelsFile'." -ForegroundColor Yellow
         return
     }
 
     $checkResult = & gh api "repos/$TargetRepo/labels/$encodedLabelName" 2>&1
     if ($LASTEXITCODE -eq 0 -and $checkResult -notmatch '"message"') {
-        Write-Verbose "Bootstrap label '$labelName' already exists on '$TargetRepo'."
+        Write-Verbose "Bootstrap label '$LabelName' already exists on '$TargetRepo'."
         return
     }
 
@@ -64,10 +66,10 @@ function Ensure-DispatchBootstrapLabel {
     $description = if ($null -ne $label.description) { [string]$label.description } else { '' }
 
     Write-Host ""
-    Write-Host "Creating bootstrap label '$labelName' on '$TargetRepo'..." -ForegroundColor Cyan -NoNewline
+    Write-Host "Creating bootstrap label '$LabelName' on '$TargetRepo'..." -ForegroundColor Cyan -NoNewline
     $ghArgs = @(
         'api', "repos/$TargetRepo/labels", '-X', 'POST',
-        '-f', "name=$labelName",
+        '-f', "name=$LabelName",
         '-f', "color=$color"
     )
     if ($description -ne '') {
@@ -76,7 +78,7 @@ function Ensure-DispatchBootstrapLabel {
 
     & gh @ghArgs *> $null
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create bootstrap label '$labelName' on '$TargetRepo'."
+        throw "Failed to create bootstrap label '$LabelName' on '$TargetRepo'."
     }
 
     Write-Host ' done' -ForegroundColor Green
