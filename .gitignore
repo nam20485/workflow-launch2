@@ -427,3 +427,4 @@ FodyWeavers.xsd
 *.msp
 tmp/*
 docs/tmp/*
+testResults.xml
