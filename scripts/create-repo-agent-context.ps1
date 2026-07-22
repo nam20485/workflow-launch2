@@ -43,7 +43,7 @@
 .PARAMETER Yes
     Non-interactive mode. Assume yes for all confirmations.
 
-.PARAMETER LaunchAgent
+.PARAMETER LaunchEditor
     Launch the editor against the newly created repo after creation.
 
 .PARAMETER TriggerHierarchyInit
@@ -75,7 +75,7 @@ param(
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Owner = 'intel-agency',
+    [string]$Owner = 'nam20485',
 
     [Parameter()]
     [ValidateSet('public', 'private')]
@@ -89,7 +89,7 @@ param(
     [switch]$Yes,
 
     [Parameter()]
-    [switch]$LaunchAgent,
+    [switch]$LaunchEditor,
 
     [Parameter()]
     [bool]$TriggerHierarchyInit = $true,
@@ -136,7 +136,7 @@ $createParams = @{
     SkipProjectSetup  = $true
 }
 if ($Yes)        { $createParams['Yes'] = $true }
-if ($LaunchAgent){ $createParams['LaunchEditor'] = $true }
+if ($LaunchEditor){ $createParams['LaunchEditor'] = $true }
 if ($DryRun)     { $createParams['DryRun'] = $true }
 
 # Invoke the existing workflow. It returns each clone path on the pipeline

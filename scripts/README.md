@@ -177,7 +177,7 @@ Thin orchestrator wrapper. Accepts:
 - `-Slug` (mandatory) — base app-plan slug, same as before.
 - `-Owner` (default `intel-agency`), `-Visibility` (default `public`).
 - `-Count` — how many repos to create from the slug.
-- `-Yes`, `-LaunchAgent`, `-DryRun` — same semantics as `create-repo-from-slug`.
+- `-Yes`, `-LaunchEditor`, `-DryRun` — same semantics as `create-repo-from-slug`.
 - `-TriggerHierarchyInit` (default `$true`) — whether to create the
   `/gh-issue-tracking-init` dispatch issue. Set `$false` to skip.
 
