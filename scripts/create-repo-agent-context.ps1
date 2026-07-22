@@ -20,8 +20,10 @@
     Pipeline order per repo:
       1. create-repo-with-plan-docs.ps1 -SkipProjectSetup <params>
       2. cleanup-template-state.ps1 -RepoRoot <clonePath>
-      3. trigger-gh-issue-tracking-init.ps1 -Repo "$Owner/$RepoName"
-         -BootstrapLabelsFile "$clonePath/.github/.labels.json"
+      3. import-labels.ps1 -Repo "$Owner/$RepoName"
+         -LabelsFile <launcher>/.github/.labels.json
+      4. trigger-gh-issue-tracking-init.ps1 -Repo "$Owner/$RepoName"
+         -BootstrapLabelsFile <launcher>/.github/.labels.json
 
     The existing `create-repo-with-plan-docs.ps1` main loop is unchanged; only
     the optional `-SkipProjectSetup` switch is added (default behavior
@@ -107,8 +109,9 @@ $scriptDir = $PSScriptRoot
 $createRepoScript = Join-Path $scriptDir 'create-repo-with-plan-docs.ps1'
 $cleanupScript = Join-Path $scriptDir 'cleanup-template-state.ps1'
 $triggerScript = Join-Path $scriptDir 'trigger-gh-issue-tracking-init.ps1'
+$importLabelsScript = Join-Path $scriptDir 'import-labels.ps1'
 
-foreach ($required in @($createRepoScript, $cleanupScript, $triggerScript)) {
+foreach ($required in @($createRepoScript, $cleanupScript, $triggerScript, $importLabelsScript)) {
     if (-not (Test-Path -LiteralPath $required)) {
         throw "Required script not found: $required"
     }
@@ -121,6 +124,15 @@ $TemplateOwner = 'intel-agency'
 # Launcher conventions.
 $PlanDocsDir = "./plan_docs/$Slug"
 $CloneParentDir = '../dynamic_workflows'
+
+# Source labels file lives in the launcher repo's .github/ (not necessarily the
+# clone's), so label imports work even when the agent-context template lacks a
+# .labels.json. This is the file every label (including the dispatch label) is
+# bootstrapped from.
+$sourceLabelsFile = Join-Path $scriptDir '..' '.github/.labels.json'
+if (-not (Test-Path -LiteralPath $sourceLabelsFile)) {
+    throw "Source labels file not found: $sourceLabelsFile"
+}
 
 Write-Host "Calling create-repo-with-plan-docs.ps1 (with -SkipProjectSetup)..." -ForegroundColor Cyan
 
@@ -181,18 +193,34 @@ foreach ($clonePath in $clonePaths) {
         Write-Host ' done' -ForegroundColor Green
     }
 
-    # Step 3: Dispatch /gh-issue-tracking-init
+    # Step 3: Import the launcher's full label set into the new repo so the
+    # dispatch label (and every other tracking label) exists before the trigger.
+    # import-labels.ps1 only creates/updates missing labels, so it is idempotent
+    # and safe to re-run.
+    Write-Host "Importing labels into $repoFullName..." -ForegroundColor Cyan
+    $importParams = @{
+        Repo       = $repoFullName
+        LabelsFile = $sourceLabelsFile
+    }
+    if ($DryRun) { $importParams['DryRun'] = $true }
+    & $importLabelsScript @importParams
+    if ($LASTEXITCODE -ne 0) {
+        throw "import-labels.ps1 failed (exit code $LASTEXITCODE) on $repoFullName."
+    }
+    Write-Host ' done' -ForegroundColor Green
+
+    # Step 4: Dispatch /gh-issue-tracking-init
     # Labeled gh-issue-tracking:direct-body so the orchestrator webhook runs the
-    # issue body verbatim as a prompt, invoking the skill.
+    # issue body verbatim as a prompt, invoking the skill. The label is already
+    # imported above; BootstrapLabelsFile points at the launcher's source file as
+    # a safety net for Ensure-DispatchBootstrapLabel (the clone may lack
+    # .labels.json).
     if ($TriggerHierarchyInit) {
         Write-Host "Running trigger-gh-issue-tracking-init.ps1 on $repoFullName..." -ForegroundColor Cyan
         $triggerParams = @{
-            Repo   = $repoFullName
-            Labels = @('gh-issue-tracking:direct-body')
-        }
-        $labelsFile = Join-Path $clonePath '.github/.labels.json'
-        if (Test-Path -LiteralPath $labelsFile) {
-            $triggerParams['BootstrapLabelsFile'] = $labelsFile
+            Repo                = $repoFullName
+            Labels              = @('gh-issue-tracking:direct-body')
+            BootstrapLabelsFile = $sourceLabelsFile
         }
         if ($DryRun) { $triggerParams['DryRun'] = $true }
         & $triggerScript @triggerParams
