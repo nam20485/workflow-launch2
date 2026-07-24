@@ -20,9 +20,12 @@
     Pipeline order per repo:
       1. create-repo-with-plan-docs.ps1 -SkipProjectSetup <params>
       2. cleanup-template-state.ps1 -RepoRoot <clonePath>
-      3. import-labels.ps1 -Repo "$Owner/$RepoName"
+      3. apply-headless-permissions.ps1 -RepoRoot <clonePath>
+         (relax template `ask` -> `allow` so headless orchestrator dispatches
+          never block on an unanswerable permission ask; preserves `deny`)
+      4. import-labels.ps1 -Repo "$Owner/$RepoName"
          -LabelsFile <launcher>/.github/.labels.json
-      4. trigger-gh-issue-tracking-init.ps1 -Repo "$Owner/$RepoName"
+      5. trigger-gh-issue-tracking-init.ps1 -Repo "$Owner/$RepoName"
          -BootstrapLabelsFile <launcher>/.github/.labels.json
 
     The existing `create-repo-with-plan-docs.ps1` main loop is unchanged; only
@@ -108,10 +111,11 @@ if ($DryRun) { Write-Host '[DRY-RUN MODE]' -ForegroundColor Yellow }
 $scriptDir = $PSScriptRoot
 $createRepoScript = Join-Path $scriptDir 'create-repo-with-plan-docs.ps1'
 $cleanupScript = Join-Path $scriptDir 'cleanup-template-state.ps1'
+$permScript = Join-Path $scriptDir 'apply-headless-permissions.ps1'
 $triggerScript = Join-Path $scriptDir 'trigger-gh-issue-tracking-init.ps1'
 $importLabelsScript = Join-Path $scriptDir 'import-labels.ps1'
 
-foreach ($required in @($createRepoScript, $cleanupScript, $triggerScript, $importLabelsScript)) {
+foreach ($required in @($createRepoScript, $cleanupScript, $permScript, $triggerScript, $importLabelsScript)) {
     if (-not (Test-Path -LiteralPath $required)) {
         throw "Required script not found: $required"
     }
@@ -179,13 +183,22 @@ foreach ($clonePath in $clonePaths) {
     & $cleanupScript @cleanupParams
     Write-Host ' done' -ForegroundColor Green
 
-    # Amend the seed commit to include the cleanup changes, then force-push.
+    # Step 3: Apply headless-safe permissions (ask -> allow, deny preserved).
+    # MUST run before the seed-commit amend so the relaxed permissions ship in
+    # the pushed commit. See apply-headless-permissions.ps1 for the root cause.
+    Write-Host 'Applying headless permissions...' -ForegroundColor Cyan -NoNewline
+    $permParams = @{ RepoRoot = $clonePath }
+    if ($DryRun) { $permParams['DryRun'] = $true }
+    & $permScript @permParams
+    Write-Host ' done' -ForegroundColor Green
+
+    # Amend the seed commit to include the cleanup + permission changes.
     if (-not $DryRun) {
-        Write-Host 'Amending seed commit with cleanup...' -ForegroundColor Cyan -NoNewline
+        Write-Host 'Amending seed commit with cleanup + permissions...' -ForegroundColor Cyan -NoNewline
         Push-Location -LiteralPath $clonePath
         try {
             & git add .
-            & git commit --amend --no-edit --message "Seed $repoName from template with plan docs, placeholder replacements, and Class-2 cleanup"
+            & git commit --amend --no-edit --message "Seed $repoName from template with plan docs, placeholder replacements, Class-2 cleanup, and headless permissions"
         }
         finally {
             Pop-Location
@@ -193,7 +206,7 @@ foreach ($clonePath in $clonePaths) {
         Write-Host ' done' -ForegroundColor Green
     }
 
-    # Step 3: Import the launcher's full label set into the new repo so the
+    # Step 4: Import the launcher's full label set into the new repo so the
     # dispatch label (and every other tracking label) exists before the trigger.
     # import-labels.ps1 only creates/updates missing labels, so it is idempotent
     # and safe to re-run.
@@ -209,7 +222,7 @@ foreach ($clonePath in $clonePaths) {
     }
     Write-Host ' done' -ForegroundColor Green
 
-    # Step 4: Dispatch /gh-issue-tracking-init
+    # Step 5: Dispatch /gh-issue-tracking-init
     # Labeled gh-issue-tracking:direct-body so the orchestrator webhook runs the
     # issue body verbatim as a prompt, invoking the skill. The label is already
     # imported above; BootstrapLabelsFile points at the launcher's source file as
