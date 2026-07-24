@@ -37,6 +37,12 @@
     for them. The template itself is intentionally left unchanged (it seeds
     every repo, orchestrator or otherwise).
 
+    COORDINATOR EXEMPTION: coordinator agents (orchestrator, team-lead,
+    team-orchestrator, planner) are SKIPPED entirely. Their deny-based
+    permissions are a universal "must delegate, never implement" design rule
+    managed in the template; relaxing them would grant a coordinator
+    implementation capability. Only implementer/specialist agents are relaxed.
+
     Idempotent: an already-relaxed file is left untouched (no `ask` to match, no
     object to replace). Safe to re-run.
 
@@ -102,10 +108,26 @@ $agentsDir = Join-Path $resolvedRoot '.opencode/agents'
 $totalAsksRelaxed = 0
 $agentsTouched = 0
 
+# Coordinator agents are pure delegators: their restrictive deny-based
+# permissions are a UNIVERSAL design rule (the orchestrator must never
+# implement), managed in the template - NOT a headless-only concern. They must
+# NOT be relaxed here: converting their bash catch-all `ask` to `allow` would
+# grant a coordinator unrestricted implementation bash and break the
+# must-delegate invariant. Their frontmatter carries no `ask` values anyway
+# (they use `deny`), so skipping is correct and a no-op today; the guard makes
+# the intent explicit and fails safe against future regressions.
+$coordinatorAgents = @('orchestrator.md', 'team-lead.md', 'team-orchestrator.md', 'planner.md')
+
 if (Test-Path -LiteralPath $agentsDir) {
     $agentFiles = @(Get-ChildItem -LiteralPath $agentsDir -File -Filter '*.md' -Force)
     foreach ($file in $agentFiles) {
         $path = $file.FullName
+
+        if ($coordinatorAgents -contains $file.Name) {
+            Write-Host " $($file.Name): coordinator (deny-managed in template) - skipped" -ForegroundColor DarkGray
+            continue
+        }
+
         $raw = [System.IO.File]::ReadAllText($path, $utf8NoBom)
 
         # Preserve the file's line ending (CRLF or LF) and trailing newline.
