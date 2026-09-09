@@ -38,3 +38,10 @@ AGENTS.md for instructions
 
 harness?  
 run in a sandbox!
+
+References:
+
+cursor:
+
+- [cursor swarm blog](https://cursor.com/blog/multi-agent-kernels)
+- [agent swarm economics](https://cursor.com/blog/agent-swarm-model-economics)
