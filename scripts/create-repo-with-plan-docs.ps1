@@ -1,5 +1,6 @@
 #!/usr/bin/env pwsh
 #requires -Version 7.0
+
 <#
 .SYNOPSIS
 Create a new GitHub repository with a random suffix, clone it locally, copy plan docs into plan_docs/, commit, and push.
@@ -47,11 +48,14 @@ Template repository name used to create new repos and to substitute template pla
 .PARAMETER TemplateOwner
 Template repository owner used to create new repos and to substitute template owner references (e.g. in image/registry paths). Default: intel-agency
 
-.EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory .\plan_docs\advanced_memory -CloneDestinationDirectory .\dynamic_workflows -Visibility public -DryRun -Verbose
+.PARAMETER Help
+    Show this usage information and exit. Alias: -h.
 
 .EXAMPLE
-./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDirectory E:\plan_docs -CloneDestinationDirectory E:\work\dynamic_workflows -Owner myorg -Visibility private
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDir .\plan_docs\advanced_memory -CloneParentDir .\dynamic_workflows -Visibility public -DryRun -Verbose
+
+.EXAMPLE
+./scripts/create-repo-with-plan-docs.ps1 -RepoName planning -PlanDocsDir E:\plan_docs -CloneParentDir E:\work\dynamic_workflows -Owner myorg -Visibility private
 
 .OUTPUTS
 System.String. The absolute clone destination path of the created repository.
@@ -60,10 +64,10 @@ System.String. The absolute clone destination path of the created repository.
 Requires GitHub CLI (`gh`) and Git. Authenticate with `gh auth login` before running.
 #>
 
-[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium', DefaultParameterSetName = 'Create')]
 param(
-    [Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Base repository name (prefix).')]
-    [Parameter(Mandatory, ParameterSetName = 'ReplaceOnly', HelpMessage = 'Final repository name to substitute for the template placeholder.')]
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Base repository name (prefix).')]
+    [Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Final repository name to substitute for the template placeholder.')]
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$RepoName,
 
@@ -71,15 +75,15 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$Owner = 'intel-agency',
 
-    [Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Directory containing plan docs to copy.')]
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Directory containing plan docs to copy.')]
     [ValidateNotNullOrEmpty()]
     [string]$PlanDocsDir,
 
-    [Parameter(Mandatory, ParameterSetName = 'Create', HelpMessage = 'Parent directory to clone into.')]
+    [Parameter(ParameterSetName = 'Create', HelpMessage = 'Parent directory to clone into.')]
     [ValidateNotNullOrEmpty()]
     [string]$CloneParentDir,
 
-    [Parameter(Mandatory, ParameterSetName = 'ReplaceOnly', HelpMessage = 'Existing repository root to update and validate locally.')]
+    [Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Existing repository root to update and validate locally.')]
     [ValidateNotNullOrEmpty()]
     [string]$ExistingRepoRoot,
 
@@ -118,10 +122,42 @@ param(
     [Parameter(ParameterSetName = 'Create', HelpMessage = 'Template repository owner used for new repos.')]
     [Parameter(ParameterSetName = 'ReplaceOnly', HelpMessage = 'Template repository owner used for placeholder replacement.')]
     [ValidateNotNullOrEmpty()]
-    [string]$TemplateOwner = 'intel-agency'
+    [string]$TemplateOwner = 'intel-agency',
+
+    [Parameter()]
+    [Alias('h')]
+    [switch]$Help
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Show-Usage {
+    Get-Help -Name $PSCommandPath -Detailed | Out-String | Write-Host
+}
+
+if ($Help) {
+    Show-Usage
+    exit 0
+}
+
+# Required parameters per parameter set (validated manually so -Help works
+# without triggering mandatory-parameter prompts).
+$missingParams = @()
+if ($PSCmdlet.ParameterSetName -eq 'ReplaceOnly') {
+    if ([string]::IsNullOrWhiteSpace($RepoName))        { $missingParams += '-RepoName' }
+    if ([string]::IsNullOrWhiteSpace($ExistingRepoRoot)) { $missingParams += '-ExistingRepoRoot' }
+}
+else {
+    if ([string]::IsNullOrWhiteSpace($RepoName))       { $missingParams += '-RepoName' }
+    if ([string]::IsNullOrWhiteSpace($PlanDocsDir))    { $missingParams += '-PlanDocsDir' }
+    if ([string]::IsNullOrWhiteSpace($CloneParentDir)) { $missingParams += '-CloneParentDir' }
+}
+if ($missingParams.Count -gt 0) {
+    Write-Host "Error: missing required parameter(s) for the '$($PSCmdlet.ParameterSetName)' parameter set: $($missingParams -join ', ')" -ForegroundColor Red
+    Write-Host ''
+    Show-Usage
+    exit 1
+}
 
 Write-Host '=== create-repo-with-plan-docs ===' -ForegroundColor Cyan
 if ($DryRun) { Write-Host '[DRY-RUN MODE]' -ForegroundColor Yellow }

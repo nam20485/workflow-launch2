@@ -13,11 +13,24 @@ BeforeAll {
 }
 
 Describe 'create-repo-from-slug.ps1 parameter validation' {
-    It 'Has a mandatory Slug parameter' {
+    It 'Requires Slug (reports error and exits non-zero when omitted)' {
         $cmd = Get-Command $script:ScriptPath
         $slugParam = $cmd.Parameters['Slug']
         $slugParam | Should -Not -BeNullOrEmpty
-        $slugParam.Attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] -and $_.Mandatory } | Should -Not -BeNullOrEmpty
+        # Slug is enforced at runtime (not via Mandatory) so -Help works without
+        # triggering a mandatory-parameter prompt. Run out-of-process because the
+        # script exits non-zero.
+        $output = & pwsh -NoProfile -File $script:ScriptPath 2>&1 | Out-String
+        $LASTEXITCODE | Should -Not -Be 0
+        $output | Should -Match '-Slug is required'
+    }
+
+    It 'Has Help switch parameter with alias h' {
+        $cmd = Get-Command $script:ScriptPath
+        $helpParam = $cmd.Parameters['Help']
+        $helpParam | Should -Not -BeNullOrEmpty
+        $helpParam.SwitchParameter | Should -BeTrue
+        $helpParam.Aliases | Should -Contain 'h'
     }
 
     It 'Has Visibility parameter with default "public"' {

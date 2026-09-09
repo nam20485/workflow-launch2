@@ -63,6 +63,9 @@
 .PARAMETER DryRun
     Forward -DryRun to all invoked scripts.
 
+.PARAMETER Help
+    Show this usage information and exit. Alias: -h.
+
 .EXAMPLE
     ./scripts/create-repo-agent-context.ps1 `
         -Slug "gap-miner-v2" -Visibility public -Yes
@@ -79,7 +82,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = 'Base app-plan slug (prefix).')]
+    [Parameter(HelpMessage = 'Base app-plan slug (prefix).')]
     [ValidatePattern('^[A-Za-z0-9_.-]+$')]
     [string]$Slug,
 
@@ -105,10 +108,30 @@ param(
     [bool]$TriggerHierarchyInit = $true,
 
     [Parameter()]
-    [switch]$DryRun
+    [switch]$DryRun,
+
+    [Parameter()]
+    [Alias('h')]
+    [switch]$Help
 )
 
 $ErrorActionPreference = 'Stop'
+
+function Show-Usage {
+    Get-Help -Name $PSCommandPath -Detailed | Out-String | Write-Host
+}
+
+if ($Help) {
+    Show-Usage
+    exit 0
+}
+
+if ([string]::IsNullOrWhiteSpace($Slug)) {
+    Write-Host 'Error: -Slug is required.' -ForegroundColor Red
+    Write-Host ''
+    Show-Usage
+    exit 1
+}
 
 Write-Host '=== create-repo-agent-context ===' -ForegroundColor Cyan
 if ($DryRun) { Write-Host '[DRY-RUN MODE]' -ForegroundColor Yellow }
