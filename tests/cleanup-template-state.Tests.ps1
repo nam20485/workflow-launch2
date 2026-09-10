@@ -35,7 +35,10 @@ Describe 'cleanup-template-state.ps1' {
         Set-Content -LiteralPath (Join-Path $planDocsDir 'development-plan.md') -Value 'Clone-seeded primary plan doc.'
         Set-Content -LiteralPath (Join-Path $plansDir 'Modern Linux Alternatives.md') -Value 'Owner plan note (personal).'
         Set-Content -LiteralPath (Join-Path $plansDir 'Ornith & Unsloth Setup Guide for AMD RX 6700 XT.md') -Value 'Owner plan note (personal).'
-        Set-Content -LiteralPath (Join-Path $plansDir 'powershell-standard-rules-plan.md') -Value 'Active template plan — must survive cleanup.'
+        Set-Content -LiteralPath (Join-Path $plansDir 'powershell-standard-rules-plan.md') -Value 'Template-self plan.'
+        Set-Content -LiteralPath (Join-Path $plansDir 'upstream-issue-body-content-plan.md') -Value 'Template-self plan.'
+        Set-Content -LiteralPath (Join-Path $plansDir 'workflow-launch2-clone-pipeline-class2-cleanup.md') -Value 'Template-self plan.'
+        Set-Content -LiteralPath (Join-Path $plansDir 'clone-example-active-plan.md') -Value 'Active plan unrelated to cleanup lists — must survive.'
     }
 
     AfterEach {
@@ -74,13 +77,16 @@ Describe 'cleanup-template-state.ps1' {
         Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/.completed/run-issues-review') | Should -BeFalse
     }
 
-    It 'removes owner plan notes by name but preserves other active plans' {
+    It 'removes owner plan notes and template-self plans by name but preserves other active plans' {
         & $script:ScriptPath -RepoRoot $script:FixtureRoot | Out-Null
 
         Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/Modern Linux Alternatives.md') | Should -BeFalse
         Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/Ornith & Unsloth Setup Guide for AMD RX 6700 XT.md') | Should -BeFalse
-        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/powershell-standard-rules-plan.md') | Should -BeTrue
-        Get-Content -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/powershell-standard-rules-plan.md') | Should -Match 'Active template plan'
+        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/powershell-standard-rules-plan.md') | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/upstream-issue-body-content-plan.md') | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/workflow-launch2-clone-pipeline-class2-cleanup.md') | Should -BeFalse
+        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/clone-example-active-plan.md') | Should -BeTrue
+        Get-Content -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/clone-example-active-plan.md') | Should -Match 'must survive'
     }
 
     It 'is idempotent — running twice is a no-op' {
@@ -125,7 +131,7 @@ Describe 'cleanup-template-state.ps1' {
         Get-ChildItem -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/.deferred') -File -Force | Should -HaveCount $beforeDeferred.Count
         Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/.completed/run-issues-review') | Should -Be $beforeRunReview
         Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/Modern Linux Alternatives.md') | Should -BeTrue
-        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/Ornith & Unsloth Setup Guide for AMD RX 6700 XT.md') | Should -BeTrue
+        Test-Path -LiteralPath (Join-Path $script:FixtureRoot 'docs/plans/workflow-launch2-clone-pipeline-class2-cleanup.md') | Should -BeTrue
     }
 
     It 'throws when -RepoRoot does not exist' {

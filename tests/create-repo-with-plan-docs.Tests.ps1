@@ -315,17 +315,19 @@ Describe 'New-GitHubRepository' {
 
     It 'Creates a public repo with template' {
         Mock Invoke-External { return @{ ExitCode = 0; Output = @() } }
-        New-GitHubRepository -Owner 'test-org' -Name 'test-repo' -Visibility 'public' -Confirm:$false
+        New-GitHubRepository -Owner 'test-org' -Name 'test-repo' -Visibility 'public' -Template $TEMPLATE -Confirm:$false
         Should -Invoke Invoke-External -Times 1 -ParameterFilter {
-            $FilePath -eq 'gh' -and $ArgumentList -contains '--public'
+            $FilePath -eq 'gh' -and $ArgumentList -contains '--public' -and
+            $ArgumentList -contains '--template' -and $ArgumentList -contains 'intel-agency/ai-new-workflow-app-template'
         }
     }
 
     It 'Creates a private repo with template' {
         Mock Invoke-External { return @{ ExitCode = 0; Output = @() } }
-        New-GitHubRepository -Owner 'test-org' -Name 'test-repo' -Visibility 'private' -Confirm:$false
+        New-GitHubRepository -Owner 'test-org' -Name 'test-repo' -Visibility 'private' -Template $TEMPLATE -Confirm:$false
         Should -Invoke Invoke-External -Times 1 -ParameterFilter {
-            $FilePath -eq 'gh' -and $ArgumentList -contains '--private'
+            $FilePath -eq 'gh' -and $ArgumentList -contains '--private' -and
+            $ArgumentList -contains '--template' -and $ArgumentList -contains 'intel-agency/ai-new-workflow-app-template'
         }
     }
 }
