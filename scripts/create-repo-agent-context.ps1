@@ -23,11 +23,12 @@
       3. apply-headless-permissions.ps1 -RepoRoot <clonePath>
          (relax template `ask` -> `allow` so headless orchestrator dispatches
            never block on an unanswerable permission ask; preserves `deny`)
-      3.5. apply-glm5-models.ps1 -RepoRoot <clonePath>
-         (normalize every agent `model:` + project-config `model` to
-           zai-coding-plan/glm-5; the template's per-tier models — glm-5.2 /
-           opencode-go/qwen3.7-max — otherwise override the dispatch `--model
-           glm-5` and force the wrong model on headless dispatches)
+       3.5. strip-model-settings.ps1 -RepoRoot <clonePath>
+          (remove every agent `model:` pin + project-config `model` /
+            `small_model` keys so the orchestrator-service runtime/dispatch
+            model selection prevails; the template's per-tier models — glm-5.3 /
+            glm-5.3-flash — are kept in the template for
+            non-orchestrator interactive clones)
       4. import-labels.ps1 -Repo "$Owner/$RepoName"
           -LabelsFile <launcher>/.github/.labels.json
       5. trigger-gh-issue-tracking-init.ps1 -Repo "$Owner/$RepoName"
@@ -140,7 +141,7 @@ $scriptDir = $PSScriptRoot
 $createRepoScript = Join-Path $scriptDir 'create-repo-with-plan-docs.ps1'
 $cleanupScript = Join-Path $scriptDir 'cleanup-template-state.ps1'
 $permScript = Join-Path $scriptDir 'apply-headless-permissions.ps1'
-$modelScript = Join-Path $scriptDir 'apply-glm5-models.ps1'
+$modelScript = Join-Path $scriptDir 'strip-model-settings.ps1'
 $triggerScript = Join-Path $scriptDir 'trigger-gh-issue-tracking-init.ps1'
 $importLabelsScript = Join-Path $scriptDir 'import-labels.ps1'
 
@@ -221,12 +222,15 @@ foreach ($clonePath in $clonePaths) {
     & $permScript @permParams
     Write-Host ' done' -ForegroundColor Green
 
-    # Step 3.5: Normalize every agent model to glm-5. MUST run before the
-    # seed-commit amend so the normalized models ship in the pushed commit. The
-    # template's per-tier model overrides (glm-5.2 / qwen3.7-max) otherwise
-    # defeat the dispatch `--model zai-coding-plan/glm-5`. See
-    # apply-glm5-models.ps1 for the root cause.
-    Write-Host 'Applying glm-5 models...' -ForegroundColor Cyan -NoNewline
+    # Step 3.5: Strip all model pins (agent frontmatter `model:` + project
+    # config `model`/`small_model`). MUST run before the seed-commit amend so
+    # the stripped config ships in the pushed commit. With the pins gone every
+    # layer falls back to the orchestrator-service dispatch `--model
+    # qwencloud/qwen3.7-max` / runtime image config instead of the template's
+    # per-tier overrides (glm-5.3 / glm-5.3-flash). The template itself keeps its
+    # models for non-orchestrator interactive clones. See
+    # strip-model-settings.ps1 for the root cause.
+    Write-Host 'Stripping model pins...' -ForegroundColor Cyan -NoNewline
     $modelParams = @{ RepoRoot = $clonePath }
     if ($DryRun) { $modelParams['DryRun'] = $true }
     & $modelScript @modelParams
@@ -234,11 +238,11 @@ foreach ($clonePath in $clonePaths) {
 
     # Amend the seed commit to include the cleanup + permission + model changes.
     if (-not $DryRun) {
-        Write-Host 'Amending seed commit with cleanup + permissions + models...' -ForegroundColor Cyan -NoNewline
+        Write-Host 'Amending seed commit with cleanup + permissions + stripped models...' -ForegroundColor Cyan -NoNewline
         Push-Location -LiteralPath $clonePath
         try {
             & git add .
-            & git commit --amend --no-edit --message "Seed $repoName from template with plan docs, placeholder replacements, Class-2 cleanup, headless permissions, and glm-5 models"
+            & git commit --amend --no-edit --message "Seed $repoName from template with plan docs, placeholder replacements, Class-2 cleanup, headless permissions, and stripped model pins"
         }
         finally {
             Pop-Location
