@@ -17,6 +17,9 @@
       (lifecycle directories preserved).
     - `docs/plans/.completed/run-issues-review/` subtree is removed entirely
       (downstream-specific run reports that leaked into the template).
+    - Owner plan notes living directly in `docs/plans/*.md` (personal notes
+      the template owner keeps on the default branch) are removed by name so
+      clones never inherit them as project plans.
 
     Idempotent: missing paths are skipped. Safe to run multiple times on the
     same clone.
@@ -136,6 +139,32 @@ Write-Host " done ($($removedCompleted.Count) removed)" -ForegroundColor Green
 Write-Host 'Clearing template deferred plans...' -ForegroundColor Cyan -NoNewline
 $removedDeferred = Remove-WildcardFiles -Directory $deferredDir -Pattern '*.md'
 Write-Host " done ($($removedDeferred.Count) removed)" -ForegroundColor Green
+
+# --- Remove owner plan notes (kept in the template, never cloned) ---
+# Personal notes the owner keeps directly in docs/plans/ on the default
+# branch. The wildcard sweeps above only cover .completed/.deferred, so
+# these are removed by name.
+$ownerPlanNotes = @(
+    'Modern Linux Alternatives.md',
+    'Ornith & Unsloth Setup Guide for AMD RX 6700 XT.md'
+)
+$plansDir = Join-Path $resolvedRoot 'docs/plans'
+
+Write-Host 'Removing owner plan notes...' -ForegroundColor Cyan -NoNewline
+$removedNotes = 0
+foreach ($name in $ownerPlanNotes) {
+    $notePath = Join-Path $plansDir $name
+    if (Test-Path -LiteralPath $notePath) {
+        if ($DryRun) {
+            Write-Host " [dry-run] would remove: $notePath" -ForegroundColor Yellow
+        }
+        else {
+            Remove-Item -LiteralPath $notePath -Force
+        }
+        $removedNotes++
+    }
+}
+Write-Host " done ($removedNotes removed)" -ForegroundColor Green
 
 # --- Remove foreign artifacts (run-issues-review/) ---
 $runReviewDir = Join-Path $resolvedRoot 'docs/plans/.completed/run-issues-review'
