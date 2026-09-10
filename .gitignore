@@ -428,3 +428,6 @@ FodyWeavers.xsd
 tmp/*
 docs/tmp/*
 testResults.xml
+
+# Qwen CLI agent session state (matches agent-context convention)
+.qwen/
